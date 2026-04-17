@@ -13,7 +13,7 @@ import javax.swing.*;
  */
 public class UI extends JFrame implements ActionListener{
     
-    JTextField txtAnalizar;
+    JTextArea txtAnalizar;
     JTextArea txtResultado;
     JButton btnAnalizar;
     public UI(){
@@ -25,13 +25,16 @@ public class UI extends JFrame implements ActionListener{
         
     }
     public void contenedor(){
-        txtAnalizar=new JTextField("");
-        txtAnalizar.setBounds(10, 10, 550, 80);
-        add(txtAnalizar);
+        txtAnalizar=new JTextArea("");
+        JScrollPane barra1=new JScrollPane(txtAnalizar);
+        barra1.setBounds(10, 10, 550, 80);
+        add(barra1);
         
         txtResultado=new JTextArea();
-        txtResultado.setBounds(10, 100, 750, 350);
-        add(txtResultado);
+        JScrollPane barra2=new JScrollPane(txtResultado);
+        barra2.setBounds(10, 100, 750, 350);
+        add(barra2);
+
         
         btnAnalizar=new JButton("ANALIZAR");
         btnAnalizar.setBounds(600, 10, 150, 80);
@@ -71,15 +74,18 @@ public class UI extends JFrame implements ActionListener{
                         return; 
                     }
                     switch (token) {
-                        
+                        case FX:
+                             System.out.println("CREADO POR EQUIPO 3");
+                            break;
                         case ERROR:
                             resultado+="EL SIMBOLO NO ESTA DEFINIDO\n";
                             break;
-                        case PALABRA_RESERVADA: case IDENTIFICADOR: case OPERADOR_SUMA: case OPERADOR_RESTA: case OPERADOR_MULTIPLICAR: case OPERADOR_DIVISION: case OPERADOR_MODULO: 
-                        case NUMERO_ENTERO: case NUMERO_REAL:
+                        case IDENTIFICADOR: case OPERADOR_SUMA: case OPERADOR_RESTA: case OPERADOR_MULTIPLICAR: case OPERADOR_DIVISION: case OPERADOR_MODULO: 
+                        case NUMERO_ENTERO: case NUMERO_REAL: case PUNTO_COMA: case INCREMENTO: case DECREMENTO:case INC_VARIABLE: case DEC_VARIABLE: case MUL_VARIABLE: 
+                        case DIV_VARIABLE: case IGUAL: case DIFERENTE: case MENOR,MENOR_IGUAL: case MAYOR: case MAYOR_IGUAL: case AND: case OR: case NEGAR: case TIPO_CARACTER:
                             resultado+=lexer.lexema+": ES UN(A) " + token+"\n";
                             break;
-                        default: resultado+="TOKEN: "+token+"\n";
+                        default: resultado+="TOKEN: "+lexer.lexema+" "+token+"\n";
                         break;
                     }
                 }
