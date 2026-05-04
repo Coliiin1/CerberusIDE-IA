@@ -4,6 +4,8 @@
  */
 package codigo;
 import static codigo.Tokens.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.*;
 import javax.swing.JOptionPane;
 /**
@@ -12,15 +14,28 @@ import javax.swing.JOptionPane;
  */
 public class AnalizadorLexico {
     Matcher m;
-    private Tokens [] tokensDetectados;
-    private String[] codigo;
+    private List<Tokens> tokensDetectados;
+    private List<String> codigo;
     int contador;
     public boolean seccionarCadena(String cadena){
         cadena=cadena.replace(";", " ; ");
-        System.out.println(cadena);
-        codigo= cadena.split("\\s+");
+        cadena=cadena.replace("{", " { ");
+        cadena=cadena.replace("}", " } ");
+        cadena=cadena.replace("(", " ( ");
+        cadena=cadena.replace(")", " ) ");
+
+        // en el codigo de arriba cambio los puntos y coma juntos para que el codigo los detecte por separado
+        codigo = new ArrayList<>();
+
+        Pattern patron = Pattern.compile("\"[^\"]*\"|\\S+");
+        Matcher matcher = patron.matcher(cadena);
+
+        while (matcher.find()) {
+            codigo.add(matcher.group());
+        }
+
         contador=0;
-        tokensDetectados=new Tokens[codigo.length];
+        tokensDetectados=new ArrayList<>();
         Tokens token;
         for(String cad:codigo){
             token=analizador(cad);
@@ -34,24 +49,77 @@ public class AnalizadorLexico {
                 case PALABRA_RESERVADA_PRI:
                 case PALABRA_RESERVADA_SI:
                 case PUNTO_COMA:
-                    tokensDetectados[contador]=token;
+                case PALABRA_RESERVADA_CAS:
+                case PALABRA_RESERVADA_SAL:
+                case PALABRA_RESERVADA_PAR:
+                case PALABRA_RESERVADA_MIE:
+                case PALABRA_RESERVADA_VER:
+                case PALABRA_RESERVADA_FAL:
+                case PALABRA_RESERVADA_FUN:
+                case PALABRA_RESERVADA_RET:
+                case PALABRA_RESERVADA_IMP:
+                case PALABRA_RESERVADA_ENT:
+                case PALABRA_RESERVADA_REA:
+                case PALABRA_RESERVADA_CAR:
+                case PALABRA_RESERVADA_CAD:
+                case PALABRA_RESERVADA_BOO:
+                case PALABRA_RESERVADA_NUL:
+                case PALABRA_RESERVADA_VAC:
+                    
+                case TIPO_CADENA:
+                    
+                case PARENTESIS_ABRE:    
+                case PARENTESIS_CIERRA:    
+                case CORCHETE_ABRE:    
+                case CORCHETE_CIERRA:    
+                case LLAVE_ABRE:    
+                case LLAVE_CIERRA:    
+                    tokensDetectados.add(token);
                     contador++;
                     break;
                 case ERROR:
-                    tokensDetectados[contador]=token;
+                    tokensDetectados.add(token);
                     contador++;
                     JOptionPane.showConfirmDialog(null, "HAY UN ERROR EN: "+cad);
                     return false;
                 default:
-                    throw new AssertionError();
+                    tokensDetectados.add(token);
+                    contador++;
+                    JOptionPane.showConfirmDialog(null, "TOKEN NO DETECTADO: "+cad);
             }
         }
+
         return true;
     }
     public Tokens analizador(String cadena){
-        Pattern numeroENtero=Pattern.compile("^(-)?\\d+$");
+        switch (cadena) {
+            case "(": return PARENTESIS_ABRE;
+            case ")": return PARENTESIS_CIERRA;
+            case "[": return CORCHETE_ABRE;
+            case "]": return CORCHETE_CIERRA;
+            case "{": return LLAVE_ABRE;
+            case "}": return LLAVE_CIERRA;
+            case ";": return PUNTO_COMA;
+            case "caso": return PALABRA_RESERVADA_CAS;
+            case "salir": return PALABRA_RESERVADA_SAL;
+            case "para": return PALABRA_RESERVADA_PAR;
+            case "mientras": return PALABRA_RESERVADA_MIE;
+            case "verdadero": return PALABRA_RESERVADA_VER;
+            case "falso": return PALABRA_RESERVADA_FAL;
+            case "funcion": return PALABRA_RESERVADA_FUN;
+            case "retornar": return PALABRA_RESERVADA_RET;
+            case "imprimir": return PALABRA_RESERVADA_IMP;
+            case "entero": return PALABRA_RESERVADA_ENT;
+            case "real": return PALABRA_RESERVADA_REA;
+            case "caracter": return PALABRA_RESERVADA_CAR;
+            case "cadena": return PALABRA_RESERVADA_CAD;
+            case "booleano": return PALABRA_RESERVADA_BOO;
+            case "nulo": return PALABRA_RESERVADA_NUL;
+            case "vacio": return PALABRA_RESERVADA_VAC;
+        }
+        Pattern tipoNumeroEntero=Pattern.compile("^(-)?\\d+$");
         Pattern identificador=Pattern.compile("^[a-zA-Z]([a-zA-Z_]|\\d)*");
-        Pattern prClase=Pattern.compile("^clase");
+        Pattern prClase=Pattern.compile("clase");
         Pattern prNuevo=Pattern.compile("nuevo");
         Pattern prEste=Pattern.compile("este");
         Pattern prPublico=Pattern.compile("publico");
@@ -59,59 +127,57 @@ public class AnalizadorLexico {
         Pattern prSi=Pattern.compile("si");
         Pattern prSino=Pattern.compile("sino");
         Pattern prSegun=Pattern.compile("segun");
-        Pattern prCaso=Pattern.compile("caso");
-        Pattern prSalir=Pattern.compile("salir");
-        Pattern prPara=Pattern.compile("para");
-        Pattern prMientras=Pattern.compile("mientras");
+        Pattern tipoCadena=Pattern.compile("\"(\\w| |\\d|\\S)+\"");
         
         
+        //crear patrones para CADA UNO de los TOKENS y acontinuacion buscar que matchen igual colocar el TOken en el switech de arriba 
         
         Pattern puntoComa=Pattern.compile(";");
-        m=numeroENtero.matcher(cadena);
-        if (m.find()) {
+        m=tipoNumeroEntero.matcher(cadena);
+        if (m.matches()) {
             return NUMERO_ENTERO;
         }
         
         m=prClase.matcher(cadena);
-        if (m.find()) {
+        if (m.matches()) {
             return PALABRA_RESERVADA_CLA;
         }
         m=prNuevo.matcher(cadena);
-        if(m.find()){
+        if(m.matches()){
             return PALABRA_RESERVADA_NUE;
         }
         m=prEste.matcher(cadena);
-        if(m.find()){
+        if(m.matches()){
             return PALABRA_RESERVADA_EST;
         }
         m=prPublico.matcher(cadena);
-        if(m.find()){
+        if(m.matches()){
             return PALABRA_RESERVADA_PUB;
         }
         m=prPrivado.matcher(cadena);
-        if(m.find()){
+        if(m.matches()){
             return PALABRA_RESERVADA_PRI;
         }
         m=prSi.matcher(cadena);
-        if(m.find()){
+        if(m.matches()){
             return PALABRA_RESERVADA_SI;
         }
         m=prSino.matcher(cadena);
-        if(m.find()){
+        if(m.matches()){
             return PALABRA_RESERVADA_SIN;
         }
         m=prSegun.matcher(cadena);
-        if(m.find()){
+        if(m.matches()){
             return PALABRA_RESERVADA_SEG;
         }
-        
-        
-        m=puntoComa.matcher(cadena);
-        if(m.find()){
-            return PUNTO_COMA;
+        m=tipoCadena.matcher(cadena);
+        if(m.matches()){
+            return TIPO_CADENA;
         }
+        
+
         m=identificador.matcher(cadena);
-        if (m.find()) {
+        if (m.matches()) {
             return IDENTIFICADOR;
         }
         return ERROR;
@@ -119,87 +185,23 @@ public class AnalizadorLexico {
     
     public String mostrarTokens(){
         String resultado="";
-        int contador=0;
+        int conta=0;
         for(Tokens tok:tokensDetectados){
-            resultado+=tok+": "+codigo[contador]+"\n";
-            contador++;
+            if (codigo.get(conta)==null) {
+                return resultado;
+            }
+            resultado+=tok+": "+codigo.get(conta)+"\n";
+            if (conta>=codigo.size()) {
+                return resultado;
+            }
+            conta++;
         }
         return resultado;
     }
     
-    public boolean nuevoAnalizador(String codigo){
-        int conttador=0;
-        Pattern numeroENtero=Pattern.compile("^(-)?\\d+$");
-        Pattern identificador=Pattern.compile("^[a-zA-Z]([a-zA-Z_]|\\d)*");
-        Pattern prClase=Pattern.compile("^clase");
-        Pattern prNuevo=Pattern.compile("nuevo");
-        Pattern prEste=Pattern.compile("este");
-        Pattern prPublico=Pattern.compile("publico");
-        Pattern prPrivado=Pattern.compile("privado");
-        Pattern prSi=Pattern.compile("^si");
-        Pattern prSino=Pattern.compile("sino");
-        Pattern prSegun=Pattern.compile("segun");
-        Pattern prCaso=Pattern.compile("caso");
-        Pattern prSalir=Pattern.compile("salir");
-        Pattern prPara=Pattern.compile("para");
-        Pattern prMientras=Pattern.compile("mientras");
-        
-        
-        
-        Pattern error=Pattern.compile(".");
-        Pattern puntoComa=Pattern.compile(".;");
-        m=numeroENtero.matcher(codigo);
-        if (m.find()) {
-            tokensDetectados[contador]=NUMERO_ENTERO;
-            contador++;
+    public void imprimirCodigo(){
+        for(String cod:codigo){
+            System.out.println(cod);
         }
-        
-        m=prClase.matcher(codigo);
-        if (m.find()) {
-            tokensDetectados[contador]=PALABRA_RESERVADA_CLA;
-        }
-        m=prNuevo.matcher(codigo);
-        if(m.find()){
-           tokensDetectados[contador]=PALABRA_RESERVADA_NUE;
-        }
-        m=prEste.matcher(codigo);
-        if(m.find()){
-            tokensDetectados[contador]=PALABRA_RESERVADA_EST;
-        }
-        m=prPublico.matcher(codigo);
-        if(m.find()){
-            tokensDetectados[contador]=PALABRA_RESERVADA_PUB;
-        }
-        m=prPrivado.matcher(codigo);
-        if(m.find()){
-            tokensDetectados[contador]=PALABRA_RESERVADA_PRI;
-        }
-        m=prSi.matcher(codigo);
-        if(m.find()){
-            tokensDetectados[contador]=PALABRA_RESERVADA_SI;
-        }
-        m=prSino.matcher(codigo);
-        if(m.find()){
-            tokensDetectados[contador]=PALABRA_RESERVADA_SIN;
-        }
-        m=prSegun.matcher(codigo);
-        if(m.find()){
-            tokensDetectados[contador]=PALABRA_RESERVADA_SEG;
-        }
-        
-        
-        m=puntoComa.matcher(codigo);
-        if(m.find()){
-            tokensDetectados[contador]= PUNTO_COMA;
-        }
-        m=identificador.matcher(codigo);
-        if (m.find()) {
-            tokensDetectados[contador]=IDENTIFICADOR;
-        }
-        m=error.matcher(codigo);
-        if (m.find()) {
-            tokensDetectados[contador]=ERROR;
-        }
-        return false;
     }
 }
