@@ -20,6 +20,9 @@ import javax.swing.filechooser.FileNameExtensionFilter;
  */
 public class InterfzaPrincipal extends JFrame implements ActionListener{
 
+    private final String urlCerberus="/Imagenes/logo.png";
+    JLabel imagenLogo;
+    
     AnalizadorLexico lex=new AnalizadorLexico();
     File f;
     
@@ -63,8 +66,12 @@ public class InterfzaPrincipal extends JFrame implements ActionListener{
     }
 
     public void iniciarComponentes(){
-        
- 
+       //imagen
+       ImageIcon iconCerberus = new ImageIcon(getClass().getResource(urlCerberus));
+       imagenLogo=new JLabel(iconCerberus);
+       imagenLogo.setBounds(1050, 100, 300, 300);
+       add(imagenLogo);
+       //botones
        btnCompilar = new JButton("COMPILAR");
        btnCompilar.setBounds(1050, 50, 100, 30);
        btnCompilar.addActionListener(this);
