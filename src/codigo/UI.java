@@ -3,6 +3,7 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
 package codigo;
+import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.*;
@@ -12,7 +13,7 @@ import javax.swing.*;
  * @author fabri
  */
 public class UI extends JFrame implements ActionListener{
-    
+    Color rojo=new Color(255,255,102);
     JTextArea txtAnalizar;
     JTextArea txtResultado;
     JButton btnAnalizar;
@@ -76,6 +77,7 @@ public class UI extends JFrame implements ActionListener{
                     switch (token) {
                         case FX:
                              System.out.println("CREADO POR EQUIPO 3");
+
                             break;
                         case ERROR:
                             resultado+="EL SIMBOLO NO ESTA DEFINIDO\n";
