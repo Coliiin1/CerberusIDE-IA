@@ -42,6 +42,7 @@ public class NewJFrame extends javax.swing.JFrame {
         jMenu6 = new javax.swing.JMenu();
         jMenu7 = new javax.swing.JMenu();
         jRadioButton1 = new javax.swing.JRadioButton();
+        jLabel1 = new javax.swing.JLabel();
         jMenuBar2 = new javax.swing.JMenuBar();
         jMenu4 = new javax.swing.JMenu();
         jMenuItem8 = new javax.swing.JMenuItem();
@@ -85,6 +86,9 @@ public class NewJFrame extends javax.swing.JFrame {
                 jRadioButton1ActionPerformed(evt);
             }
         });
+
+        jLabel1.setFont(new java.awt.Font("Berlin Sans FB Demi", 0, 12)); // NOI18N
+        jLabel1.setText("HOLAMUNDO");
 
         jMenu4.setText("File");
         jMenu4.addActionListener(new java.awt.event.ActionListener() {
@@ -130,13 +134,19 @@ public class NewJFrame extends javax.swing.JFrame {
                 .addContainerGap(544, Short.MAX_VALUE)
                 .addComponent(jRadioButton1)
                 .addGap(414, 414, 414))
+            .addGroup(layout.createSequentialGroup()
+                .addGap(304, 304, 304)
+                .addComponent(jLabel1)
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addGap(265, 265, 265)
+                .addGap(155, 155, 155)
+                .addComponent(jLabel1)
+                .addGap(94, 94, 94)
                 .addComponent(jRadioButton1)
-                .addContainerGap(288, Short.MAX_VALUE))
+                .addContainerGap(289, Short.MAX_VALUE))
         );
 
         pack();
@@ -182,6 +192,7 @@ public class NewJFrame extends javax.swing.JFrame {
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JFileChooser jFileChooser1;
+    private javax.swing.JLabel jLabel1;
     private javax.swing.JMenu jMenu1;
     private javax.swing.JMenu jMenu2;
     private javax.swing.JMenu jMenu3;

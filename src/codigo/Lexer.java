@@ -673,9 +673,7 @@ class Lexer {
           { lexema=yytext();return INC_VARIABLE;
           }
         case 63: break;
-        case 18: 
-          { lexema=yytext();return ASIGNACION;
-          }
+
         case 64: break;
         case 5: 
           { lexema=yytext();return OPERADOR_DIVISION;

@@ -5,7 +5,7 @@
 package UI;
 
 import Archivos.Archivo;
-import codigo.AnalizadorLexico;
+import AnalizadorLexico.AnalizadorLexico;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.event.ActionEvent;
@@ -20,7 +20,7 @@ import javax.swing.filechooser.FileNameExtensionFilter;
  */
 public class InterfzaPrincipal extends JFrame implements ActionListener{
 
-    private final String urlCerberus="/Imagenes/logo.png";
+    private final String urlCerberus="/Imagenes/LOGO1.png";
     JLabel imagenLogo;
     
     AnalizadorLexico lex=new AnalizadorLexico();
@@ -49,6 +49,7 @@ public class InterfzaPrincipal extends JFrame implements ActionListener{
     JMenu menArchivo;
     JMenu menOpciones;
     JMenuItem itemArchivoAbrir;
+    JMenuItem itemArchivoNuevo;
     JMenuItem itemOpcionesSalir;
     JRadioButtonMenuItem radioOpcionesOscuro;
     
@@ -58,7 +59,7 @@ public class InterfzaPrincipal extends JFrame implements ActionListener{
     public InterfzaPrincipal() {
         setTitle("CERBERUS IDE");
         setLayout(null);
-        setSize(1400,800);
+        setSize(1280,800);
 
         //setResizable(false);
         getContentPane().setBackground(gris);
@@ -68,16 +69,22 @@ public class InterfzaPrincipal extends JFrame implements ActionListener{
     public void iniciarComponentes(){
        //imagen
        ImageIcon iconCerberus = new ImageIcon(getClass().getResource(urlCerberus));
-       imagenLogo=new JLabel(iconCerberus);
-       imagenLogo.setBounds(1050, 100, 300, 300);
+       
+       Image imagenOriginal = iconCerberus.getImage();
+       Image imagenEscalada = imagenOriginal.getScaledInstance(200, 300, Image.SCALE_SMOOTH);
+       
+       ImageIcon iconFinal = new ImageIcon(imagenEscalada);
+       imagenLogo=new JLabel(iconFinal);
+       imagenLogo.setBounds(1050, 100, 200, 300);
        add(imagenLogo);
        //botones
        btnCompilar = new JButton("COMPILAR");
-       btnCompilar.setBounds(1050, 50, 100, 30);
+       btnCompilar.setBounds(1050, 50, 200, 30);
        btnCompilar.addActionListener(this);
        add(btnCompilar);
         //inicio de editor
         txt=new JTextArea("");
+        txt.setFont(new java.awt.Font("Consolas", 0, 18));
         scroll=new JScrollPane(txt);
         scroll.setBorder(null);
         scroll.setBounds(10,50,1000,400);
@@ -101,7 +108,10 @@ public class InterfzaPrincipal extends JFrame implements ActionListener{
         
         itemArchivoAbrir=new JMenuItem("Abrir");
         itemArchivoAbrir.addActionListener(this);
+        itemArchivoNuevo=new JMenuItem("Nuevo");
+        itemArchivoNuevo.addActionListener(this);
         menArchivo.add(itemArchivoAbrir);
+        menArchivo.add(itemArchivoNuevo);
         
         itemOpcionesSalir=new JMenuItem("SALIR");
         itemOpcionesSalir.addActionListener(this);
@@ -170,6 +180,12 @@ public class InterfzaPrincipal extends JFrame implements ActionListener{
             }
             txtArchivo.setText("ARCHIVO: "+f.getAbsolutePath());
         }
+        if (o==itemArchivoNuevo) {
+            txt.setText("");
+            f=null;
+            txtArchivo.setText("ARCHIVO: ");
+        }
+        
         if(o==itemOpcionesSalir){
             System.exit(0);
         }

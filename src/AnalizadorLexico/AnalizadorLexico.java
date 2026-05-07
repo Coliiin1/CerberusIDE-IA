@@ -2,7 +2,8 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
-package codigo;
+package AnalizadorLexico;
+import codigo.Tokens;
 import static codigo.Tokens.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -23,6 +24,30 @@ public class AnalizadorLexico {
         cadena=cadena.replace("}", " } ");
         cadena=cadena.replace("(", " ( ");
         cadena=cadena.replace(")", " ) ");
+        cadena=cadena.replace("[", " [ ");
+        cadena=cadena.replace("]", " ] ");
+        cadena=cadena.replace("+", " + ");
+        cadena=cadena.replace("-", " - ");
+        cadena=cadena.replace("*", " * ");
+        cadena=cadena.replace("/", " / ");
+        cadena=cadena.replace("%", " % ");
+        cadena=cadena.replace("=", " = ");
+        cadena=cadena.replace("<", " < ");
+        cadena=cadena.replace(">", " > ");
+        cadena=cadena.replace("++", " ++ ");
+        cadena=cadena.replace("--", " -- ");
+        cadena=cadena.replace("+ =", " -= ");
+        cadena=cadena.replace("* =", " *= ");
+        cadena=cadena.replace("/ =", " /= ");
+        cadena=cadena.replace("= =", " == ");
+        cadena=cadena.replace("! =", " != ");
+        cadena=cadena.replace("<  =", " <= ");
+        cadena=cadena.replace(">  =", " >= ");
+        cadena=cadena.replace("&", " & ");
+        cadena=cadena.replace("|", " | ");
+        cadena=cadena.replace("!", " ! ");
+        
+
 
         // en el codigo de arriba cambio los puntos y coma juntos para que el codigo los detecte por separado
         codigo = new ArrayList<>();
@@ -65,8 +90,11 @@ public class AnalizadorLexico {
                 case PALABRA_RESERVADA_BOO:
                 case PALABRA_RESERVADA_NUL:
                 case PALABRA_RESERVADA_VAC:
+                case PALABRA_RESERVADA_PRIN:
                     
                 case TIPO_CADENA:
+                case TIPO_CARACTER:
+                case NUMERO_REAL:
                     
                 case PARENTESIS_ABRE:    
                 case PARENTESIS_CIERRA:    
@@ -80,12 +108,11 @@ public class AnalizadorLexico {
                 case ERROR:
                     tokensDetectados.add(token);
                     contador++;
-                    JOptionPane.showConfirmDialog(null, "HAY UN ERROR EN: "+cad);
+                    JOptionPane.showMessageDialog(null, "HAY UN ERROR EN: "+cad);
                     return false;
                 default:
                     tokensDetectados.add(token);
                     contador++;
-                    JOptionPane.showConfirmDialog(null, "TOKEN NO DETECTADO: "+cad);
             }
         }
 
@@ -116,6 +143,27 @@ public class AnalizadorLexico {
             case "booleano": return PALABRA_RESERVADA_BOO;
             case "nulo": return PALABRA_RESERVADA_NUL;
             case "vacio": return PALABRA_RESERVADA_VAC;
+            case "principal": return PALABRA_RESERVADA_PRIN;
+            case "+": return OPERADOR_SUMA;
+            case "-": return OPERADOR_RESTA;
+            case "*": return OPERADOR_MULTIPLICAR;
+            case "/": return OPERADOR_DIVISION;
+            case "%": return OPERADOR_MODULO;
+            case "=": return ASIGANCION;
+            case "++": return INCREMENTO;
+            case "--": return DECREMENTO;
+            case "*=": return MUL_VARIABLE;
+            case "/=": return DIV_VARIABLE;
+            case "==": return IGUAL;
+            case "!=": return DIFERENTE;
+            case "<=": return MENOR_IGUAL;
+            case ">=": return MAYOR_IGUAL;
+            case "&": return AND;
+            case "|": return OR;
+            case "!": return NEGAR;
+            case "<": return MENOR;
+            case ">": return MAYOR;
+  
         }
         Pattern tipoNumeroEntero=Pattern.compile("^(-)?\\d+$");
         Pattern identificador=Pattern.compile("^[a-zA-Z]([a-zA-Z_]|\\d)*");
@@ -128,6 +176,8 @@ public class AnalizadorLexico {
         Pattern prSino=Pattern.compile("sino");
         Pattern prSegun=Pattern.compile("segun");
         Pattern tipoCadena=Pattern.compile("\"(\\w| |\\d|\\S)+\"");
+        Pattern tipoCaracter=Pattern.compile("'(\\w| |\\d|\\S)'");
+        Pattern tipoNumeroReal=Pattern.compile("(\\d)+\\.(\\d)+");
         
         
         //crear patrones para CADA UNO de los TOKENS y acontinuacion buscar que matchen igual colocar el TOken en el switech de arriba 
@@ -174,7 +224,15 @@ public class AnalizadorLexico {
         if(m.matches()){
             return TIPO_CADENA;
         }
-        
+        m=tipoCaracter.matcher(cadena);
+        if(m.matches()){
+            return TIPO_CARACTER;
+        }
+        m=tipoNumeroReal.matcher(cadena);
+        if(m.matches()){
+            return NUMERO_REAL;
+        }
+
 
         m=identificador.matcher(cadena);
         if (m.matches()) {
