@@ -248,5 +248,5 @@ public class InterfzaPrincipal extends JFrame implements ActionListener{
         }
         //throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
     }
-    
+    //hola putos 
 }
