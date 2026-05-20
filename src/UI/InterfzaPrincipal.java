@@ -27,7 +27,7 @@ public class InterfzaPrincipal extends JFrame implements ActionListener{
     AnalizadorLexico lex=new AnalizadorLexico();
     AnalizadorSintactico sin;
     File archivo;
-    
+    //a
     Color gris=new Color(203,203,203);
     Color negro=new Color(143,143,143);
     Color grisOscuro=new Color(70,70,70);
