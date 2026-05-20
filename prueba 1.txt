@@ -1,2 +1,5 @@
-prueba del hola mundo desde IDE
-si lees esto ya jalo bien we
+
+	entero x1=3233;
+entero x1=3233
+entero x1=3233;
+entero x1=3233;

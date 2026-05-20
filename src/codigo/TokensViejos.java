@@ -4,11 +4,13 @@
  */
 package codigo;
 
+
+
 /**
  *
  * @author fabri
  */
-public enum Tokens {
+public enum TokensViejos {
     PALABRA_RESERVADA_CLA,
     PALABRA_RESERVADA_NUE,
     PALABRA_RESERVADA_EST,

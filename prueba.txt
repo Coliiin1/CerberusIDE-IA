@@ -1,10 +1,10 @@
 clase hola (){
 	imprimir("HLA MUNDO");
-	caracter char 'f';
+	caracter caracterF 'f';
 		si (char>='2'){
 		
-		
 		}
-	real numero 323.4343;
+		
+	entero numero 323;
 	caracter car='d';
 }

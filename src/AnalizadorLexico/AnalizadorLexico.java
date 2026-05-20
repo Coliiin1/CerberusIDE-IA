@@ -3,21 +3,35 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
 package AnalizadorLexico;
-import codigo.Tokens;
-import static codigo.Tokens.*;
+import static AnalizadorLexico.Tokens.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.*;
 import javax.swing.JOptionPane;
+
+
+
 /**
  *
  * @author fabri
  */
 public class AnalizadorLexico {
+
+    
     Matcher m;
     private List<Tokens> tokensDetectados;
     private List<String> codigo;
+    private ArrayList<Identificadores> tabla;
+    
     int contador;
+
+    public AnalizadorLexico() {
+        tabla=new ArrayList<>();
+    }
+
+    
+    
+    
     public boolean seccionarCadena(String cadena){
         cadena=cadena.replace(";", " ; ");
         cadena=cadena.replace("{", " { ");
@@ -46,8 +60,6 @@ public class AnalizadorLexico {
         cadena=cadena.replace("&", " & ");
         cadena=cadena.replace("|", " | ");
         cadena=cadena.replace("!", " ! ");
-        
-
 
         // en el codigo de arriba cambio los puntos y coma juntos para que el codigo los detecte por separado
         codigo = new ArrayList<>();
@@ -65,52 +77,16 @@ public class AnalizadorLexico {
         for(String cad:codigo){
             token=analizador(cad);
             switch (token) {
-                case NUMERO_ENTERO:
-                case IDENTIFICADOR:
-                case PALABRA_RESERVADA_CLA:
-                case PALABRA_RESERVADA_NUE:
-                case PALABRA_RESERVADA_EST:
-                case PALABRA_RESERVADA_PUB:
-                case PALABRA_RESERVADA_PRI:
-                case PALABRA_RESERVADA_SI:
-                case PUNTO_COMA:
-                case PALABRA_RESERVADA_CAS:
-                case PALABRA_RESERVADA_SAL:
-                case PALABRA_RESERVADA_PAR:
-                case PALABRA_RESERVADA_MIE:
-                case PALABRA_RESERVADA_VER:
-                case PALABRA_RESERVADA_FAL:
-                case PALABRA_RESERVADA_FUN:
-                case PALABRA_RESERVADA_RET:
-                case PALABRA_RESERVADA_IMP:
-                case PALABRA_RESERVADA_ENT:
-                case PALABRA_RESERVADA_REA:
-                case PALABRA_RESERVADA_CAR:
-                case PALABRA_RESERVADA_CAD:
-                case PALABRA_RESERVADA_BOO:
-                case PALABRA_RESERVADA_NUL:
-                case PALABRA_RESERVADA_VAC:
-                case PALABRA_RESERVADA_PRIN:
-                    
-                case TIPO_CADENA:
-                case TIPO_CARACTER:
-                case NUMERO_REAL:
-                    
-                case PARENTESIS_ABRE:    
-                case PARENTESIS_CIERRA:    
-                case CORCHETE_ABRE:    
-                case CORCHETE_CIERRA:    
-                case LLAVE_ABRE:    
-                case LLAVE_CIERRA:    
-                    tokensDetectados.add(token);
-                    contador++;
-                    break;
                 case ERROR:
                     tokensDetectados.add(token);
                     contador++;
                     JOptionPane.showMessageDialog(null, "HAY UN ERROR EN: "+cad);
                     return false;
                 default:
+                    if (token==null) {
+                        JOptionPane.showMessageDialog(null, "TOKEN NO RECONOCIDO: "+cad);
+                        return false;
+                    }
                     tokensDetectados.add(token);
                     contador++;
             }
@@ -237,6 +213,7 @@ public class AnalizadorLexico {
         m=identificador.matcher(cadena);
         if (m.matches()) {
             return IDENTIFICADOR;
+
         }
         return ERROR;
     }
@@ -248,7 +225,7 @@ public class AnalizadorLexico {
             if (codigo.get(conta)==null) {
                 return resultado;
             }
-            resultado+=tok+": "+codigo.get(conta)+"\n";
+            resultado+=tok+"  ->  "+codigo.get(conta)+"\n";
             if (conta>=codigo.size()) {
                 return resultado;
             }
@@ -262,4 +239,58 @@ public class AnalizadorLexico {
             System.out.println(cod);
         }
     }
+    
+
+    
+    
+    public void generarTabla(){
+        Tokens token;
+        for (int j = 0; j < tokensDetectados.size(); j++) {
+            token=tokensDetectados.get(j);
+            switch (token) {
+                case PALABRA_RESERVADA_ENT:
+                case PALABRA_RESERVADA_REA:
+                case PALABRA_RESERVADA_CAR:
+                case PALABRA_RESERVADA_CAD:
+                case PALABRA_RESERVADA_BOO:
+                    if (tokensDetectados.get(j+1)==null) {
+                        JOptionPane.showMessageDialog(null, "OCURRIO UN ERROR", "ERROR", 0);
+                        return;
+                    }
+                    if (tokensDetectados.get(j+1)==IDENTIFICADOR) {
+                        token=tokensDetectados.get(j);
+                        tabla.add(new Identificadores(token,codigo.get(j+1)));
+                    }else{
+                        JOptionPane.showMessageDialog(null, "MAMO", "OCURRIO UN ERROR", 0);
+                    }
+                    break;
+                default:
+            }
+        }
+    }
+    
+    public void limpiarTabla(){
+        tabla.clear();
+    }
+    
+    public void imprimirTabla(){
+        for(Identificadores iden:tabla){
+            iden.mostrarIdentificadorTerminal();
+        }
+    }
+
+    public List<Tokens> getTokensDetectados() {
+        return tokensDetectados;
+    }
+
+    public List<String> getCodigo() {
+        return codigo;
+    }
+
+    public ArrayList<Identificadores> getTabla() {
+        return tabla;
+    }
+    
+    
+    
 }

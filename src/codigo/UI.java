@@ -68,7 +68,7 @@ public class UI extends JFrame implements ActionListener{
                 Lexer lexer=new Lexer(lector);
                 String resultado="";
                 while (true) {
-                    Tokens token=lexer.yylex();
+                    TokensViejos token=lexer.yylex();
                     if (token==null) {
                         resultado+="YA SE REVISO TODO";
                         txtResultado.setText(resultado);

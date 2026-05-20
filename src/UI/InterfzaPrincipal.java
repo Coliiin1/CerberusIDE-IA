@@ -1,11 +1,12 @@
 /*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txtLexico to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
 package UI;
 
 import Archivos.Archivo;
 import AnalizadorLexico.AnalizadorLexico;
+import AnalizadorSintactico.AnalizadorSintactico;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.event.ActionEvent;
@@ -24,7 +25,8 @@ public class InterfzaPrincipal extends JFrame implements ActionListener{
     JLabel imagenLogo;
     
     AnalizadorLexico lex=new AnalizadorLexico();
-    File f;
+    AnalizadorSintactico sin;
+    File archivo;
     
     Color gris=new Color(203,203,203);
     Color negro=new Color(143,143,143);
@@ -38,11 +40,14 @@ public class InterfzaPrincipal extends JFrame implements ActionListener{
     
     //editor
     JScrollPane scroll;
-    JTextArea txt;
+    JTextArea txtLexico;
     
     JTextArea txtArchivo;
     
-    JTextArea txt1;
+    JTextArea txtSintactico;
+    JScrollPane scroll3;
+    
+    JTextArea txtProgramacion;
     JScrollPane scroll2;
     //Menu
     JMenuBar barraMenu;
@@ -59,7 +64,7 @@ public class InterfzaPrincipal extends JFrame implements ActionListener{
     public InterfzaPrincipal() {
         setTitle("CERBERUS IDE");
         setLayout(null);
-        setSize(1280,800);
+        setSize(1400,800);
 
         //setResizable(false);
         getContentPane().setBackground(gris);
@@ -83,9 +88,9 @@ public class InterfzaPrincipal extends JFrame implements ActionListener{
        btnCompilar.addActionListener(this);
        add(btnCompilar);
         //inicio de editor
-        txt=new JTextArea("");
-        txt.setFont(new java.awt.Font("Consolas", 0, 18));
-        scroll=new JScrollPane(txt);
+        txtLexico=new JTextArea("");
+        txtLexico.setFont(new java.awt.Font("Consolas", 0, 18));
+        scroll=new JScrollPane(txtLexico);
         scroll.setBorder(null);
         scroll.setBounds(10,50,1000,400);
         add(scroll);
@@ -96,10 +101,18 @@ public class InterfzaPrincipal extends JFrame implements ActionListener{
         txtArchivo.setFont(new Font("Arial",Font.BOLD,20));
         add(txtArchivo);
         
-        txt1=new JTextArea("");
-        scroll2=new JScrollPane(txt1);
+        txtSintactico = new JTextArea("");
+        txtSintactico.setFont(new java.awt.Font("Arial", 0, 18));
+        scroll3=new JScrollPane(txtSintactico);
+        scroll3.setBorder(null);
+        scroll3.setBounds(510, 500, 500, 200);
+        add(scroll3);
+        
+        txtProgramacion=new JTextArea("");
+        txtProgramacion.setFont(new java.awt.Font("Arial", 0, 18));
+        scroll2=new JScrollPane(txtProgramacion);
         scroll2.setBorder(null);
-        scroll2.setBounds(10, 500, 1000, 200);
+        scroll2.setBounds(10, 500, 490, 200);
         add(scroll2);
         //inicio de meus 
         barraMenu=new JMenuBar();
@@ -122,28 +135,33 @@ public class InterfzaPrincipal extends JFrame implements ActionListener{
            public void actionPerformed(ActionEvent e) {
                if(radioOpcionesOscuro.isSelected()){
                    getContentPane().setBackground(grisOscuro);
-                   txt.setBackground(negroOscuro);
-                   txt.setForeground(blanco);
-                   txt.setCaretColor(blanco);
-                   txt1.setBackground(negroOscuro);
-                   txt1.setForeground(blanco);
-                   txt1.setCaretColor(blanco);
+                   txtLexico.setBackground(negroOscuro);
+                   txtLexico.setForeground(blanco);
+                   txtLexico.setCaretColor(blanco);
+                   txtProgramacion.setBackground(negroOscuro);
+                   txtProgramacion.setForeground(blanco);
+                   txtProgramacion.setCaretColor(blanco);
                    txtArchivo.setBackground(negroOscuro);
                    txtArchivo.setForeground(blanco);
                    txtArchivo.setCaretColor(blanco);
+                   txtSintactico.setBackground(negroOscuro);
+                   txtSintactico.setForeground(blanco);
+                   txtSintactico.setCaretColor(blanco);
                    
                }else{
                    getContentPane().setBackground(gris);
-                   txt.setBackground(blanco);
-                   txt.setForeground(fullNegro);
-                   txt.setCaretColor(fullNegro);
-                   txt1.setBackground(blanco);
-                   txt1.setForeground(fullNegro);
-                   txt1.setCaretColor(fullNegro);
+                   txtLexico.setBackground(blanco);
+                   txtLexico.setForeground(fullNegro);
+                   txtLexico.setCaretColor(fullNegro);
+                   txtProgramacion.setBackground(blanco);
+                   txtProgramacion.setForeground(fullNegro);
+                   txtProgramacion.setCaretColor(fullNegro);
                    txtArchivo.setBackground(blanco);
                    txtArchivo.setForeground(fullNegro);
                    txtArchivo.setCaretColor(fullNegro);
-                   
+                   txtSintactico.setBackground(blanco);
+                   txtSintactico.setForeground(fullNegro);
+                   txtSintactico.setCaretColor(fullNegro);
                }
            }
             
@@ -172,17 +190,17 @@ public class InterfzaPrincipal extends JFrame implements ActionListener{
             selector.setFileFilter(filtro);
             int resultado = selector.showOpenDialog(InterfzaPrincipal.this);
             if(resultado==JFileChooser.APPROVE_OPTION){
-                f=selector.getSelectedFile();
-                txt.setText(Archivo.leer(f));
+                archivo=selector.getSelectedFile();
+                txtLexico.setText(Archivo.leer(archivo));
             }
-            if (f==null) {
+            if (archivo==null) {
                 return;
             }
-            txtArchivo.setText("ARCHIVO: "+f.getAbsolutePath());
+            txtArchivo.setText("ARCHIVO: "+archivo.getAbsolutePath());
         }
         if (o==itemArchivoNuevo) {
-            txt.setText("");
-            f=null;
+            txtLexico.setText("");
+            archivo=null;
             txtArchivo.setText("ARCHIVO: ");
         }
         
@@ -191,7 +209,8 @@ public class InterfzaPrincipal extends JFrame implements ActionListener{
         }
         
         if (o==btnCompilar) {
-            if (f==null) {
+            lex.limpiarTabla();
+            if (archivo==null) {
                 String nombre="";
                 do {
                     nombre=JOptionPane.showInputDialog(rootPane, "INGRESA EL NOMBRE DEL ARCHIVO");
@@ -199,18 +218,33 @@ public class InterfzaPrincipal extends JFrame implements ActionListener{
                         return;
                     }
                 } while (nombre.equals(""));
-                Archivo.crear(nombre,txt.getText());
+                Archivo.crear(nombre,txtLexico.getText());
                 
             }else{
-                if (!Archivo.leer(f).equals(txt.getText())) {
-                    Archivo.guardar(f.getName(), txt.getText());
+                if (!Archivo.leer(archivo).equals(txtLexico.getText())) {
+                    Archivo.guardar(archivo.getName(), txtLexico.getText());
                 }
             }
             
-            if (lex.seccionarCadena(txt.getText())) {
-                txt1.setText("ANALIZADOR LEXICO PASADO \n"+lex.mostrarTokens());
+            if (lex.seccionarCadena(txtLexico.getText())) {
+                txtProgramacion.setText("ANALIZADOR LEXICO PASADO \n"+lex.mostrarTokens());
+                lex.generarTabla();
+                lex.imprimirTabla();
+                sin=new AnalizadorSintactico(lex.getTokensDetectados(), lex.getCodigo(),lex.getTabla());
             }else{
-                txt1.setText("ANALIZADOR LEXICO NO PASADO: "+lex.mostrarTokens());
+                txtProgramacion.setText("ANALIZADOR LEXICO NO PASADO: "+lex.mostrarTokens());
+                return;
+            }
+            if(sin.comprobarParentesis()){
+                sin.mostrarParentetis();
+            }else{
+                txtSintactico.setText("HAY UN PROBLEMA CON LLAVES PARENTESIS Y CORCHETES");
+            }
+            if (sin.analizar()) {
+                txtSintactico.setText("ANALISIS SINATCTICO PASADO");
+                sin.imprimirTabla();
+            }else{
+                txtSintactico.setText("NO SE PASO EN ANALISIS SINTACTICO");
             }
         }
         //throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
