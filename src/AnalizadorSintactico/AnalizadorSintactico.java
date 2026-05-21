@@ -204,6 +204,8 @@ public class AnalizadorSintactico {
             }
         }
     }
+    
+    
     public void imprimir(){
         match(PALABRA_RESERVADA_IMP);
         match(PARENTESIS_ABRE);
@@ -219,18 +221,36 @@ public class AnalizadorSintactico {
         match(PUNTO_COMA);
     }
     
+    public void cicloMientras(){
+        match(PALABRA_RESERVADA_MIE);
+        match(PARENTESIS_ABRE);
+    }
+    
     public void si(){
         match(PALABRA_RESERVADA_SI);
         match(PARENTESIS_ABRE);
         match(PARENTESIS_CIERRA);
         match(LLAVE_ABRE);
-        instruccionesSi();
+        instruccionesSi(LLAVE_CIERRA);
         match(LLAVE_CIERRA);
         
     }
     
-    public void instruccionesSi(){
-        while(tokensDetectados.get(posicion)!=LLAVE_CIERRA){
+    public void segun(){
+        match(PALABRA_RESERVADA_SEG);
+        match(PARENTESIS_ABRE);
+        match(IDENTIFICADOR);
+        match(PARENTESIS_CIERRA);
+        match(LLAVE_ABRE);
+        match(LLAVE_CIERRA);
+    }
+    
+    public void casos(){
+        
+    }
+    
+    public void instruccionesSi(Tokens token){
+        while(tokensDetectados.get(posicion)!=token){
             instruccion();
         }
     }
