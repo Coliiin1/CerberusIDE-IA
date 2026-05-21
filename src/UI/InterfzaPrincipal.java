@@ -239,7 +239,8 @@ public class InterfzaPrincipal extends JFrame implements ActionListener{
             }else{
                 txtSintactico.setText("HAY UN PROBLEMA CON LLAVES PARENTESIS Y CORCHETES");
             }
-            if (sin.analizar()) {
+            sin.analizar();
+            if (sin.getResultado()) {
                 txtSintactico.setText("ANALISIS SINATCTICO PASADO");
                 sin.imprimirTabla();
             }else{

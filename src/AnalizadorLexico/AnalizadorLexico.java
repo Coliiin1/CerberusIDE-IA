@@ -153,7 +153,7 @@ public class AnalizadorLexico {
         Pattern prSegun=Pattern.compile("segun");
         Pattern tipoCadena=Pattern.compile("\"(\\w| |\\d|\\S)+\"");
         Pattern tipoCaracter=Pattern.compile("'(\\w| |\\d|\\S)'");
-        Pattern tipoNumeroReal=Pattern.compile("(\\d)+\\.(\\d)+");
+        Pattern tipoNumeroReal=Pattern.compile("(\\d)+(\\.(\\d)+)?");
         
         
         //crear patrones para CADA UNO de los TOKENS y acontinuacion buscar que matchen igual colocar el TOken en el switech de arriba 

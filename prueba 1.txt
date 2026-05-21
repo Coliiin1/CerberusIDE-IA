@@ -1,5 +1,11 @@
-
+clase main(){
 	entero x1=3233;
-entero x1=3233
-entero x1=3233;
-entero x1=3233;
+	real x2=8.9;
+	caracter d='d';
+	cadena cadena1="hola mundo";
+	imprimir("hola wey");
+	si(){
+		imprimir("hola weyes");
+	}
+}
+

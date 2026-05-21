@@ -21,6 +21,7 @@ public class AnalizadorSintactico {
     private List<String> codigo;
     private ArrayList<Identificadores> tabla;
     private int posicion;
+    private boolean resultado;
 
     public AnalizadorSintactico( List<Tokens> tokensDetectados, List<String> codigo,ArrayList<Identificadores> tabla) {
         this.pilaParentesis = new Stack<>();
@@ -28,6 +29,7 @@ public class AnalizadorSintactico {
         this.codigo = codigo;
         this.tabla=tabla;
         posicion=0;
+        resultado=true;
     }
     
     
@@ -53,7 +55,6 @@ public class AnalizadorSintactico {
                 default:
             }
         }
-        System.out.println(pilaParentesis.size());
         mostrarParentetis();
         if (pilaParentesis.size()==0) {
             return true;
@@ -81,17 +82,20 @@ public class AnalizadorSintactico {
         }catch(RuntimeException | AssertionError e){
             JOptionPane.showMessageDialog(null, "OCURRIO UN ERROR: "+e.getMessage(), "ERROR EN LA SINTAXIS", 0);
         }
+        falso();
         return false;
     }
     
     public boolean match(Tokens esperado){
         if (posicion>=tokensDetectados.size()) {
             System.out.println("ERROR");
+            return false;
         }
         if (tokensDetectados.get(posicion)==esperado) {
             posicion++;
         }else{
             System.out.println("SE ESPERABA "+esperado.name()+" Y SE ENCONTRO: "+tokensDetectados.get(posicion).name());
+            falso();
             return false;
         }
         return true;
@@ -102,14 +106,16 @@ public class AnalizadorSintactico {
     }
     //mis gramaticas 
     private void programa(){
-        //inicio();
+        inicio();
         instrucciones();
-        //match(LLAVE_CIERRA);
+        match(LLAVE_CIERRA);
     }
 
     private void inicio(){
         match(PALABRA_RESERVADA_CLA);
         match(IDENTIFICADOR);
+        match(PARENTESIS_ABRE);
+        match(PARENTESIS_CIERRA);
         match(LLAVE_ABRE);
     }
     
@@ -125,7 +131,19 @@ public class AnalizadorSintactico {
             case PALABRA_RESERVADA_ENT: case PALABRA_RESERVADA_REA: case PALABRA_RESERVADA_CAD: case PALABRA_RESERVADA_CAR: case PALABRA_RESERVADA_BOO:
                 declaracion(actual);
                 break;
+            case PALABRA_RESERVADA_IMP:
+                imprimir();
+                break;
+            case PALABRA_RESERVADA_SI:
+                si();
+                break;
+            case PARENTESIS_CIERRA:
+                System.out.println("DETECTA EL PARETENTESIS QUE CIERRA");
+                break;
+            case null:
+                break;
             default:
+                System.out.println("no se ha puesto el token");
                 throw new AssertionError();
         }
     }
@@ -156,8 +174,10 @@ public class AnalizadorSintactico {
                     
                     break;
                 default:
+                    falso();
                     throw new AssertionError();
             }
+            asignarValor(identificador, codigo.get(posicion-1));
         }
         if (!match(PUNTO_COMA)) {
             mostrarEsperado(PUNTO_COMA);
@@ -184,7 +204,36 @@ public class AnalizadorSintactico {
             }
         }
     }
+    public void imprimir(){
+        match(PALABRA_RESERVADA_IMP);
+        match(PARENTESIS_ABRE);
+        switch (tokensDetectados.get(posicion)) {
+            case IDENTIFICADOR: case TIPO_CADENA: case TIPO_CARACTER: case NUMERO_REAL: case NUMERO_ENTERO:
+                posicion++;
+                break;
+            default:
+                falso();
+                throw new AssertionError();
+        }
+        match(PARENTESIS_CIERRA);
+        match(PUNTO_COMA);
+    }
     
+    public void si(){
+        match(PALABRA_RESERVADA_SI);
+        match(PARENTESIS_ABRE);
+        match(PARENTESIS_CIERRA);
+        match(LLAVE_ABRE);
+        instruccionesSi();
+        match(LLAVE_CIERRA);
+        
+    }
+    
+    public void instruccionesSi(){
+        while(tokensDetectados.get(posicion)!=LLAVE_CIERRA){
+            instruccion();
+        }
+    }
     public void imprimirTabla(){
         for(Identificadores iden:tabla){
             iden.mostrarIdentificadorTerminal();
@@ -195,4 +244,15 @@ public class AnalizadorSintactico {
         return tabla;
     }
     
+    private void falso(){
+        resultado=false;
+    }
+    
+    private void verdadero(){
+        resultado=true;
+    }
+    
+    public boolean getResultado(){
+        return resultado;
+    }
 }
