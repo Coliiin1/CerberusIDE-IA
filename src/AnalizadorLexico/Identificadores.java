@@ -39,8 +39,11 @@ public class Identificadores {
     }
     
     
-    public void mostrarIdentificadorTerminal(){
+    public String mostrarIdentificadorTerminal(){
+        String objeto;
+        objeto=tipo+", "+token.name()+", "+identificador+", "+valor;
         System.out.println(tipo+", "+token.name()+", "+identificador+", "+valor);
+        return objeto;
     }
 
     public String getIdentificador() {

@@ -48,7 +48,7 @@ public class AnalizadorLexico {
         cadena=cadena.replace("=", " = ");
         cadena=cadena.replace("<", " < ");
         cadena=cadena.replace(">", " > ");
-        cadena=cadena.replace("++", " ++ ");
+        cadena=cadena.replace(" +  + ", " ++ ");
         cadena=cadena.replace("--", " -- ");
         cadena=cadena.replace("+ =", " -= ");
         cadena=cadena.replace("* =", " *= ");
@@ -125,7 +125,7 @@ public class AnalizadorLexico {
             case "*": return OPERADOR_MULTIPLICAR;
             case "/": return OPERADOR_DIVISION;
             case "%": return OPERADOR_MODULO;
-            case "=": return ASIGANCION;
+            case "=": return ASIGNACION;
             case "++": return INCREMENTO;
             case "--": return DECREMENTO;
             case "*=": return MUL_VARIABLE;

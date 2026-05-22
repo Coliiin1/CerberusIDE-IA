@@ -96,7 +96,12 @@ public class AnalizadorSintactico {
         }else{
             System.out.println("SE ESPERABA "+esperado.name()+" Y SE ENCONTRO: "+tokensDetectados.get(posicion).name());
             falso();
-            return false;
+             throw new RuntimeException(
+            "Se esperaba "
+            + esperado.name()
+            + " y se encontró "
+            + tokensDetectados.get(posicion).name()
+        );
         }
         return true;
     }
@@ -136,6 +141,7 @@ public class AnalizadorSintactico {
                 break;
             case PALABRA_RESERVADA_SI:
                 si();
+                break;
             case PALABRA_RESERVADA_PAR:
                 para();
                 break;
@@ -181,9 +187,11 @@ public class AnalizadorSintactico {
             }
             asignarValor(identificador, codigo.get(posicion-1));
         }
-        if (!match(PUNTO_COMA)) {
-            mostrarEsperado(PUNTO_COMA);
-        }
+        match(PUNTO_COMA);
+    }
+    
+    private void asiganacion(){
+        
     }
     
     private void tipo(){
@@ -230,6 +238,7 @@ public class AnalizadorSintactico {
     public void si(){
         match(PALABRA_RESERVADA_SI);
         match(PARENTESIS_ABRE);
+        expresionLogica();
         match(PARENTESIS_CIERRA);
         match(LLAVE_ABRE);
         instruccionesSi(LLAVE_CIERRA);
@@ -281,18 +290,99 @@ public class AnalizadorSintactico {
         match(INCREMENTO);
         match(PARENTESIS_CIERRA );
         match(LLAVE_ABRE);
+        instruccionesSi(LLAVE_CIERRA);
         match(LLAVE_CIERRA);
     }
     
+    
+    private void expresionLogica(){
+        condicion();
+        Tokens actual=tokensDetectados.get(posicion);
+        while (actual==AND||actual==OR) {
+            posicion++;
+            condicion();
+        }
+    }
+    
+    private void condicion(){
+        expresionAritmetica();
+
+        operadorRelacional();
+
+        expresionAritmetica();
+    }
+    
+    private void operadorRelacional(){
+        Tokens actual = tokensDetectados.get(posicion);
+
+    switch(actual){
+        case MAYOR:
+        case MENOR:
+        case MAYOR_IGUAL:
+        case MENOR_IGUAL:
+        case IGUAL:
+        case DIFERENTE:
+            posicion++;
+            break;
+        default:
+            throw new RuntimeException("Operador relacional inválido");
+        }
+    }
+    private void expresionAritmetica(){
+        termino();
+        while(tokensDetectados.get(posicion)==OPERADOR_SUMA||tokensDetectados.get(posicion)==OPERADOR_RESTA){
+            posicion++;
+            termino();
+        }
+    }
+    
+    private void termino(){
+        factor();
+        while(tokensDetectados.get(posicion)==OPERADOR_MULTIPLICAR||tokensDetectados.get(posicion)==OPERADOR_DIVISION||tokensDetectados.get(posicion)==OPERADOR_MODULO){
+            posicion++;
+            factor();
+        }
+    }
+    
+    private void factor(){
+        Tokens actual=tokensDetectados.get(posicion);
+        switch (actual) {
+            case IDENTIFICADOR: case NUMERO_ENTERO: case NUMERO_REAL:
+                posicion++;
+                break;
+            case PARENTESIS_ABRE:
+                match(PARENTESIS_ABRE);
+                expresionAritmetica();
+                match(PARENTESIS_CIERRA);
+                
+                break;
+            default:
+                throw new AssertionError("Numero invalido");
+        }
+    }
+    
+    
+    //partes de funcionalidad de mi codigo 
     public void instruccionesSi(Tokens token){
         while(tokensDetectados.get(posicion)!=token){
             instruccion();
         }
     }
-    public void imprimirTabla(){
-        for(Identificadores iden:tabla){
-            iden.mostrarIdentificadorTerminal();
+    
+    public boolean encontrarIdentificador(String nombreIdentificador){
+        for(Identificadores ide: tabla){
+            if (ide.getIdentificador().equals(nombreIdentificador)) {
+                return true;
+            }
         }
+        return false;
+    }
+    public String imprimirTabla(){
+        String resultado="";
+        for(Identificadores iden:tabla){
+            resultado+=iden.mostrarIdentificadorTerminal()+"\n";
+        }
+        return resultado;
     }
 
     public ArrayList<Identificadores> getTabla() {

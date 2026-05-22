@@ -64,7 +64,7 @@ public class InterfzaPrincipal extends JFrame implements ActionListener{
     public InterfzaPrincipal() {
         setTitle("CERBERUS IDE");
         setLayout(null);
-        setSize(1400,800);
+        setSize(1700,1000);
 
         //setResizable(false);
         getContentPane().setBackground(gris);
@@ -241,8 +241,7 @@ public class InterfzaPrincipal extends JFrame implements ActionListener{
             }
             sin.analizar();
             if (sin.getResultado()) {
-                txtSintactico.setText("ANALISIS SINATCTICO PASADO");
-                sin.imprimirTabla();
+                txtSintactico.setText("ANALISIS SINATCTICO PASADO\n"+sin.imprimirTabla());
             }else{
                 txtSintactico.setText("NO SE PASO EN ANALISIS SINTACTICO");
             }
