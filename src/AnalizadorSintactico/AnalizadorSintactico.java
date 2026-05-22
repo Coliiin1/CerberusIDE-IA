@@ -136,6 +136,8 @@ public class AnalizadorSintactico {
                 break;
             case PALABRA_RESERVADA_SI:
                 si();
+            case PALABRA_RESERVADA_PAR:
+                para();
                 break;
             case PARENTESIS_CIERRA:
                 System.out.println("DETECTA EL PARETENTESIS QUE CIERRA");
@@ -153,7 +155,7 @@ public class AnalizadorSintactico {
         tipo();
         match(IDENTIFICADOR);
         identificador=codigo.get(posicion-1);
-        if (match(ASIGANCION)) {
+        if (match(ASIGNACION)) {
             switch (tipo) {
                 case PALABRA_RESERVADA_ENT:  
                     match(NUMERO_ENTERO);
@@ -194,7 +196,6 @@ public class AnalizadorSintactico {
                 System.out.println("TIPO NO RECONOCIDO");
         }
     }
-    
     public void asignarValor(String identificador, String valor){
         if (!tabla.isEmpty()) {
             for(Identificadores iden: tabla){
@@ -247,6 +248,40 @@ public class AnalizadorSintactico {
     
     public void casos(){
         
+    }
+    public void para(){
+        match(PALABRA_RESERVADA_PAR);
+        match(PARENTESIS_ABRE);
+        match(PALABRA_RESERVADA_ENT);
+        match(IDENTIFICADOR);
+        match(ASIGNACION);
+        match(NUMERO_ENTERO);
+        match(PUNTO_COMA);
+        match(IDENTIFICADOR);
+        switch (tokensDetectados.get(posicion)) {
+            case MENOR:
+                match(MENOR);
+                break;
+            case MAYOR:
+                match(MAYOR);
+                break;
+            case MENOR_IGUAL:
+                match(MENOR_IGUAL);
+                break;
+            case MAYOR_IGUAL:
+                match(MAYOR_IGUAL);
+                break;
+            default:
+                falso();
+                throw new AssertionError();
+        }
+        match(NUMERO_ENTERO);
+        match(PUNTO_COMA);
+        match(IDENTIFICADOR);
+        match(INCREMENTO);
+        match(PARENTESIS_CIERRA );
+        match(LLAVE_ABRE);
+        match(LLAVE_CIERRA);
     }
     
     public void instruccionesSi(Tokens token){
