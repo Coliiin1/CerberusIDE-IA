@@ -38,7 +38,7 @@ public enum Tokens {
     PALABRA_RESERVADA_PRIN,
     
     
-    
+    DOS_PUNTOS,
     PUNTO_COMA,
     OPERADOR_SUMA,
     OPERADOR_RESTA,

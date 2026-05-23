@@ -1,14 +1,34 @@
 clase main(){
-	entero x1=4;
+	entero x6=4;
 	real x2=8.9;
 	caracter d='d';
 	cadena cadena1="hola mundo";
-	imprimir("hola wey");
-	si(x<y){
+	imprimir("hola nenes");
+	imprimir(d);
+	si(x<y+7){
+		real y=3.2;
+		entero xd=432;
 	}
 	para(entero x=9;i<8;i++){
 		imprimir("hola nene");
 		entero x1=32;
 	}	
-}
+
+	mientras(x==3){
+		entero x=32;
+	}
+
+	hacer{
+		entero k=9;
+	}mientras(k!=9);	
+
+	segun(cadena1){
+		caso "hola mundo":
+			imprimir("hola mundo");
+		salir;
+		caso "hola":
+			imprimir("hola");
+		salir;
+	}
+
 

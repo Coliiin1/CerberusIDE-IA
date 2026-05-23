@@ -7,10 +7,12 @@ package AnalizadorSintactico;
 import AnalizadorLexico.Identificadores;
 import AnalizadorLexico.Tokens;
 import static AnalizadorLexico.Tokens.*;
+import AnalizadorSemantico.AnalizadorSemantico;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
 import javax.swing.JOptionPane;
+
 /**
  *
  * @author fabri
@@ -22,6 +24,7 @@ public class AnalizadorSintactico {
     private ArrayList<Identificadores> tabla;
     private int posicion;
     private boolean resultado;
+    private AnalizadorSemantico sem;
 
     public AnalizadorSintactico( List<Tokens> tokensDetectados, List<String> codigo,ArrayList<Identificadores> tabla) {
         this.pilaParentesis = new Stack<>();
@@ -30,6 +33,7 @@ public class AnalizadorSintactico {
         this.tabla=tabla;
         posicion=0;
         resultado=true;
+        sem=new AnalizadorSemantico();
     }
     
     
@@ -130,6 +134,7 @@ public class AnalizadorSintactico {
         }
     }
     
+    //cada pieza de lcodigo posible
     private void instruccion(){
         Tokens actual=tokensDetectados.get(posicion);
         switch (actual) {
@@ -148,7 +153,22 @@ public class AnalizadorSintactico {
             case PARENTESIS_CIERRA:
                 System.out.println("DETECTA EL PARETENTESIS QUE CIERRA");
                 break;
-            case null:
+            case PALABRA_RESERVADA_MIE:
+                mientras();
+                match(LLAVE_ABRE);
+                instruccionesSi(LLAVE_CIERRA);
+                match(LLAVE_CIERRA);
+                break;
+            case PALABRA_RESERVADA_HAC:
+                match(PALABRA_RESERVADA_HAC);
+                match(LLAVE_ABRE);
+                instruccionesSi(LLAVE_CIERRA);
+                match(LLAVE_CIERRA);
+                mientras();
+                match(PUNTO_COMA);
+                break;
+            case PALABRA_RESERVADA_SEG:
+                segun();
                 break;
             default:
                 System.out.println("no se ha puesto el token");
@@ -165,7 +185,6 @@ public class AnalizadorSintactico {
             switch (tipo) {
                 case PALABRA_RESERVADA_ENT:  
                     match(NUMERO_ENTERO);
-                    asignarValor(identificador, codigo.get(posicion-1));
                     break;
                 case PALABRA_RESERVADA_REA: 
                     match(NUMERO_REAL);
@@ -177,9 +196,13 @@ public class AnalizadorSintactico {
                     match(TIPO_CARACTER);
                     break;
                 case PALABRA_RESERVADA_BOO:
-                    match(PALABRA_RESERVADA_VER);
-                    match(PALABRA_RESERVADA_FAL);
-                    
+                    if(tokensDetectados.get(posicion)==PALABRA_RESERVADA_VER){
+                        match(PALABRA_RESERVADA_VER);
+                    }else if(tokensDetectados.get(posicion)==PALABRA_RESERVADA_FAL){
+                        match(PALABRA_RESERVADA_FAL);
+                    }else{
+                        throw new RuntimeException("Se esperaba verdadero o falso");
+                    }
                     break;
                 default:
                     falso();
@@ -230,9 +253,11 @@ public class AnalizadorSintactico {
         match(PUNTO_COMA);
     }
     
-    public void cicloMientras(){
+    public void mientras(){
         match(PALABRA_RESERVADA_MIE);
         match(PARENTESIS_ABRE);
+        expresionLogica();
+        match(PARENTESIS_CIERRA);
     }
     
     public void si(){
@@ -250,13 +275,32 @@ public class AnalizadorSintactico {
         match(PALABRA_RESERVADA_SEG);
         match(PARENTESIS_ABRE);
         match(IDENTIFICADOR);
+        String identificador=codigo.get(posicion-1);
         match(PARENTESIS_CIERRA);
         match(LLAVE_ABRE);
+        if (!sem.buscar(tabla, identificador)) {
+            resultado=false;
+            JOptionPane.showMessageDialog(null, "no se encontro el identificador "+identificador,"ERROR AL ENCONTRAR", 0);
+            return;
+        }   
+        while(tokensDetectados.get(posicion)==PALABRA_RESERVADA_CAS){
+            casos(sem.retornarTipo(sem.buscarIde(tabla, identificador)));
+        }
+//        while(tokensDetectados.get(posicion)!=LLAVE_CIERRA){
+//            casos(sem.retornarTipo(sem.buscarIde(tabla, identificador)));
+//        }
         match(LLAVE_CIERRA);
     }
     
-    public void casos(){
-        
+    public void casos(Tokens tipo){
+        match(PALABRA_RESERVADA_CAS);
+        match(tipo);
+        match(DOS_PUNTOS);
+        while(tokensDetectados.get(posicion)!=PALABRA_RESERVADA_SAL){
+            instruccion();
+        }
+        match(PALABRA_RESERVADA_SAL);
+        match(PUNTO_COMA);
     }
     public void para(){
         match(PALABRA_RESERVADA_PAR);

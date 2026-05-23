@@ -22,7 +22,6 @@ public class AnalizadorLexico {
     private List<Tokens> tokensDetectados;
     private List<String> codigo;
     private ArrayList<Identificadores> tabla;
-    
     int contador;
 
     public AnalizadorLexico() {
@@ -34,6 +33,7 @@ public class AnalizadorLexico {
     
     public boolean seccionarCadena(String cadena){
         cadena=cadena.replace(";", " ; ");
+        cadena=cadena.replace(":", " : ");
         cadena=cadena.replace("{", " { ");
         cadena=cadena.replace("}", " } ");
         cadena=cadena.replace("(", " ( ");
@@ -46,20 +46,21 @@ public class AnalizadorLexico {
         cadena=cadena.replace("/", " / ");
         cadena=cadena.replace("%", " % ");
         cadena=cadena.replace("=", " = ");
+        cadena=cadena.replace("!", " ! ");
         cadena=cadena.replace("<", " < ");
         cadena=cadena.replace(">", " > ");
         cadena=cadena.replace(" +  + ", " ++ ");
         cadena=cadena.replace("--", " -- ");
-        cadena=cadena.replace("+ =", " -= ");
+        cadena=cadena.replace("+ =", " += ");
         cadena=cadena.replace("* =", " *= ");
         cadena=cadena.replace("/ =", " /= ");
-        cadena=cadena.replace("= =", " == ");
-        cadena=cadena.replace("! =", " != ");
+        cadena=cadena.replace("=  =", " == ");
+        cadena=cadena.replace("!  =", " != ");
         cadena=cadena.replace("<  =", " <= ");
         cadena=cadena.replace(">  =", " >= ");
         cadena=cadena.replace("&", " & ");
         cadena=cadena.replace("|", " | ");
-        cadena=cadena.replace("!", " ! ");
+        
 
         // en el codigo de arriba cambio los puntos y coma juntos para que el codigo los detecte por separado
         codigo = new ArrayList<>();
@@ -103,6 +104,7 @@ public class AnalizadorLexico {
             case "{": return LLAVE_ABRE;
             case "}": return LLAVE_CIERRA;
             case ";": return PUNTO_COMA;
+            case ":": return DOS_PUNTOS;
             case "caso": return PALABRA_RESERVADA_CAS;
             case "salir": return PALABRA_RESERVADA_SAL;
             case "para": return PALABRA_RESERVADA_PAR;
@@ -118,6 +120,7 @@ public class AnalizadorLexico {
             case "cadena": return PALABRA_RESERVADA_CAD;
             case "booleano": return PALABRA_RESERVADA_BOO;
             case "nulo": return PALABRA_RESERVADA_NUL;
+            case "hacer": return PALABRA_RESERVADA_HAC;
             case "vacio": return PALABRA_RESERVADA_VAC;
             case "principal": return PALABRA_RESERVADA_PRIN;
             case "+": return OPERADOR_SUMA;

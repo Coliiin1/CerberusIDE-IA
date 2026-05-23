@@ -50,6 +50,10 @@ public class Identificadores {
         return identificador;
     }
 
+    public String getTipo() {
+        return tipo;
+    }
+
     public void setValor(String valor) {
         this.valor = valor;
     }
