@@ -172,6 +172,7 @@ public class AnalizadorLexico {
         Pattern prClase=Pattern.compile("clase");
         Pattern prNuevo=Pattern.compile("nuevo");
         Pattern prEste=Pattern.compile("este");
+        Pattern prPara=Pattern.compile("para");
         Pattern prPublico=Pattern.compile("publico");
         Pattern prPrivado=Pattern.compile("privado");
         Pattern prSi=Pattern.compile("si");
@@ -221,6 +222,10 @@ public class AnalizadorLexico {
         m=prSegun.matcher(cadena);
         if(m.matches()){
             return PALABRA_RESERVADA_SEG;
+        }
+        m=prPara.matcher(cadena);
+        if(m.matches()){
+            return PALABRA_RESERVADA_PAR;
         }
         m=tipoCadena.matcher(cadena);
         if(m.matches()){

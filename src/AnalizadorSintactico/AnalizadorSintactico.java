@@ -25,6 +25,7 @@ public class AnalizadorSintactico {
     private int posicion;
     private boolean resultado;
     private AnalizadorSemantico sem;
+    private boolean existePrincipal = false;
 
     public AnalizadorSintactico( List<Token> tokensDetectados,ArrayList<Identificadores> tabla) {
         this.pilaParentesis = new Stack<>();
@@ -117,8 +118,11 @@ public class AnalizadorSintactico {
     //mis gramaticas 
     private void programa(){
         inicio();
-        instrucciones();
+        funciones();
         match(LLAVE_CIERRA);
+        if(posicion<tokensDetectados.size()){
+            throw new RuntimeException("Codigo fuera de la clase");
+        }
     }
 
     private void inicio(){
@@ -128,19 +132,61 @@ public class AnalizadorSintactico {
         match(PARENTESIS_CIERRA);
         match(LLAVE_ABRE);
     }
+    private void funciones(){
+        while(tokensDetectados.get(posicion).getTipo()== PALABRA_RESERVADA_FUN){
+            match(PALABRA_RESERVADA_FUN);
+            funcion();
+        }
+        if(!existePrincipal){
+            throw new RuntimeException("No se encontro una funcion principal");
+        }
+    }
+    private void funcion(){
+        if(tokensDetectados.get(posicion).getTipo()== PALABRA_RESERVADA_PRIN){
+            principal();
+        }else{
+            funcionComun();
+        }
+    }
+    private void funcionComun(){
+        match(IDENTIFICADOR);
+        match(PARENTESIS_ABRE);
+        match(PARENTESIS_CIERRA);
+        match(LLAVE_ABRE);
+        instrucciones();
+        match(LLAVE_CIERRA);
+    }
+    private void principal(){
+        if(existePrincipal){
+            throw new RuntimeException("Ya existe una funcion principal");
+        }
+        existePrincipal = true;
+        match(PALABRA_RESERVADA_PRIN);
+        match(PARENTESIS_ABRE);
+        match(PARENTESIS_CIERRA);
+        match(LLAVE_ABRE);
+        instrucciones();
+        match(LLAVE_CIERRA);
+    }
     
     private void instrucciones() {
-        while(posicion<tokensDetectados.size()-1){
+        while(tokensDetectados.get(posicion).getTipo()!= LLAVE_CIERRA){
             instruccion();
         }
     }
-    
+
     //cada pieza de lcodigo posible
     private void instruccion(){
         Token actual=tokensDetectados.get(posicion);
         switch (actual.getTipo()) {
             case PALABRA_RESERVADA_ENT: case PALABRA_RESERVADA_REA: case PALABRA_RESERVADA_CAD: case PALABRA_RESERVADA_CAR: case PALABRA_RESERVADA_BOO:
                 declaracion(actual.getTipo());
+                break;
+            case PALABRA_RESERVADA_FUN:
+                funciones();
+                break;
+            case PALABRA_RESERVADA_PRIN:
+                principal();
                 break;
             case PALABRA_RESERVADA_IMP:
                 imprimir();
@@ -176,7 +222,7 @@ public class AnalizadorSintactico {
                 throw new AssertionError();
         }
     }
-   
+
     private void declaracion(Tokens tipo){
         String identificador;
         tipo();
@@ -184,10 +230,10 @@ public class AnalizadorSintactico {
         identificador=tokensDetectados.get(posicion-1).getLexema();
         if (match(ASIGNACION)) {
             switch (tipo) {
-                case PALABRA_RESERVADA_ENT:  
+                case PALABRA_RESERVADA_ENT:
                     match(NUMERO_ENTERO);
                     break;
-                case PALABRA_RESERVADA_REA: 
+                case PALABRA_RESERVADA_REA:
                     match(NUMERO_REAL);
                     break;
                 case PALABRA_RESERVADA_CAD:
@@ -307,28 +353,15 @@ public class AnalizadorSintactico {
         match(PALABRA_RESERVADA_PAR);
         match(PARENTESIS_ABRE);
         match(PALABRA_RESERVADA_ENT);
+        String v=tokensDetectados.get(posicion).getLexema();
         match(IDENTIFICADOR);
         match(ASIGNACION);
+        String valor=tokensDetectados.get(posicion).getLexema();
         match(NUMERO_ENTERO);
+        asignarValor(v,valor);
         match(PUNTO_COMA);
         match(IDENTIFICADOR);
-        switch (tokensDetectados.get(posicion).getTipo()) {
-            case MENOR:
-                match(MENOR);
-                break;
-            case MAYOR:
-                match(MAYOR);
-                break;
-            case MENOR_IGUAL:
-                match(MENOR_IGUAL);
-                break;
-            case MAYOR_IGUAL:
-                match(MAYOR_IGUAL);
-                break;
-            default:
-                falso();
-                throw new AssertionError();
-        }
+        operadorRelacional();
         match(NUMERO_ENTERO);
         match(PUNTO_COMA);
         match(IDENTIFICADOR);
