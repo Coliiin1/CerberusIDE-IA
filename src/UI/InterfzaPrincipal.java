@@ -1,5 +1,5 @@
 /*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txtLexico to change this license
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txtCodigo to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
 package UI;
@@ -14,6 +14,8 @@ import java.awt.event.ActionListener;
 import java.awt.Image;
 import java.io.File;
 import javax.swing.*;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
 /**
  *
@@ -40,14 +42,15 @@ public class InterfzaPrincipal extends JFrame implements ActionListener{
     
     //editor
     JScrollPane scroll;
-    JTextArea txtLexico;
+    JTextArea txtLineas;
+    JTextArea txtCodigo;
     
     JTextArea txtArchivo;
     
     JTextArea txtSintactico;
     JScrollPane scroll3;
     
-    JTextArea txtProgramacion;
+    JTextArea txtLexico;
     JScrollPane scroll2;
     //Menu
     JMenuBar barraMenu;
@@ -88,9 +91,48 @@ public class InterfzaPrincipal extends JFrame implements ActionListener{
        btnCompilar.addActionListener(this);
        add(btnCompilar);
         //inicio de editor
-        txtLexico=new JTextArea("");
-        txtLexico.setFont(new java.awt.Font("Consolas", 0, 18));
-        scroll=new JScrollPane(txtLexico);
+        txtCodigo=new JTextArea("");
+        txtCodigo.setFont(new java.awt.Font("Consolas", 0, 18));
+        
+        
+        txtCodigo.getDocument().addDocumentListener(new DocumentListener() {
+
+            public String getTextoLineas(){
+                int lineas = txtCodigo.getLineCount();
+                StringBuilder numeros = new StringBuilder();
+
+                for(int i = 1; i <= lineas; i++){
+                    numeros.append(i).append("\n");
+                }
+
+                return numeros.toString();
+            }
+
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                txtLineas.setText(getTextoLineas());
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                txtLineas.setText(getTextoLineas());
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                txtLineas.setText(getTextoLineas());
+            }
+        });
+        
+        
+        txtLineas = new JTextArea("1");
+        txtLineas.setBackground(new Color(230,230,230));
+        txtLineas.setEditable(false);
+        txtLineas.setFont(new Font("Consolas", Font.PLAIN, 18));
+        txtLineas.setColumns(3);
+
+        scroll=new JScrollPane(txtCodigo);
+        scroll.setRowHeaderView(txtLineas);
         scroll.setBorder(null);
         scroll.setBounds(10,50,1000,400);
         add(scroll);
@@ -108,9 +150,9 @@ public class InterfzaPrincipal extends JFrame implements ActionListener{
         scroll3.setBounds(510, 500, 500, 200);
         add(scroll3);
         
-        txtProgramacion=new JTextArea("");
-        txtProgramacion.setFont(new java.awt.Font("Arial", 0, 18));
-        scroll2=new JScrollPane(txtProgramacion);
+        txtLexico=new JTextArea("");
+        txtLexico.setFont(new java.awt.Font("Arial", 0, 18));
+        scroll2=new JScrollPane(txtLexico);
         scroll2.setBorder(null);
         scroll2.setBounds(10, 500, 490, 200);
         add(scroll2);
@@ -135,12 +177,12 @@ public class InterfzaPrincipal extends JFrame implements ActionListener{
            public void actionPerformed(ActionEvent e) {
                if(radioOpcionesOscuro.isSelected()){
                    getContentPane().setBackground(grisOscuro);
+                   txtCodigo.setBackground(negroOscuro);
+                   txtCodigo.setForeground(blanco);
+                   txtCodigo.setCaretColor(blanco);
                    txtLexico.setBackground(negroOscuro);
                    txtLexico.setForeground(blanco);
                    txtLexico.setCaretColor(blanco);
-                   txtProgramacion.setBackground(negroOscuro);
-                   txtProgramacion.setForeground(blanco);
-                   txtProgramacion.setCaretColor(blanco);
                    txtArchivo.setBackground(negroOscuro);
                    txtArchivo.setForeground(blanco);
                    txtArchivo.setCaretColor(blanco);
@@ -150,12 +192,12 @@ public class InterfzaPrincipal extends JFrame implements ActionListener{
                    
                }else{
                    getContentPane().setBackground(gris);
+                   txtCodigo.setBackground(blanco);
+                   txtCodigo.setForeground(fullNegro);
+                   txtCodigo.setCaretColor(fullNegro);
                    txtLexico.setBackground(blanco);
                    txtLexico.setForeground(fullNegro);
                    txtLexico.setCaretColor(fullNegro);
-                   txtProgramacion.setBackground(blanco);
-                   txtProgramacion.setForeground(fullNegro);
-                   txtProgramacion.setCaretColor(fullNegro);
                    txtArchivo.setBackground(blanco);
                    txtArchivo.setForeground(fullNegro);
                    txtArchivo.setCaretColor(fullNegro);
@@ -191,7 +233,7 @@ public class InterfzaPrincipal extends JFrame implements ActionListener{
             int resultado = selector.showOpenDialog(InterfzaPrincipal.this);
             if(resultado==JFileChooser.APPROVE_OPTION){
                 archivo=selector.getSelectedFile();
-                txtLexico.setText(Archivo.leer(archivo));
+                txtCodigo.setText(Archivo.leer(archivo));
             }
             if (archivo==null) {
                 return;
@@ -199,7 +241,7 @@ public class InterfzaPrincipal extends JFrame implements ActionListener{
             txtArchivo.setText("ARCHIVO: "+archivo.getAbsolutePath());
         }
         if (o==itemArchivoNuevo) {
-            txtLexico.setText("");
+            txtCodigo.setText("");
             archivo=null;
             txtArchivo.setText("ARCHIVO: ");
         }
@@ -218,20 +260,20 @@ public class InterfzaPrincipal extends JFrame implements ActionListener{
                         return;
                     }
                 } while (nombre.equals(""));
-                Archivo.crear(nombre,txtLexico.getText());
+                Archivo.crear(nombre,txtCodigo.getText());
                 
             }else{
-                if (!Archivo.leer(archivo).equals(txtLexico.getText())) {
-                    Archivo.guardar(archivo.getName(), txtLexico.getText());
+                if (!Archivo.leer(archivo).equals(txtCodigo.getText())) {
+                    Archivo.guardar(archivo.getName(), txtCodigo.getText());
                 }
             }
             
-            if (lex.seccionarCadena(txtLexico.getText())) {
-                txtProgramacion.setText("ANALIZADOR LEXICO PASADO \n"+lex.mostrarTokens());
+            if (lex.seccionarCadena(txtCodigo.getText())) {
+                txtLexico.setText("ANALIZADOR LEXICO PASADO \n"+lex.mostrarTokens());
                 lex.generarTabla();
-                sin=new AnalizadorSintactico(lex.getTokensDetectados(), lex.getCodigo(),lex.getTabla());
+                sin=new AnalizadorSintactico(lex.getTokensDetectados(),lex.getTabla());
             }else{
-                txtProgramacion.setText("ANALIZADOR LEXICO NO PASADO: "+lex.mostrarTokens());
+                txtLexico.setText("ANALIZADOR LEXICO NO PASADO: "+lex.mostrarTokens());
                 return;
             }
             if(sin.comprobarParentesis()){
@@ -248,6 +290,4 @@ public class InterfzaPrincipal extends JFrame implements ActionListener{
         }
         //throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
     }
-    //hola putos
-    //xdd
 }

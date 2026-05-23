@@ -5,6 +5,7 @@
 package AnalizadorSintactico;
 
 import AnalizadorLexico.Identificadores;
+import AnalizadorLexico.Token;
 import AnalizadorLexico.Tokens;
 import static AnalizadorLexico.Tokens.*;
 import AnalizadorSemantico.AnalizadorSemantico;
@@ -18,18 +19,16 @@ import javax.swing.JOptionPane;
  * @author fabri
  */
 public class AnalizadorSintactico {
-    private Stack<Tokens> pilaParentesis;
-    private List<Tokens> tokensDetectados;
-    private List<String> codigo;
+    private Stack<Token> pilaParentesis;
+    private List<Token> tokensDetectados;
     private ArrayList<Identificadores> tabla;
     private int posicion;
     private boolean resultado;
     private AnalizadorSemantico sem;
 
-    public AnalizadorSintactico( List<Tokens> tokensDetectados, List<String> codigo,ArrayList<Identificadores> tabla) {
+    public AnalizadorSintactico( List<Token> tokensDetectados,ArrayList<Identificadores> tabla) {
         this.pilaParentesis = new Stack<>();
         this.tokensDetectados = tokensDetectados;
-        this.codigo = codigo;
         this.tabla=tabla;
         posicion=0;
         resultado=true;
@@ -38,9 +37,9 @@ public class AnalizadorSintactico {
     
     
     public boolean comprobarParentesis(){
-        Tokens tok;
-        for(Tokens token: tokensDetectados){
-            switch (token) {
+        Token tok;
+        for(Token token: tokensDetectados){
+            switch (token.getTipo()) {
                 case PARENTESIS_ABRE:
                 case CORCHETE_ABRE:
                 case LLAVE_ABRE:
@@ -50,7 +49,7 @@ public class AnalizadorSintactico {
                 case CORCHETE_CIERRA:
                 case LLAVE_CIERRA:
                     tok=pilaParentesis.peek();
-                    if (tok==PARENTESIS_ABRE&&token==PARENTESIS_CIERRA || tok==CORCHETE_ABRE&&token==CORCHETE_CIERRA || tok==LLAVE_ABRE&&token==LLAVE_CIERRA) {
+                    if (tok.getTipo()==PARENTESIS_ABRE&&token.getTipo()==PARENTESIS_CIERRA || tok.getTipo()==CORCHETE_ABRE&&token.getTipo()==CORCHETE_CIERRA || tok.getTipo()==LLAVE_ABRE&&token.getTipo()==LLAVE_CIERRA) {
                         pilaParentesis.pop();
                     }else{
                         JOptionPane.showMessageDialog(null, "HAY UN PROBLEMA CON: "+tok, "ERROR", 0);
@@ -63,19 +62,19 @@ public class AnalizadorSintactico {
         if (pilaParentesis.size()==0) {
             return true;
         }else{
-            JOptionPane.showMessageDialog(null, "hubo un problema con "+ pilaParentesis.peek().name(), "ERROR", 0);
+            JOptionPane.showMessageDialog(null, "hubo un problema con "+ pilaParentesis.peek().getTipo().name(), "ERROR", 0);
             return false;
         }
     }
     
     public String mostrarPeekParentesis(){
-        Tokens token=pilaParentesis.peek();
-        return token.name();
+        Token token=pilaParentesis.peek();
+        return token.getTipo().name();
     }
     
     public void mostrarParentetis(){
-        for(Tokens token: pilaParentesis){
-            System.out.println(token.name());
+        for(Token token: pilaParentesis){
+            System.out.println(token.getTipo().name());
         }
     }
     
@@ -95,23 +94,25 @@ public class AnalizadorSintactico {
             System.out.println("ERROR");
             return false;
         }
-        if (tokensDetectados.get(posicion)==esperado) {
+        if (tokensDetectados.get(posicion).getTipo()==esperado) {
             posicion++;
         }else{
-            System.out.println("SE ESPERABA "+esperado.name()+" Y SE ENCONTRO: "+tokensDetectados.get(posicion).name());
+            System.out.println("SE ESPERABA "+esperado.name()+" Y SE ENCONTRO: "+tokensDetectados.get(posicion).getTipo().name());
             falso();
              throw new RuntimeException(
             "Se esperaba "
             + esperado.name()
             + " y se encontró "
-            + tokensDetectados.get(posicion).name()
+            + tokensDetectados.get(posicion).getTipo().name()+" en la linea y columna"
+            + tokensDetectados.get(posicion).getLinea()+" "
+            + tokensDetectados.get(posicion).getColumna()
         );
         }
         return true;
     }
     
     public void mostrarEsperado(Tokens esperado){
-        JOptionPane.showMessageDialog(null,"NO SE ENCONTRO EL: "+esperado.name()+"\nEn su lugar se encontro: "+tokensDetectados.get(posicion).name() ,"ERROR ANALIZADO SINTACTICO" , 0);
+        JOptionPane.showMessageDialog(null,"NO SE ENCONTRO EL: "+esperado.name()+"\nEn su lugar se encontro: "+tokensDetectados.get(posicion).getTipo().name() ,"ERROR ANALIZADO SINTACTICO" , 0);
     }
     //mis gramaticas 
     private void programa(){
@@ -136,10 +137,10 @@ public class AnalizadorSintactico {
     
     //cada pieza de lcodigo posible
     private void instruccion(){
-        Tokens actual=tokensDetectados.get(posicion);
-        switch (actual) {
+        Token actual=tokensDetectados.get(posicion);
+        switch (actual.getTipo()) {
             case PALABRA_RESERVADA_ENT: case PALABRA_RESERVADA_REA: case PALABRA_RESERVADA_CAD: case PALABRA_RESERVADA_CAR: case PALABRA_RESERVADA_BOO:
-                declaracion(actual);
+                declaracion(actual.getTipo());
                 break;
             case PALABRA_RESERVADA_IMP:
                 imprimir();
@@ -180,7 +181,7 @@ public class AnalizadorSintactico {
         String identificador;
         tipo();
         match(IDENTIFICADOR);
-        identificador=codigo.get(posicion-1);
+        identificador=tokensDetectados.get(posicion-1).getLexema();
         if (match(ASIGNACION)) {
             switch (tipo) {
                 case PALABRA_RESERVADA_ENT:  
@@ -196,9 +197,9 @@ public class AnalizadorSintactico {
                     match(TIPO_CARACTER);
                     break;
                 case PALABRA_RESERVADA_BOO:
-                    if(tokensDetectados.get(posicion)==PALABRA_RESERVADA_VER){
+                    if(tokensDetectados.get(posicion).getTipo()==PALABRA_RESERVADA_VER){
                         match(PALABRA_RESERVADA_VER);
-                    }else if(tokensDetectados.get(posicion)==PALABRA_RESERVADA_FAL){
+                    }else if(tokensDetectados.get(posicion).getTipo()==PALABRA_RESERVADA_FAL){
                         match(PALABRA_RESERVADA_FAL);
                     }else{
                         throw new RuntimeException("Se esperaba verdadero o falso");
@@ -208,7 +209,7 @@ public class AnalizadorSintactico {
                     falso();
                     throw new AssertionError();
             }
-            asignarValor(identificador, codigo.get(posicion-1));
+            asignarValor(identificador, tokensDetectados.get(posicion-1).getLexema());
         }
         match(PUNTO_COMA);
     }
@@ -218,8 +219,8 @@ public class AnalizadorSintactico {
     }
     
     private void tipo(){
-        Tokens actual = tokensDetectados.get(posicion);
-        switch (actual) {
+        Token actual = tokensDetectados.get(posicion);
+        switch (actual.getTipo()) {
             case PALABRA_RESERVADA_ENT: case PALABRA_RESERVADA_REA: case PALABRA_RESERVADA_CAD: case PALABRA_RESERVADA_CAR: case PALABRA_RESERVADA_BOO:
                 posicion++;
                 break;
@@ -241,7 +242,7 @@ public class AnalizadorSintactico {
     public void imprimir(){
         match(PALABRA_RESERVADA_IMP);
         match(PARENTESIS_ABRE);
-        switch (tokensDetectados.get(posicion)) {
+        switch (tokensDetectados.get(posicion).getTipo()) {
             case IDENTIFICADOR: case TIPO_CADENA: case TIPO_CARACTER: case NUMERO_REAL: case NUMERO_ENTERO:
                 posicion++;
                 break;
@@ -275,15 +276,15 @@ public class AnalizadorSintactico {
         match(PALABRA_RESERVADA_SEG);
         match(PARENTESIS_ABRE);
         match(IDENTIFICADOR);
-        String identificador=codigo.get(posicion-1);
+        String identificador=tokensDetectados.get(posicion-1).getLexema();
         match(PARENTESIS_CIERRA);
         match(LLAVE_ABRE);
         if (!sem.buscar(tabla, identificador)) {
             resultado=false;
             JOptionPane.showMessageDialog(null, "no se encontro el identificador "+identificador,"ERROR AL ENCONTRAR", 0);
             return;
-        }   
-        while(tokensDetectados.get(posicion)==PALABRA_RESERVADA_CAS){
+        }
+        while(tokensDetectados.get(posicion).getTipo()==PALABRA_RESERVADA_CAS){
             casos(sem.retornarTipo(sem.buscarIde(tabla, identificador)));
         }
 //        while(tokensDetectados.get(posicion)!=LLAVE_CIERRA){
@@ -296,7 +297,7 @@ public class AnalizadorSintactico {
         match(PALABRA_RESERVADA_CAS);
         match(tipo);
         match(DOS_PUNTOS);
-        while(tokensDetectados.get(posicion)!=PALABRA_RESERVADA_SAL){
+        while(tokensDetectados.get(posicion).getTipo()!=PALABRA_RESERVADA_SAL){
             instruccion();
         }
         match(PALABRA_RESERVADA_SAL);
@@ -311,7 +312,7 @@ public class AnalizadorSintactico {
         match(NUMERO_ENTERO);
         match(PUNTO_COMA);
         match(IDENTIFICADOR);
-        switch (tokensDetectados.get(posicion)) {
+        switch (tokensDetectados.get(posicion).getTipo()) {
             case MENOR:
                 match(MENOR);
                 break;
@@ -341,8 +342,8 @@ public class AnalizadorSintactico {
     
     private void expresionLogica(){
         condicion();
-        Tokens actual=tokensDetectados.get(posicion);
-        while (actual==AND||actual==OR) {
+        Token actual=tokensDetectados.get(posicion);
+        while (actual.getTipo()==AND||actual.getTipo()==OR) {
             posicion++;
             condicion();
         }
@@ -357,9 +358,9 @@ public class AnalizadorSintactico {
     }
     
     private void operadorRelacional(){
-        Tokens actual = tokensDetectados.get(posicion);
+        Token actual = tokensDetectados.get(posicion);
 
-    switch(actual){
+    switch(actual.getTipo()){
         case MAYOR:
         case MENOR:
         case MAYOR_IGUAL:
@@ -374,7 +375,7 @@ public class AnalizadorSintactico {
     }
     private void expresionAritmetica(){
         termino();
-        while(tokensDetectados.get(posicion)==OPERADOR_SUMA||tokensDetectados.get(posicion)==OPERADOR_RESTA){
+        while(tokensDetectados.get(posicion).getTipo()==OPERADOR_SUMA||tokensDetectados.get(posicion).getTipo()==OPERADOR_RESTA){
             posicion++;
             termino();
         }
@@ -382,15 +383,15 @@ public class AnalizadorSintactico {
     
     private void termino(){
         factor();
-        while(tokensDetectados.get(posicion)==OPERADOR_MULTIPLICAR||tokensDetectados.get(posicion)==OPERADOR_DIVISION||tokensDetectados.get(posicion)==OPERADOR_MODULO){
+        while(tokensDetectados.get(posicion).getTipo()==OPERADOR_MULTIPLICAR||tokensDetectados.get(posicion).getTipo()==OPERADOR_DIVISION||tokensDetectados.get(posicion).getTipo()==OPERADOR_MODULO){
             posicion++;
             factor();
         }
     }
     
     private void factor(){
-        Tokens actual=tokensDetectados.get(posicion);
-        switch (actual) {
+        Token actual=tokensDetectados.get(posicion);
+        switch (actual.getTipo()) {
             case IDENTIFICADOR: case NUMERO_ENTERO: case NUMERO_REAL:
                 posicion++;
                 break;
@@ -408,7 +409,7 @@ public class AnalizadorSintactico {
     
     //partes de funcionalidad de mi codigo 
     public void instruccionesSi(Tokens token){
-        while(tokensDetectados.get(posicion)!=token){
+        while(tokensDetectados.get(posicion).getTipo()!=token){
             instruccion();
         }
     }

@@ -26,9 +26,9 @@ clase main(){
 		caso "hola mundo":
 			imprimir("hola mundo");
 		salir;
-		caso "hola":
+		caso "hola:
 			imprimir("hola");
 		salir;
 	}
 
-
+}

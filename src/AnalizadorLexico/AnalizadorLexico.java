@@ -19,8 +19,7 @@ public class AnalizadorLexico {
 
     
     Matcher m;
-    private List<Tokens> tokensDetectados;
-    private List<String> codigo;
+    private List<Token> tokenDetectados;
     private ArrayList<Identificadores> tabla;
     int contador;
 
@@ -62,36 +61,60 @@ public class AnalizadorLexico {
         cadena=cadena.replace("|", " | ");
         
 
-        // en el codigo de arriba cambio los puntos y coma juntos para que el codigo los detecte por separado
-        codigo = new ArrayList<>();
 
-        Pattern patron = Pattern.compile("\"[^\"]*\"|\\S+");
-        Matcher matcher = patron.matcher(cadena);
 
-        while (matcher.find()) {
-            codigo.add(matcher.group());
-        }
+//        Pattern patron = Pattern.compile("\"[^\"]*\"|\\S+");
+//        Matcher matcher = patron.matcher(cadena);
+        tokenDetectados=new ArrayList<>();
+        String[] lineas = cadena.split("\n");
 
-        contador=0;
-        tokensDetectados=new ArrayList<>();
-        Tokens token;
-        for(String cad:codigo){
-            token=analizador(cad);
-            switch (token) {
-                case ERROR:
-                    tokensDetectados.add(token);
-                    contador++;
-                    JOptionPane.showMessageDialog(null, "HAY UN ERROR EN: "+cad);
-                    return false;
-                default:
-                    if (token==null) {
-                        JOptionPane.showMessageDialog(null, "TOKEN NO RECONOCIDO: "+cad);
-                        return false;
-                    }
-                    tokensDetectados.add(token);
-                    contador++;
+        int fila = 1;
+
+        for(String lineaTexto : lineas){
+
+            int columna = 1;
+
+            Pattern patron = Pattern.compile("\"[^\"]*\"|\\S+");
+            Matcher matcher = patron.matcher(lineaTexto);
+
+            while(matcher.find()){
+
+                String lexema = matcher.group();
+
+                Tokens token = analizador(lexema);
+
+                tokenDetectados.add(
+                    new Token(
+                        token,
+                        lexema,
+                        fila,
+                        matcher.start() + 1
+                    )
+                );
             }
+
+            fila++;
         }
+//        contador=0;
+//        tokensDetectados=new ArrayList<>();
+//        Tokens token;
+//        for(String cad:codigo){
+//            token=analizador(cad);
+//            switch (token) {
+//                case ERROR:
+//                    tokensDetectados.add(token);
+//                    contador++;
+//                    JOptionPane.showMessageDialog(null, "HAY UN ERROR EN: "+cad);
+//                    return false;
+//                default:
+//                    if (token==null) {
+//                        JOptionPane.showMessageDialog(null, "TOKEN NO RECONOCIDO: "+cad);
+//                        return false;
+//                    }
+//                    tokensDetectados.add(token);
+//                    contador++;
+//            }
+//        }
 
         return true;
     }
@@ -223,23 +246,18 @@ public class AnalizadorLexico {
     
     public String mostrarTokens(){
         String resultado="";
-        int conta=0;
-        for(Tokens tok:tokensDetectados){
-            if (codigo.get(conta)==null) {
+        for(Token tok:tokenDetectados){
+            if (tok.getLexema()==null) {
                 return resultado;
             }
-            resultado+=tok+"  ->  "+codigo.get(conta)+"\n";
-            if (conta>=codigo.size()) {
-                return resultado;
-            }
-            conta++;
+            resultado+=tok.getTipo().name()+"  ->  "+tok.getLexema()+"\n";
         }
         return resultado;
     }
     
     public void imprimirCodigo(){
-        for(String cod:codigo){
-            System.out.println(cod);
+        for(Token tok:tokenDetectados){
+            System.out.println(tok.getLexema());
         }
     }
     
@@ -248,21 +266,21 @@ public class AnalizadorLexico {
     
     public void generarTabla(){
         Tokens token;
-        for (int j = 0; j < tokensDetectados.size(); j++) {
-            token=tokensDetectados.get(j);
+        for (int j = 0; j < tokenDetectados.size(); j++) {
+            token=tokenDetectados.get(j).getTipo();
             switch (token) {
                 case PALABRA_RESERVADA_ENT:
                 case PALABRA_RESERVADA_REA:
                 case PALABRA_RESERVADA_CAR:
                 case PALABRA_RESERVADA_CAD:
                 case PALABRA_RESERVADA_BOO:
-                    if (tokensDetectados.get(j+1)==null) {
+                    if (tokenDetectados.get(j+1)==null) {
                         JOptionPane.showMessageDialog(null, "OCURRIO UN ERROR", "ERROR", 0);
                         return;
                     }
-                    if (tokensDetectados.get(j+1)==IDENTIFICADOR) {
-                        token=tokensDetectados.get(j);
-                        tabla.add(new Identificadores(token,codigo.get(j+1)));
+                    if (tokenDetectados.get(j+1).getTipo()==IDENTIFICADOR) {
+                        token=tokenDetectados.get(j).getTipo();
+                        tabla.add(new Identificadores(token,tokenDetectados.get(j+1).getLexema()));
                     }else{
                         JOptionPane.showMessageDialog(null, "MAMO", "OCURRIO UN ERROR", 0);
                     }
@@ -282,12 +300,8 @@ public class AnalizadorLexico {
         }
     }
 
-    public List<Tokens> getTokensDetectados() {
-        return tokensDetectados;
-    }
-
-    public List<String> getCodigo() {
-        return codigo;
+    public List<Token> getTokensDetectados() {
+        return tokenDetectados;
     }
 
     public ArrayList<Identificadores> getTabla() {
