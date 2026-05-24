@@ -119,6 +119,7 @@ public class AnalizadorSintactico {
     }
     //mis gramaticas 
     private void programa(){
+        globales();
         inicio();
         funciones();
         match(LLAVE_CIERRA);
@@ -133,6 +134,22 @@ public class AnalizadorSintactico {
         match(PARENTESIS_ABRE);
         match(PARENTESIS_CIERRA);
         match(LLAVE_ABRE);
+    }
+    private void globales(){
+        scope="global";
+        while(true){
+            switch((tokensDetectados.get(posicion).getTipo())){
+                case PALABRA_RESERVADA_ENT:
+                case PALABRA_RESERVADA_REA:
+                case PALABRA_RESERVADA_CAD:
+                case PALABRA_RESERVADA_CAR:
+                case PALABRA_RESERVADA_BOO:
+                    declaracion(tokensDetectados.get(posicion).getTipo());
+                    break;
+                default:
+                    return;
+            }
+        }
     }
     private void funciones(){
         while(tokensDetectados.get(posicion).getTipo()== PALABRA_RESERVADA_FUN){
@@ -237,7 +254,6 @@ public class AnalizadorSintactico {
         tipo();
         match(IDENTIFICADOR);
         identificador=tokensDetectados.get(posicion-1).getLexema();
-        
         if (tokensDetectados.get(posicion).getTipo()==ASIGNACION) {
             asignacion(tokensDetectados.get(posicion-2).getTipo());
         }
