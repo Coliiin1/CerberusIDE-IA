@@ -84,7 +84,7 @@ public class InterfzaPrincipal extends JFrame implements ActionListener {
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
         getRootPane().setBorder(BorderFactory.createLineBorder(new Color(40,40,40)));
-        Image icono = Toolkit.getDefaultToolkit().getImage(getClass().getResource("/Imagenes/LogowFondo.png"));
+        Image icono = Toolkit.getDefaultToolkit().getImage(getClass().getResource("/Imagenes/LogoC.png"));
         setIconImage(icono);
     }
 
@@ -167,7 +167,7 @@ public class InterfzaPrincipal extends JFrame implements ActionListener {
         panelSuperior = new JPanel(new BorderLayout());
         panelSuperior.setPreferredSize(new Dimension(0, 65));
         panelSuperior.setBorder(new EmptyBorder(10, 20, 10, 20));
-        ImageIcon logoIcon = new ImageIcon(getClass().getResource("/Imagenes/logo.png"));
+        ImageIcon logoIcon = new ImageIcon(getClass().getResource("/Imagenes/logoCT.png"));
         Image logoEscalado = logoIcon.getImage().getScaledInstance(40, 40, Image.SCALE_SMOOTH);
 
         lblTitulo = new JLabel("CERBERUS IDE", new ImageIcon(logoEscalado), JLabel.LEFT);
