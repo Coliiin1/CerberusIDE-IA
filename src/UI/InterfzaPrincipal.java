@@ -67,7 +67,7 @@ public class InterfzaPrincipal extends JFrame implements ActionListener{
     public InterfzaPrincipal() {
         setTitle("CERBERUS IDE");
         setLayout(null);
-        setSize(1700,1000);
+        setSize(1800,1000);
 
         //setResizable(false);
         getContentPane().setBackground(gris);
@@ -76,15 +76,15 @@ public class InterfzaPrincipal extends JFrame implements ActionListener{
 
     public void iniciarComponentes(){
        //imagen
-       ImageIcon iconCerberus = new ImageIcon(getClass().getResource(urlCerberus));
-       
-       Image imagenOriginal = iconCerberus.getImage();
-       Image imagenEscalada = imagenOriginal.getScaledInstance(200, 300, Image.SCALE_SMOOTH);
-       
-       ImageIcon iconFinal = new ImageIcon(imagenEscalada);
-       imagenLogo=new JLabel(iconFinal);
-       imagenLogo.setBounds(1050, 100, 200, 300);
-       add(imagenLogo);
+//       ImageIcon iconCerberus = new ImageIcon(getClass().getResource(urlCerberus));
+//       
+//       Image imagenOriginal = iconCerberus.getImage();
+//       Image imagenEscalada = imagenOriginal.getScaledInstance(200, 300, Image.SCALE_SMOOTH);
+//       
+//       ImageIcon iconFinal = new ImageIcon(imagenEscalada);
+//       imagenLogo=new JLabel(iconFinal);
+//       imagenLogo.setBounds(1050, 100, 200, 300);
+//       add(imagenLogo);
        //botones
        btnCompilar = new JButton("COMPILAR");
        btnCompilar.setBounds(1050, 50, 200, 30);
@@ -134,11 +134,11 @@ public class InterfzaPrincipal extends JFrame implements ActionListener{
         scroll=new JScrollPane(txtCodigo);
         scroll.setRowHeaderView(txtLineas);
         scroll.setBorder(null);
-        scroll.setBounds(10,50,1000,400);
+        scroll.setBounds(10,80,1000,800);
         add(scroll);
         
         txtArchivo=new JTextArea("ARCHIVO: ");
-        txtArchivo.setBounds(10, 460, 1000, 20);
+        txtArchivo.setBounds(10, 50, 1000, 20);
         txtArchivo.setEditable(false);
         txtArchivo.setFont(new Font("Arial",Font.BOLD,20));
         add(txtArchivo);
@@ -147,14 +147,14 @@ public class InterfzaPrincipal extends JFrame implements ActionListener{
         txtSintactico.setFont(new java.awt.Font("Arial", 0, 18));
         scroll3=new JScrollPane(txtSintactico);
         scroll3.setBorder(null);
-        scroll3.setBounds(510, 500, 500, 200);
+        scroll3.setBounds(1050, 90, 500, 200);
         add(scroll3);
         
         txtLexico=new JTextArea("");
         txtLexico.setFont(new java.awt.Font("Arial", 0, 18));
         scroll2=new JScrollPane(txtLexico);
         scroll2.setBorder(null);
-        scroll2.setBounds(10, 500, 490, 200);
+        scroll2.setBounds(1050, 300, 500, 200);
         add(scroll2);
         //inicio de meus 
         barraMenu=new JMenuBar();
