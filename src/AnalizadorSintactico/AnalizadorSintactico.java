@@ -28,12 +28,12 @@ public class AnalizadorSintactico {
     private AnalizadorSemantico sem;
     private boolean existePrincipal = false;
 
-    public AnalizadorSintactico( List<Token> tokensDetectados,ArrayList<Identificadores> tabla) {
+    public AnalizadorSintactico( List<Token> tokensDetectados) {
         this.pilaParentesis = new Stack<>();
         this.tokensDetectados = tokensDetectados;
-        this.tabla=tabla;
         posicion=0;
         resultado=true;
+        tabla=new ArrayList<>();
         sem=new AnalizadorSemantico();
     }
     
@@ -105,9 +105,9 @@ public class AnalizadorSintactico {
             "Se esperaba "
             + esperado.name()
             + " y se encontró "
-            + tokensDetectados.get(posicion).getTipo().name()+" en la linea y columna"
-            + tokensDetectados.get(posicion).getLinea()+" "
-            + tokensDetectados.get(posicion).getColumna()
+            + tokensDetectados.get(posicion).getTipo().name()+"\nen la linea: "
+            + tokensDetectados.get(posicion).getLinea()+"\nen: "
+            + tokensDetectados.get(posicion).getLexema()
         );
         }
         return true;
@@ -218,6 +218,10 @@ public class AnalizadorSintactico {
             case PALABRA_RESERVADA_SEG:
                 segun();
                 break;
+            case IDENTIFICADOR:
+                asignacionDirecta();
+                match(PUNTO_COMA);
+                break;
             default:
                 System.out.println("no se ha puesto el token");
                 throw new AssertionError();
@@ -226,43 +230,57 @@ public class AnalizadorSintactico {
 
     private void declaracion(Tokens tipo){
         String identificador;
+        agregarTabla();
         tipo();
         match(IDENTIFICADOR);
         identificador=tokensDetectados.get(posicion-1).getLexema();
-        if (match(ASIGNACION)) {
-            switch (tipo) {
-                case PALABRA_RESERVADA_ENT:
-                    match(NUMERO_ENTERO);
-                    break;
-                case PALABRA_RESERVADA_REA:
-                    match(NUMERO_REAL);
-                    break;
-                case PALABRA_RESERVADA_CAD:
-                    match(TIPO_CADENA);
-                    break;
-                case PALABRA_RESERVADA_CAR:
-                    match(TIPO_CARACTER);
-                    break;
-                case PALABRA_RESERVADA_BOO:
-                    if(tokensDetectados.get(posicion).getTipo()==PALABRA_RESERVADA_VER){
-                        match(PALABRA_RESERVADA_VER);
-                    }else if(tokensDetectados.get(posicion).getTipo()==PALABRA_RESERVADA_FAL){
-                        match(PALABRA_RESERVADA_FAL);
-                    }else{
-                        throw new RuntimeException("Se esperaba verdadero o falso");
-                    }
-                    break;
-                default:
-                    falso();
-                    throw new AssertionError();
-            }
-            asignarValor(identificador, tokensDetectados.get(posicion-1).getLexema());
+        if (tokensDetectados.get(posicion).getTipo()==ASIGNACION) {
+            asignacion(tokensDetectados.get(posicion-2).getTipo());
         }
         match(PUNTO_COMA);
     }
     
-    private void asiganacion(){
+    private void asignacionDirecta(){
+        match(IDENTIFICADOR);
+        if (tokensDetectados.get(posicion).getTipo()==ASIGNACION) {
+            if (!sem.buscar(tabla, tokensDetectados.get(posicion-1).getLexema())) {
+                throw new AssertionError("NO SE ENCONTRO EL IDENTIFICADOR: "+tokensDetectados.get(posicion-1).getLexema());
+            }
+            Tokens tok= sem.buscarIde(tabla, tokensDetectados.get(posicion-1).getLexema()).getToken();
+            asignacion(tok);
+        }
+    }
+    private void asignacion(Tokens variable){
+        match(ASIGNACION);
+        System.out.println("LLEGA A LA ASIGNACION");
+        switch (variable) {
+            case PALABRA_RESERVADA_ENT:
+                match(NUMERO_ENTERO);
+                break;
+            case PALABRA_RESERVADA_REA:
+                match(NUMERO_REAL);
+                break;
+            case PALABRA_RESERVADA_CAD:
+                match(TIPO_CADENA);
+                break;
+            case PALABRA_RESERVADA_CAR:
+                match(TIPO_CARACTER);
+                break;
+            case PALABRA_RESERVADA_BOO:
+                if(tokensDetectados.get(posicion).getTipo()==PALABRA_RESERVADA_VER){
+                    match(PALABRA_RESERVADA_VER);
+                }else if(tokensDetectados.get(posicion).getTipo()==PALABRA_RESERVADA_FAL){
+                    match(PALABRA_RESERVADA_FAL);
+                }else{
+                    throw new RuntimeException("Se esperaba verdadero o falso");
+                }
+                break;
+            default:
+                falso();
+                throw new AssertionError("NO SE RECONOCIO EL TIPO "+tokensDetectados.get(posicion).getLinea());
+        }
         
+        asignarValor( tokensDetectados.get(posicion-3).getLexema(), tokensDetectados.get(posicion-1).getLexema());
     }
     
     private void tipo(){
@@ -316,9 +334,26 @@ public class AnalizadorSintactico {
         match(LLAVE_ABRE);
         instruccionesSi(LLAVE_CIERRA);
         match(LLAVE_CIERRA);
-        
+        if(tokensDetectados.get(posicion).getTipo()==PALABRA_RESERVADA_SIN){
+            sino();
+        }
     }
     
+    private void sino(){
+        match(PALABRA_RESERVADA_SIN);
+        switch (tokensDetectados.get(posicion).getTipo()) {
+            case PALABRA_RESERVADA_SI:
+                si();
+                break;
+            case LLAVE_ABRE:
+                match(LLAVE_ABRE);
+                instruccionesSi(LLAVE_CIERRA);
+                match(LLAVE_CIERRA);
+                break;
+            default:
+                throw new AssertionError("PROBELAMS EN IF");
+        }
+    }
     public void segun(){
         match(PALABRA_RESERVADA_SEG);
         match(PARENTESIS_ABRE);
@@ -478,5 +513,19 @@ public class AnalizadorSintactico {
     
     public boolean getResultado(){
         return resultado;
+    }
+    
+    private void agregarTabla(){
+        Tokens token;
+        if (tokensDetectados.get(posicion+1).getTipo()==null) {
+            JOptionPane.showMessageDialog(null, "OCURRIO UN ERROR", "ERROR", 0);
+            return;
+        }
+        if (tokensDetectados.get(posicion+1).getTipo()==IDENTIFICADOR) {
+            token=tokensDetectados.get(posicion).getTipo();
+            tabla.add(new Identificadores(token,tokensDetectados.get(posicion+1).getLexema()));
+        }else{
+            JOptionPane.showMessageDialog(null, "NO SE PUDO AGREGAR A LA TABLA: "+tokensDetectados.get(posicion).getLinea()+" "+tokensDetectados.get(posicion).getLexema(), "OCURRIO UN ERROR", 0);
+        }
     }
 }

@@ -1,6 +1,8 @@
 clase main(){
 	funcion principal(){
-entero x6=4;
+	
+	entero x6=4;
+	x6=98;
 	real x2=8.9;
 	caracter d='d';
 	cadena cadena1="hola mundo";
@@ -9,6 +11,8 @@ entero x6=4;
 	si(x<y+7){
 		real y=3.2;
 		entero xd=432;
+	}sino{
+		imprimir("gola");
 	}
 	para(entero x=9;i<8;i++){
 		imprimir("hola nene");
@@ -27,7 +31,7 @@ entero x6=4;
 		caso "hola mundo":
 			imprimir("hola mundo");
 		salir;
-		caso "hola:
+		caso "hola":
 			imprimir("hola");
 		salir;
 	}

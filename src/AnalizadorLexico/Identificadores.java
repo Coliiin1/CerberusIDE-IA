@@ -50,6 +50,11 @@ public class Identificadores {
         return identificador;
     }
 
+    public Tokens getToken() {
+        return token;
+    }
+
+    
     public String getTipo() {
         return tipo;
     }

@@ -271,7 +271,7 @@ public class InterfzaPrincipal extends JFrame implements ActionListener{
             if (lex.seccionarCadena(txtCodigo.getText())) {
                 txtLexico.setText("ANALIZADOR LEXICO PASADO \n"+lex.mostrarTokens());
                 lex.generarTabla();
-                sin=new AnalizadorSintactico(lex.getTokensDetectados(),lex.getTabla());
+                sin=new AnalizadorSintactico(lex.getTokensDetectados());
             }else{
                 txtLexico.setText("ANALIZADOR LEXICO NO PASADO: "+lex.mostrarTokens());
                 return;
