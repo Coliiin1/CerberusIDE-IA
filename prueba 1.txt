@@ -1,5 +1,6 @@
 clase main(){
-	entero x6=4;
+	funcion principal(){
+entero x6=4;
 	real x2=8.9;
 	caracter d='d';
 	cadena cadena1="hola mundo";
@@ -30,5 +31,5 @@ clase main(){
 			imprimir("hola");
 		salir;
 	}
-
+}	
 }

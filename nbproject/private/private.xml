@@ -8,7 +8,9 @@
             <file>file:/C:/Users/fabri/Documents/NetBeansProjects/AnalizadorLexico/src/AnalizadorLexico/Identificadores.java</file>
             <file>file:/C:/Users/fabri/Documents/NetBeansProjects/AnalizadorLexico/src/AnalizadorLexico/Tokens.java</file>
             <file>file:/C:/Users/fabri/Documents/NetBeansProjects/AnalizadorLexico/src/AnalizadorLexico/AnalizadorLexico.java</file>
-            <file>file:/C:/Users/fabri/Documents/NetBeansProjects/AnalizadorLexico/src/UI/NewJFrame.java</file>
+            <file>file:/C:/Users/fabri/Documents/NetBeansProjects/AnalizadorLexico/src/AnalizadorSemantico/AnalizadorSemantico.java</file>
+            <file>file:/C:/Users/fabri/Documents/NetBeansProjects/AnalizadorLexico/src/AnalizadorLexico/Token.java</file>
+            <file>file:/C:/Users/fabri/Documents/NetBeansProjects/AnalizadorLexico/src/AnalizadorSintactico/ErrorSintactico.java</file>
         </group>
     </open-files>
 </project-private>
