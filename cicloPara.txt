@@ -1,0 +1,7 @@
+clase main(){
+funcion principal(){
+para(entero i=4; i<10; i++){}
+}
+funcion a2(){}
+funcion xd(){}
+}
