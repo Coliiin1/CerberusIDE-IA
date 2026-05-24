@@ -27,6 +27,7 @@ public class AnalizadorSintactico {
     private boolean resultado;
     private AnalizadorSemantico sem;
     private boolean existePrincipal = false;
+    private String scope;
 
     public AnalizadorSintactico( List<Token> tokensDetectados) {
         this.pilaParentesis = new Stack<>();
@@ -149,8 +150,9 @@ public class AnalizadorSintactico {
             funcionComun();
         }
     }
-    private void funcionComun(){
+    private void funcionComun(){        
         match(IDENTIFICADOR);
+        scope=tokensDetectados.get(posicion-1).getLexema();
         match(PARENTESIS_ABRE);
         match(PARENTESIS_CIERRA);
         match(LLAVE_ABRE);
@@ -161,6 +163,7 @@ public class AnalizadorSintactico {
         if(existePrincipal){
             throw new RuntimeException("Ya existe una funcion principal");
         }
+        scope="principal";
         existePrincipal = true;
         match(PALABRA_RESERVADA_PRIN);
         match(PARENTESIS_ABRE);
@@ -234,6 +237,7 @@ public class AnalizadorSintactico {
         tipo();
         match(IDENTIFICADOR);
         identificador=tokensDetectados.get(posicion-1).getLexema();
+        
         if (tokensDetectados.get(posicion).getTipo()==ASIGNACION) {
             asignacion(tokensDetectados.get(posicion-2).getTipo());
         }
@@ -461,7 +465,11 @@ public class AnalizadorSintactico {
     private void factor(){
         Token actual=tokensDetectados.get(posicion);
         switch (actual.getTipo()) {
-            case IDENTIFICADOR: case NUMERO_ENTERO: case NUMERO_REAL:
+            case IDENTIFICADOR:
+                if (!sem.buscar(tabla, actual.getLexema())) {
+                    throw new AssertionError("NO SE HA DECLARADO EL IDENTIFICADOR: "+actual.getLexema()+mostrarLineaError(actual));
+                }
+            case NUMERO_ENTERO: case NUMERO_REAL:
                 posicion++;
                 break;
             case PARENTESIS_ABRE:
@@ -515,7 +523,15 @@ public class AnalizadorSintactico {
         return resultado;
     }
     
+    private String mostrarLineaError(Token tok){
+        String resultado="\nEn la linea: "+tok.getLinea()+"\nEn el: "+tok.getLexema();
+        return resultado;
+    }
+    
     private void agregarTabla(){
+        if (sem.buscar(tabla, tokensDetectados.get(posicion+1).getLexema())) {
+            throw new AssertionError("YA EXISTE ESE IDENTIFICADOR: "+tokensDetectados.get(posicion+1).getLexema());
+        }
         Tokens token;
         if (tokensDetectados.get(posicion+1).getTipo()==null) {
             JOptionPane.showMessageDialog(null, "OCURRIO UN ERROR", "ERROR", 0);
@@ -523,7 +539,7 @@ public class AnalizadorSintactico {
         }
         if (tokensDetectados.get(posicion+1).getTipo()==IDENTIFICADOR) {
             token=tokensDetectados.get(posicion).getTipo();
-            tabla.add(new Identificadores(token,tokensDetectados.get(posicion+1).getLexema()));
+            tabla.add(new Identificadores(token,tokensDetectados.get(posicion+1).getLexema(),scope));
         }else{
             JOptionPane.showMessageDialog(null, "NO SE PUDO AGREGAR A LA TABLA: "+tokensDetectados.get(posicion).getLinea()+" "+tokensDetectados.get(posicion).getLexema(), "OCURRIO UN ERROR", 0);
         }

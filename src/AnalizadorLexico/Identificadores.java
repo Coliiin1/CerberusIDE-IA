@@ -13,8 +13,9 @@ public class Identificadores {
     private Tokens token;
     private String identificador;
     private String valor;
+    private String scope;
 
-    public Identificadores(Tokens token, String identificador) {
+    public Identificadores(Tokens token, String identificador,String scope) {
         this.token = token;
         this.identificador = identificador;
         switch (token) {
@@ -36,12 +37,13 @@ public class Identificadores {
             default:
                 tipo="NO SE ENCONTRO TIPO";
         }
+        this.scope=scope;
     }
     
     
     public String mostrarIdentificadorTerminal(){
         String objeto;
-        objeto=tipo+", "+token.name()+", "+identificador+", "+valor;
+        objeto=tipo+", "+token.name()+", "+identificador+", "+valor+", "+scope;
         System.out.println(tipo+", "+token.name()+", "+identificador+", "+valor);
         return objeto;
     }

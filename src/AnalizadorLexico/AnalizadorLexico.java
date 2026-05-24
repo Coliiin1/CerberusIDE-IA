@@ -285,7 +285,7 @@ public class AnalizadorLexico {
                     }
                     if (tokenDetectados.get(j+1).getTipo()==IDENTIFICADOR) {
                         token=tokenDetectados.get(j).getTipo();
-                        tabla.add(new Identificadores(token,tokenDetectados.get(j+1).getLexema()));
+                        //tabla.add(new Identificadores(token,tokenDetectados.get(j+1).getLexema(),scope));
                     }else{
                         JOptionPane.showMessageDialog(null, "MAMO", "OCURRIO UN ERROR", 0);
                     }

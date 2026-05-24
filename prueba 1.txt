@@ -1,15 +1,16 @@
 clase main(){
 	funcion principal(){
 	
-	entero x6=4;
-	x6=98;
-	real x2=8.9;
+	entero x=4;
+	x=98;
+	real y=8.9;
 	caracter d='d';
+
 	cadena cadena1="hola mundo";
 	imprimir("hola nenes");
 	imprimir(d);
 	si(x<y+7){
-		real y=3.2;
+		real y1=3.2;
 		entero xd=432;
 	}sino{
 		imprimir("gola");
@@ -20,7 +21,7 @@ clase main(){
 	}	
 
 	mientras(x==3){
-		entero x=32;
+		entero x2=32;
 	}
 
 	hacer{
@@ -36,4 +37,10 @@ clase main(){
 		salir;
 	}
 }	
+funcion hola(){
+entero nueve=9;
+}
+
+
+
 }
