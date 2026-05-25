@@ -6,7 +6,7 @@ clase main(){
 	real y=8.9+65.4;
 	caracter d='d';
 	cadena cadena1="hola mundo";
-	imprimir("hola nenes");
+	imprimir("hola nenes"+" ");
 	imprimir(d);
 	si(x<y+7){
 		real y1=3.2;

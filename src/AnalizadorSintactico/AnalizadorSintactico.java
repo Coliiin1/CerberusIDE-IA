@@ -367,20 +367,28 @@ public class AnalizadorSintactico {
         String valor="";
         match(PALABRA_RESERVADA_IMP);
         match(PARENTESIS_ABRE);
-        switch (tokensDetectados.get(posicion).getTipo()) {
-            case IDENTIFICADOR: case TIPO_CADENA: case TIPO_CARACTER: case NUMERO_REAL: case NUMERO_ENTERO:
-                valor=tokensDetectados.get(posicion).getLexema();
-                posicion++;
-                break;
-            default:
-                falso();
-                throw new AssertionError();
+        valor=expresionImprimible();
+        while (tokensDetectados.get(posicion).getTipo()==OPERADOR_SUMA) {
+            posicion++;
+            valor=valor+expresionImprimible();
         }
         match(PARENTESIS_CIERRA);
         match(PUNTO_COMA);
         documentador.agregar(obtenerLinea(tokensDetectados.get(posicion-1))+"SE IMPRIME: "+valor);
     }
-    
+    private String expresionImprimible(){
+        String resul="";
+        switch (tokensDetectados.get(posicion).getTipo()) {
+            case IDENTIFICADOR: case TIPO_CADENA: case TIPO_CARACTER: case NUMERO_REAL: case NUMERO_ENTERO:
+                resul=tokensDetectados.get(posicion).getLexema();
+                posicion++;
+                break;
+            default:
+                falso();
+                throw new AssertionError("NO SE RECONOCE EL TIPO: "+mostrarLineaError(tokensDetectados.get(posicion)));
+        }
+        return resul;
+    }
     public void mientras(){
         match(PALABRA_RESERVADA_MIE);
         match(PARENTESIS_ABRE);
