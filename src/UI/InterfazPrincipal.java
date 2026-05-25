@@ -492,28 +492,6 @@ public class InterfazPrincipal extends JFrame implements ActionListener {
         revalidate();
 
     }
-
-    public static void main(String[] args) {
-
-        SwingUtilities.invokeLater(() -> {
-
-            try {
-
-                // Usar Metal L&F en lugar del sistema para tener control total sobre los colores
-                UIManager.setLookAndFeel("javax.swing.plaf.metal.MetalLookAndFeel");
-            } catch (Exception e) {
-
-                // fallback silencioso
-
-            }
-
-            InterfazPrincipal ui = new InterfazPrincipal();
-            ui.iniciarComponentes();
-            ui.setVisible(true);
-        });
-
-    }
-
     @Override
     public void actionPerformed(ActionEvent e) {
 
