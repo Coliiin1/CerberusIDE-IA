@@ -69,5 +69,5 @@ public class AnalizadorSemantico {
         return true;
     }
     
-    
+
 }

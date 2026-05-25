@@ -1,11 +1,10 @@
 clase main(){
 	funcion principal(){
 	
-	entero x=4;
+	entero x=4+23;
 	x=98;
-	real y=8.9;
+	real y=8.9+65.4
 	caracter d='d';
-
 	cadena cadena1="hola mundo";
 	imprimir("hola nenes");
 	imprimir(d);

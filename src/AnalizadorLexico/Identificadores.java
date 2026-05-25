@@ -65,6 +65,10 @@ public class Identificadores {
         this.valor = valor;
     }
 
+    public String getValor() {
+        return valor;
+    }
+
     
 }
 

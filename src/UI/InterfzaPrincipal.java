@@ -358,11 +358,10 @@ public class InterfzaPrincipal extends JFrame implements ActionListener {
         area.setSelectionColor(new Color(0,122,255));
 
     }
-
     // ======== MODOS ========
 
     private void aplicarModoOscuro() {
-
+        
         fondoActual           = new Color(18,18,20);
         panelActual           = new Color(30,30,34);
         panelSecundarioActual = new Color(45,45,50);
@@ -609,7 +608,16 @@ public class InterfzaPrincipal extends JFrame implements ActionListener {
             // ===== SEMANTICO =====
             txtSemantico.setText("ANALIZADOR SEMÁNTICO DISPONIBLE\n\nAÚN NO IMPLEMENTADO.");
             // ===== DOCUMENTADOR =====
-            txtDocumentador.setText("DOCUMENTADOR DISPONIBLE\n\nAÚN NO IMPLEMENTADO.");
+            if (!sin.getResultado()) {
+                txtDocumentador.setText("NO SE PASO NI EL SEMANTICO NI EL SINTACTICO NO SE PUEDE CREAR DOCUMENTADOR");
+            }else{
+                txtSemantico.setText("SE PASO EL ANALIZADOR SEMANTICO");
+                txtDocumentador.setText(sin.getDocumentador().imprimir());
+            }
+            
+            
+            
+            
         }
     }
 

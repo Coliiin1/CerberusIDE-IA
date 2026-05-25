@@ -28,6 +28,7 @@ public class AnalizadorSintactico {
     private AnalizadorSemantico sem;
     private boolean existePrincipal = false;
     private String scope;
+    private Documentador documentador;
 
     public AnalizadorSintactico( List<Token> tokensDetectados) {
         this.pilaParentesis = new Stack<>();
@@ -36,6 +37,7 @@ public class AnalizadorSintactico {
         resultado=true;
         tabla=new ArrayList<>();
         sem=new AnalizadorSemantico();
+        documentador=new Documentador();
     }
     
     
@@ -131,9 +133,11 @@ public class AnalizadorSintactico {
     private void inicio(){
         match(PALABRA_RESERVADA_CLA);
         match(IDENTIFICADOR);
+        String clase=tokensDetectados.get(posicion-1).getLexema();
         match(PARENTESIS_ABRE);
         match(PARENTESIS_CIERRA);
         match(LLAVE_ABRE);
+        documentador.agregar(obtenerLinea(tokensDetectados.get(posicion-1))+"SE CREA UNA CLASE LLAMADA: "+clase);
     }
     private void globales(){
         scope="global";
@@ -169,12 +173,15 @@ public class AnalizadorSintactico {
     }
     private void funcionComun(){        
         match(IDENTIFICADOR);
+        String funcion=tokensDetectados.get(posicion-1).getLexema();
         scope=tokensDetectados.get(posicion-1).getLexema();
         match(PARENTESIS_ABRE);
         match(PARENTESIS_CIERRA);
         match(LLAVE_ABRE);
+        documentador.agregar(obtenerLinea(tokensDetectados.get(posicion-1))+"SE CREA UNA FUNCION LLAMADA: "+funcion);
         instrucciones();
         match(LLAVE_CIERRA);
+        
     }
     private void principal(){
         if(existePrincipal){
@@ -186,8 +193,10 @@ public class AnalizadorSintactico {
         match(PARENTESIS_ABRE);
         match(PARENTESIS_CIERRA);
         match(LLAVE_ABRE);
+        documentador.agregar(obtenerLinea(tokensDetectados.get(posicion-1))+"SE CREA LA FUNCION PRINCIPAL DEL CODIGO");
         instrucciones();
         match(LLAVE_CIERRA);
+        
     }
     
     private void instrucciones() {
@@ -228,26 +237,34 @@ public class AnalizadorSintactico {
                 match(LLAVE_CIERRA);
                 break;
             case PALABRA_RESERVADA_HAC:
-                match(PALABRA_RESERVADA_HAC);
-                match(LLAVE_ABRE);
-                instruccionesSi(LLAVE_CIERRA);
-                match(LLAVE_CIERRA);
-                mientras();
-                match(PUNTO_COMA);
+                hacer();
                 break;
             case PALABRA_RESERVADA_SEG:
                 segun();
                 break;
             case IDENTIFICADOR:
+                String iden=tokensDetectados.get(posicion).getLexema();
                 asignacionDirecta();
                 match(PUNTO_COMA);
+                documentador.agregar(obtenerLinea(tokensDetectados.get(posicion-1))+"SE ASIGNA EL VALOR: "+sem.buscarIde(tabla, iden).getValor()+" A LA VARIABLE "+sem.buscarIde(tabla, iden).getIdentificador());
                 break;
             default:
                 System.out.println("no se ha puesto el token");
                 throw new AssertionError();
         }
     }
-
+    
+    private void hacer(){
+        match(PALABRA_RESERVADA_HAC);
+        match(LLAVE_ABRE);
+        documentador.agregar(obtenerLinea(tokensDetectados.get(posicion-1))+"SE CREA UN CICLO HACER MIENTRAS QUE EVALUARA EL SIGUIENTE MIENTRAS ");
+        instruccionesSi(LLAVE_CIERRA);
+        match(LLAVE_CIERRA);
+        mientras();
+        match(PUNTO_COMA);
+        
+    }
+    
     private void declaracion(Tokens tipo){
         String identificador;
         agregarTabla();
@@ -258,6 +275,8 @@ public class AnalizadorSintactico {
             asignacion(tokensDetectados.get(posicion-2).getTipo());
         }
         match(PUNTO_COMA);
+        documentador.agregar(obtenerLinea(tokensDetectados.get(posicion-1))+"SE CREA UNA VARIABLE LLAMADA: "+identificador+" DE TIPO: "+sem.buscarIde(tabla, identificador).getTipo()
+                +" CON VALOR: "+sem.buscarIde(tabla, identificador).getValor());
     }
     
     private void asignacionDirecta(){
@@ -299,8 +318,14 @@ public class AnalizadorSintactico {
                 falso();
                 throw new AssertionError("NO SE RECONOCIO EL TIPO "+tokensDetectados.get(posicion).getLinea());
         }
+        if (tokensDetectados.get(posicion).getTipo()!=PUNTO_COMA) {
+            posicion--;
+            int x=posicion;
+            expresionAritmetica();
+        }else{
+            asignarValor( tokensDetectados.get(posicion-3).getLexema(), tokensDetectados.get(posicion-1).getLexema());   
+        }
         
-        asignarValor( tokensDetectados.get(posicion-3).getLexema(), tokensDetectados.get(posicion-1).getLexema());
     }
     
     private void tipo(){
@@ -325,10 +350,12 @@ public class AnalizadorSintactico {
     
     
     public void imprimir(){
+        String valor="";
         match(PALABRA_RESERVADA_IMP);
         match(PARENTESIS_ABRE);
         switch (tokensDetectados.get(posicion).getTipo()) {
             case IDENTIFICADOR: case TIPO_CADENA: case TIPO_CARACTER: case NUMERO_REAL: case NUMERO_ENTERO:
+                valor=tokensDetectados.get(posicion).getLexema();
                 posicion++;
                 break;
             default:
@@ -337,21 +364,26 @@ public class AnalizadorSintactico {
         }
         match(PARENTESIS_CIERRA);
         match(PUNTO_COMA);
+        documentador.agregar(obtenerLinea(tokensDetectados.get(posicion-1))+"SE IMPRIME: "+valor);
     }
     
     public void mientras(){
         match(PALABRA_RESERVADA_MIE);
         match(PARENTESIS_ABRE);
+        int x=posicion;
         expresionLogica();
         match(PARENTESIS_CIERRA);
+        documentador.agregar(obtenerLinea(tokensDetectados.get(posicion-1))+"SE CREA UN CICLO MIENTRAS QUE EVALUA LA EXPRESION lOGICA: "+recorrerGenerarCadena(x));
     }
     
     public void si(){
         match(PALABRA_RESERVADA_SI);
         match(PARENTESIS_ABRE);
+        int x=posicion;
         expresionLogica();
         match(PARENTESIS_CIERRA);
         match(LLAVE_ABRE);
+        documentador.agregar(obtenerLinea(tokensDetectados.get(posicion-1))+"SE CREA UNA CONDICION SI QUE EVALUA: "+recorrerGenerarCadena(x));
         instruccionesSi(LLAVE_CIERRA);
         match(LLAVE_CIERRA);
         if(tokensDetectados.get(posicion).getTipo()==PALABRA_RESERVADA_SIN){
@@ -361,6 +393,7 @@ public class AnalizadorSintactico {
     
     private void sino(){
         match(PALABRA_RESERVADA_SIN);
+        documentador.agregar(obtenerLinea(tokensDetectados.get(posicion-1))+"SE CREA UNA SALIDA EN CASO QUE EL SI RETORNE FALSO");
         switch (tokensDetectados.get(posicion).getTipo()) {
             case PALABRA_RESERVADA_SI:
                 si();
@@ -379,6 +412,7 @@ public class AnalizadorSintactico {
         match(PARENTESIS_ABRE);
         match(IDENTIFICADOR);
         String identificador=tokensDetectados.get(posicion-1).getLexema();
+        documentador.agregar(obtenerLinea(tokensDetectados.get(posicion-1))+"SE CREA UN SEGUN QUE EJECUTARA UN BUCLE PARA EL VALOR DE: "+identificador);
         match(PARENTESIS_CIERRA);
         match(LLAVE_ABRE);
         if (!sem.buscar(tabla, identificador)) {
@@ -398,16 +432,19 @@ public class AnalizadorSintactico {
     public void casos(Tokens tipo){
         match(PALABRA_RESERVADA_CAS);
         match(tipo);
+        documentador.agregar(obtenerLinea(tokensDetectados.get(posicion-1))+"SE CREA UN CASO PARA EL VALOR: "+tokensDetectados.get(posicion-1).getLexema());
         match(DOS_PUNTOS);
         while(tokensDetectados.get(posicion).getTipo()!=PALABRA_RESERVADA_SAL){
             instruccion();
         }
         match(PALABRA_RESERVADA_SAL);
+        documentador.agregar(obtenerLinea(tokensDetectados.get(posicion-1))+"SE TERMINA EL CASO");
         match(PUNTO_COMA);
     }
     public void para(){
         match(PALABRA_RESERVADA_PAR);
         match(PARENTESIS_ABRE);
+        int x=posicion;
         match(PALABRA_RESERVADA_ENT);
         String v=tokensDetectados.get(posicion).getLexema();
         match(IDENTIFICADOR);
@@ -423,6 +460,7 @@ public class AnalizadorSintactico {
         match(IDENTIFICADOR);
         match(INCREMENTO);
         match(PARENTESIS_CIERRA );
+        documentador.agregar(obtenerLinea(tokensDetectados.get(posicion-1))+"SE CREA UN BUCLE DE TIPO PARA CON LAS REGLAS: "+recorrerGenerarCadena(x));
         match(LLAVE_ABRE);
         instruccionesSi(LLAVE_CIERRA);
         match(LLAVE_CIERRA);
@@ -430,7 +468,7 @@ public class AnalizadorSintactico {
     
     
     private void expresionLogica(){
-        condicion();
+        condicion();  
         Token actual=tokensDetectados.get(posicion);
         while (actual.getTipo()==AND||actual.getTipo()==OR) {
             posicion++;
@@ -495,7 +533,7 @@ public class AnalizadorSintactico {
                 
                 break;
             default:
-                throw new AssertionError("Numero invalido");
+                throw new AssertionError("Numero invalido"+mostrarLineaError(actual));
         }
     }
     
@@ -539,6 +577,10 @@ public class AnalizadorSintactico {
         return resultado;
     }
     
+    public Documentador getDocumentador(){
+        return documentador;
+    }
+    
     private String mostrarLineaError(Token tok){
         String resultado="\nEn la linea: "+tok.getLinea()+"\nEn el: "+tok.getLexema();
         return resultado;
@@ -559,5 +601,47 @@ public class AnalizadorSintactico {
         }else{
             JOptionPane.showMessageDialog(null, "NO SE PUDO AGREGAR A LA TABLA: "+tokensDetectados.get(posicion).getLinea()+" "+tokensDetectados.get(posicion).getLexema(), "OCURRIO UN ERROR", 0);
         }
+    }
+    
+    private String obtenerLinea(Token tok){
+        String res="LINEA ";
+        res=res+tok.getLinea()+": ";
+        return res;
+    }
+    
+    private String obtenerOperacion(int x){
+        String resul="";
+        double numero=0;
+        Stack<String> pila=new Stack<>();
+        while (tokensDetectados.get(x).getTipo()!=PUNTO_COMA) {
+            switch (tokensDetectados.get(x).getTipo()) {
+                case NUMERO_ENTERO:
+                    pila.add(tokensDetectados.get(x).getLexema());
+                    numero+=Double.parseDouble(tokensDetectados.get(x).getLexema());
+                    break;
+                case NUMERO_REAL:
+                    pila.add(tokensDetectados.get(x).getLexema());
+                    numero+=Double.parseDouble(tokensDetectados.get(x).getLexema());
+                    break;
+                case OPERADOR_SUMA:
+                    numero=Double.parseDouble(pila.peek());
+                default:
+                    throw new AssertionError();
+            }
+            x++;
+        }
+//        for (int i = x; i < y; i++) {
+//            resul=resul+tokensDetectados.get(posicion).getLexema();
+//        }
+        return resul;
+    }
+    
+    private String recorrerGenerarCadena(int x){
+        String res="";
+        while (tokensDetectados.get(x).getTipo()!=PARENTESIS_CIERRA) {
+            res=res+tokensDetectados.get(x).getLexema();
+            x++;
+        }
+        return res;
     }
 }
