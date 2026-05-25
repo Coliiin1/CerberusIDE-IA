@@ -148,7 +148,7 @@ public class AnalizadorSintactico {
                 case PALABRA_RESERVADA_CAD:
                 case PALABRA_RESERVADA_CAR:
                 case PALABRA_RESERVADA_BOO:
-                    declaracion(tokensDetectados.get(posicion).getTipo());
+                    declaracion(tokensDetectados.get(posicion).getTipo(),scope);
                     break;
                 default:
                     return;
@@ -210,7 +210,7 @@ public class AnalizadorSintactico {
         Token actual=tokensDetectados.get(posicion);
         switch (actual.getTipo()) {
             case PALABRA_RESERVADA_ENT: case PALABRA_RESERVADA_REA: case PALABRA_RESERVADA_CAD: case PALABRA_RESERVADA_CAR: case PALABRA_RESERVADA_BOO:
-                declaracion(actual.getTipo());
+                declaracion(actual.getTipo(),scope);
                 break;
             case PALABRA_RESERVADA_FUN:
                 funciones();
@@ -284,7 +284,7 @@ public class AnalizadorSintactico {
         
     }
     
-    private void declaracion(Tokens tipo){
+    private void declaracion(Tokens tipo, String scope){
         String identificador;
         agregarTabla();
         tipo();
@@ -294,8 +294,14 @@ public class AnalizadorSintactico {
             asignacion(tokensDetectados.get(posicion-2).getTipo(),identificador);
         }
         match(PUNTO_COMA);
-        documentador.agregar(obtenerLinea(tokensDetectados.get(posicion-1))+"SE CREA UNA VARIABLE LLAMADA: "+identificador+" DE TIPO: "+sem.buscarIde(tabla, identificador).getTipo()
-                +" CON VALOR: "+sem.buscarIde(tabla, identificador).getValor());
+        if(scope=="global"){
+            documentador.agregar(obtenerLinea(tokensDetectados.get(posicion-1))+"SE CREA UNA VARIABLE GLOBAL LLAMADA: "+identificador+" DE TIPO: "+sem.buscarIde(tabla, identificador).getTipo()
+                    +" CON VALOR: "+sem.buscarIde(tabla, identificador).getValor());
+        }else{
+            documentador.agregar(obtenerLinea(tokensDetectados.get(posicion-1))+"SE CREA UNA VARIABLE LLAMADA: "+identificador+" DE TIPO: "+sem.buscarIde(tabla, identificador).getTipo()
+                    +" CON VALOR: "+sem.buscarIde(tabla, identificador).getValor());
+        }
+
     }
     
     private void asignacionDirecta(){
