@@ -63,7 +63,7 @@ public class AnalizadorSintactico {
                 default:
             }
         }
-        mostrarParentetis();
+        mostrarParentesis();
         if (pilaParentesis.size()==0) {
             return true;
         }else{
@@ -77,7 +77,7 @@ public class AnalizadorSintactico {
         return token.getTipo().name();
     }
     
-    public void mostrarParentetis(){
+    public void mostrarParentesis(){
         for(Token token: pilaParentesis){
             System.out.println(token.getTipo().name());
         }
@@ -205,7 +205,7 @@ public class AnalizadorSintactico {
         }
     }
 
-    //cada pieza de lcodigo posible
+    //cada pieza del codigo posible
     private void instruccion(){
         Token actual=tokensDetectados.get(posicion);
         switch (actual.getTipo()) {

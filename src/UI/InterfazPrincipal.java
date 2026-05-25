@@ -24,7 +24,7 @@ import javax.swing.plaf.ColorUIResource;
  *
  * @author fabri
  */
-public class InterfzaPrincipal extends JFrame implements ActionListener {
+public class InterfazPrincipal extends JFrame implements ActionListener {
 
     AnalizadorLexico lex = new AnalizadorLexico();
     AnalizadorSintactico sin;
@@ -76,7 +76,7 @@ public class InterfzaPrincipal extends JFrame implements ActionListener {
     FileNameExtensionFilter filtro =
             new FileNameExtensionFilter("Texto (.txt)", "txt");
 
-    public InterfzaPrincipal() {
+    public InterfazPrincipal() {
 
         setTitle("CERBERUS IDE");
         setSize(1750, 950);
@@ -507,7 +507,7 @@ public class InterfzaPrincipal extends JFrame implements ActionListener {
 
             }
 
-            InterfzaPrincipal ui = new InterfzaPrincipal();
+            InterfazPrincipal ui = new InterfazPrincipal();
             ui.iniciarComponentes();
             ui.setVisible(true);
         });
@@ -522,7 +522,7 @@ public class InterfzaPrincipal extends JFrame implements ActionListener {
         if (o == itemArchivoAbrir) {
 
             selector.setFileFilter(filtro);
-            int resultado = selector.showOpenDialog(InterfzaPrincipal.this);
+            int resultado = selector.showOpenDialog(InterfazPrincipal.this);
 
             if (resultado == JFileChooser.APPROVE_OPTION) {
 
@@ -593,7 +593,7 @@ public class InterfzaPrincipal extends JFrame implements ActionListener {
             }
             // ===== SINTACTICO =====
             if (sin.comprobarParentesis()) {
-                sin.mostrarParentetis();
+                sin.mostrarParentesis();
             } else {
                 txtSintactico.setText("HAY UN PROBLEMA CON LLAVES, PARÉNTESIS Y CORCHETES");
             }
