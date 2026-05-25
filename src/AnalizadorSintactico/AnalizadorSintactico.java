@@ -243,10 +243,29 @@ public class AnalizadorSintactico {
                 segun();
                 break;
             case IDENTIFICADOR:
-                String iden=tokensDetectados.get(posicion).getLexema();
+
+                String iden =
+                    tokensDetectados.get(posicion).getLexema();
+
                 asignacionDirecta();
+
+                Identificadores variable =
+                    sem.buscarIde(tabla, iden);
+
                 match(PUNTO_COMA);
-                documentador.agregar(obtenerLinea(tokensDetectados.get(posicion-1))+"SE ASIGNA EL VALOR: "+sem.buscarIde(tabla, iden).getValor()+" A LA VARIABLE "+sem.buscarIde(tabla, iden).getIdentificador());
+
+                if(variable != null){
+
+                    documentador.agregar(
+                        obtenerLinea(tokensDetectados.get(posicion-1))
+                        + "SE ASIGNA EL VALOR: "
+                        + variable.getValor()
+                        + " A LA VARIABLE "
+                        + variable.getIdentificador()
+                    );
+
+                }
+
                 break;
             default:
                 System.out.println("no se ha puesto el token");
@@ -272,7 +291,7 @@ public class AnalizadorSintactico {
         match(IDENTIFICADOR);
         identificador=tokensDetectados.get(posicion-1).getLexema();
         if (tokensDetectados.get(posicion).getTipo()==ASIGNACION) {
-            asignacion(tokensDetectados.get(posicion-2).getTipo());
+            asignacion(tokensDetectados.get(posicion-2).getTipo(),identificador);
         }
         match(PUNTO_COMA);
         documentador.agregar(obtenerLinea(tokensDetectados.get(posicion-1))+"SE CREA UNA VARIABLE LLAMADA: "+identificador+" DE TIPO: "+sem.buscarIde(tabla, identificador).getTipo()
@@ -286,46 +305,35 @@ public class AnalizadorSintactico {
                 throw new AssertionError("NO SE ENCONTRO EL IDENTIFICADOR: "+tokensDetectados.get(posicion-1).getLexema());
             }
             Tokens tok= sem.buscarIde(tabla, tokensDetectados.get(posicion-1).getLexema()).getToken();
-            asignacion(tok);
+            asignacion(tok,tokensDetectados.get(posicion-1).getLexema());
         }
     }
-    private void asignacion(Tokens variable){
+    
+    //aqui lo que hice fue cambiar como asiganamos retonando valores numericos no tome en cnta valores como strings y caracteres 
+    private void asignacion(Tokens variable,String identificador){
         match(ASIGNACION);
-        System.out.println("LLEGA A LA ASIGNACION");
         switch (variable) {
             case PALABRA_RESERVADA_ENT:
-                match(NUMERO_ENTERO);
+                double valorEntero =
+                expresionAritmetica();
+                asignarValor(identificador,String.valueOf((int)valorEntero));
                 break;
             case PALABRA_RESERVADA_REA:
-                match(NUMERO_REAL);
+                double valorReal =
+                expresionAritmetica();
+                asignarValor(identificador,String.valueOf(valorReal));
                 break;
             case PALABRA_RESERVADA_CAD:
                 match(TIPO_CADENA);
+                asignarValor(identificador,tokensDetectados.get(posicion-1).getLexema());
                 break;
             case PALABRA_RESERVADA_CAR:
                 match(TIPO_CARACTER);
-                break;
-            case PALABRA_RESERVADA_BOO:
-                if(tokensDetectados.get(posicion).getTipo()==PALABRA_RESERVADA_VER){
-                    match(PALABRA_RESERVADA_VER);
-                }else if(tokensDetectados.get(posicion).getTipo()==PALABRA_RESERVADA_FAL){
-                    match(PALABRA_RESERVADA_FAL);
-                }else{
-                    throw new RuntimeException("Se esperaba verdadero o falso");
-                }
+                asignarValor(identificador,tokensDetectados.get(posicion-1).getLexema());
                 break;
             default:
-                falso();
-                throw new AssertionError("NO SE RECONOCIO EL TIPO "+tokensDetectados.get(posicion).getLinea());
+                throw new AssertionError("TIPO INVALIDO");
         }
-        if (tokensDetectados.get(posicion).getTipo()!=PUNTO_COMA) {
-            posicion--;
-            int x=posicion;
-            expresionAritmetica();
-        }else{
-            asignarValor( tokensDetectados.get(posicion-3).getLexema(), tokensDetectados.get(posicion-1).getLexema());   
-        }
-        
     }
     
     private void tipo(){
@@ -500,42 +508,69 @@ public class AnalizadorSintactico {
             throw new RuntimeException("Operador relacional inválido");
         }
     }
-    private void expresionAritmetica(){
-        termino();
-        while(tokensDetectados.get(posicion).getTipo()==OPERADOR_SUMA||tokensDetectados.get(posicion).getTipo()==OPERADOR_RESTA){
+    private double expresionAritmetica(){
+        double valor = termino();
+        while(
+            tokensDetectados.get(posicion).getTipo()==OPERADOR_SUMA ||tokensDetectados.get(posicion).getTipo()==OPERADOR_RESTA){
+            Tokens operador =tokensDetectados.get(posicion).getTipo();
             posicion++;
-            termino();
+            double valor2 = termino();
+            if(operador == OPERADOR_SUMA){
+                valor += valor2;
+            }else{
+                valor -= valor2;
+            }
         }
+        return valor;
     }
     
-    private void termino(){
-        factor();
-        while(tokensDetectados.get(posicion).getTipo()==OPERADOR_MULTIPLICAR||tokensDetectados.get(posicion).getTipo()==OPERADOR_DIVISION||tokensDetectados.get(posicion).getTipo()==OPERADOR_MODULO){
+    private double termino(){
+        double valor = factor();
+        while(
+            tokensDetectados.get(posicion).getTipo()==OPERADOR_MULTIPLICAR ||tokensDetectados.get(posicion).getTipo()==OPERADOR_DIVISION ||tokensDetectados.get(posicion).getTipo()==OPERADOR_MODULO){
+            Tokens operador =tokensDetectados.get(posicion).getTipo();
             posicion++;
-            factor();
+            double valor2 = factor();
+            switch(operador){
+                case OPERADOR_MULTIPLICAR:
+                    valor *= valor2;
+                    break;
+                case OPERADOR_DIVISION:
+                    valor /= valor2;
+                    break;
+                case OPERADOR_MODULO:
+                    valor %= valor2;
+                    break;
+            }
         }
+        return valor;
     }
     
-    private void factor(){
-        Token actual=tokensDetectados.get(posicion);
-        switch (actual.getTipo()) {
-            case IDENTIFICADOR:
-                if (!sem.buscar(tabla, actual.getLexema())) {
-                    throw new AssertionError("NO SE HA DECLARADO EL IDENTIFICADOR: "+actual.getLexema()+mostrarLineaError(actual));
-                }
-            case NUMERO_ENTERO: case NUMERO_REAL:
+    private double factor(){
+        Token actual = tokensDetectados.get(posicion);
+        switch(actual.getTipo()){
+            case NUMERO_ENTERO:
                 posicion++;
-                break;
+                return Double.parseDouble(actual.getLexema());
+            case NUMERO_REAL:
+                posicion++;
+                return Double.parseDouble(actual.getLexema());
+            case IDENTIFICADOR:
+                posicion++;
+                Identificadores ide =
+                sem.buscarIde(tabla, actual.getLexema());
+                if(ide == null){
+                    throw new RuntimeException("Variable no encontrada: "+ actual.getLexema());}
+                return Double.parseDouble(ide.getValor());
             case PARENTESIS_ABRE:
                 match(PARENTESIS_ABRE);
-                expresionAritmetica();
+                double valor = expresionAritmetica();
                 match(PARENTESIS_CIERRA);
-                
-                break;
+                return valor;
             default:
-                throw new AssertionError("Numero invalido"+mostrarLineaError(actual));
+                throw new RuntimeException("Factor invalido");
         }
-    }
+}
     
     
     //partes de funcionalidad de mi codigo 
@@ -630,9 +665,6 @@ public class AnalizadorSintactico {
             }
             x++;
         }
-//        for (int i = x; i < y; i++) {
-//            resul=resul+tokensDetectados.get(posicion).getLexema();
-//        }
         return resul;
     }
     
