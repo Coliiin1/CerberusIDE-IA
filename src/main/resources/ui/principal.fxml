@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Menu?>
+<?import javafx.scene.control.MenuBar?>
+<?import javafx.scene.control.MenuItem?>
+<?import javafx.scene.control.RadioMenuItem?>
+<?import javafx.scene.control.SeparatorMenuItem?>
+<?import javafx.scene.control.SplitPane?>
+<?import javafx.scene.control.Tab?>
+<?import javafx.scene.control.TabPane?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.geometry.Insets?>
+
+<BorderPane fx:id="root" xmlns="http://javafx.com/javafx/24" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="ui.InterfazPrincipalController">
+    <top>
+        <VBox>
+            <MenuBar>
+                <Menu text="Archivo">
+                    <MenuItem text="Nuevo" fx:id="itemArchivoNuevo"/>
+                    <MenuItem text="Abrir" fx:id="itemArchivoAbrir"/>
+                    <SeparatorMenuItem/>
+                    <MenuItem text="Salir" fx:id="itemOpcionesSalir"/>
+                </Menu>
+                <Menu text="Opciones">
+                    <RadioMenuItem text="Modo Claro" fx:id="radioModoClaro"/>
+                </Menu>
+            </MenuBar>
+            <HBox styleClass="barra-superior" alignment="CENTER_LEFT" spacing="12">
+                <padding>
+                    <Insets top="12" right="20" bottom="12" left="20"/>
+                </padding>
+                <Label text="CERBERUS IDE" styleClass="titulo"/>
+                <Region HBox.hgrow="ALWAYS"/>
+                <Button text="COMPILAR" fx:id="btnCompilar" styleClass="btn-compilar"/>
+            </HBox>
+        </VBox>
+    </top>
+    <center>
+        <SplitPane dividerPositions="0.72">
+            <items>
+                <VBox styleClass="panel-editor">
+                    <padding>
+                        <Insets top="10" right="5" bottom="10" left="10"/>
+                    </padding>
+                    <Label fx:id="txtArchivo" text="ARCHIVO: " styleClass="etiqueta-archivo"/>
+                    <HBox VBox.vgrow="ALWAYS">
+                        <TextArea fx:id="txtLineas" editable="false" focusTraversable="false"
+                                  wrapText="false" styleClass="lineas"/>
+                        <TextArea fx:id="txtCodigo" HBox.hgrow="ALWAYS" wrapText="false"
+                                  styleClass="editor"/>
+                    </HBox>
+                </VBox>
+                <TabPane fx:id="tabResultados" styleClass="pestanas" tabClosingPolicy="UNAVAILABLE">
+                    <tabs>
+                        <Tab text="Analizador Léxico">
+                            <content>
+                                <TextArea fx:id="txtLexico" editable="false" styleClass="resultado"/>
+                            </content>
+                        </Tab>
+                        <Tab text="Analizador Sintáctico">
+                            <content>
+                                <TextArea fx:id="txtSintactico" editable="false" styleClass="resultado"/>
+                            </content>
+                        </Tab>
+                        <Tab text="Analizador Semántico">
+                            <content>
+                                <TextArea fx:id="txtSemantico" editable="false" styleClass="resultado"/>
+                            </content>
+                        </Tab>
+                        <Tab text="Documentador">
+                            <content>
+                                <TextArea fx:id="txtDocumentador" editable="false" styleClass="resultado"/>
+                            </content>
+                        </Tab>
+                    </tabs>
+                </TabPane>
+            </items>
+        </SplitPane>
+    </center>
+</BorderPane>

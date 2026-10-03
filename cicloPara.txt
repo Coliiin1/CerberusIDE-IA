@@ -1,5 +1,7 @@
+entero a=2;
 clase main(){
 funcion principal(){
+entero af=14;
 para(entero i=4; i<10; i++){}
 }
 funcion a2(){}

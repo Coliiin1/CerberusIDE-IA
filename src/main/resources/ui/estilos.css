@@ -1,0 +1,141 @@
+.root {
+    -fx-font-family: "Segoe UI";
+    -fx-font-size: 13px;
+    -fx-background-color: -fondo;
+}
+
+/* Paleta por tema */
+.modo-oscuro {
+    -fondo: #121214;
+    -panel: #1e1e22;
+    -panel-sec: #2d2d32;
+    -texto: #ebebeb;
+    -editor: #161618;
+    -linea: #414146;
+    -acento: #0036a6;
+}
+
+.modo-claro {
+    -fondo: #f5f5f5;
+    -panel: #ffffff;
+    -panel-sec: #ebebeb;
+    -texto: #191919;
+    -editor: #fcfcfc;
+    -linea: #d2d2d2;
+    -acento: #0036a6;
+}
+
+/* Barra superior */
+.barra-superior {
+    -fx-background-color: -panel;
+}
+
+.titulo {
+    -fx-font-size: 24px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -texto;
+}
+
+.btn-compilar {
+    -fx-background-color: -acento;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-font-size: 14px;
+    -fx-pref-width: 160px;
+    -fx-pref-height: 40px;
+    -fx-cursor: hand;
+    -fx-background-radius: 4px;
+}
+
+.btn-compilar:hover {
+    -fx-background-color: derive(-acento, 25%);
+}
+
+/* Menubar */
+.menu-bar {
+    -fx-background-color: -panel;
+}
+
+.menu-bar .label,
+.menu-item .label {
+    -fx-text-fill: -texto;
+}
+
+.menu-item,
+.context-menu {
+    -fx-background-color: -panel;
+}
+
+.menu-item:focused {
+    -fx-background-color: -panel-sec;
+}
+
+/* Editor */
+.panel-editor {
+    -fx-background-color: -fondo;
+}
+
+.etiqueta-archivo {
+    -fx-text-fill: -texto;
+    -fx-font-weight: bold;
+    -fx-padding: 0 0 8 0;
+}
+
+.editor,
+.resultado {
+    -fx-control-inner-background: -editor;
+    -fx-text-fill: -texto;
+    -fx-highlight-fill: -acento;
+    -fx-font-family: "Consolas";
+}
+
+.editor {
+    -fx-font-size: 18px;
+}
+
+.resultado {
+    -fx-font-size: 16px;
+}
+
+.lineas {
+    -fx-control-inner-background: -panel-sec;
+    -fx-text-fill: -texto;
+    -fx-font-family: "Consolas";
+    -fx-font-size: 18px;
+    -fx-pref-width: 46px;
+}
+
+.lineas .scroll-bar {
+    -fx-opacity: 0;
+}
+
+/* Pestañas de resultados */
+.pestanas {
+    -fx-background-color: -panel;
+}
+
+.tab-pane .tab-header-area .tab-header-background {
+    -fx-background-color: -panel;
+}
+
+.tab-pane .tab {
+    -fx-background-color: -panel;
+}
+
+.tab-pane .tab:selected {
+    -fx-background-color: -panel-sec;
+}
+
+.tab .tab-label {
+    -fx-text-fill: -texto;
+}
+
+/* SplitPane */
+.split-pane {
+    -fx-background-color: -fondo;
+}
+
+.split-pane > .split-pane-divider {
+    -fx-background-color: -linea;
+    -fx-padding: 0 1 0 1;
+}
