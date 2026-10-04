@@ -1,5 +1,11 @@
 # AGENTS.md
 
+## Maintenance requirement (fundamental)
+- Update this file in the same change whenever an important modification is made:
+  new/removed classes or packages, architecture or compile-flow changes, new or
+  changed build/run commands, and any other non-obvious behavior an agent would
+  otherwise get wrong. Do not leave it stale.
+
 ## Project
 CerberusIDE — a JavaFX IDE/compiler for a custom Spanish-like pseudocode
 language. Maven build; UI is JavaFX (FXML + CSS). Compiler logic is pure Java
@@ -25,6 +31,8 @@ language. Maven build; UI is JavaFX (FXML + CSS). Compiler logic is pure Java
 - `AnalizadorSintactico` — recursive-descent parser; drives `Documentador`.
 - `AnalizadorSemantico` — largely a stub; UI hardcodes its pass/fail text.
 - `Archivos.Archivo` — file I/O (pure, no UI; returns booleans / throws `IOException`).
+  `crear()` auto-appends `.txt`, `guardar()` does not; both write relative to the JVM
+  working directory (not the opened file's folder).
 - `Util.Reporter` — functional interface used by analyzers to surface errors to the UI
   (replaces the old `JOptionPane` coupling). Inject via `AnalizadorLexico#setReporter`
   or the `AnalizadorSintactico` constructor.
@@ -32,5 +40,7 @@ language. Maven build; UI is JavaFX (FXML + CSS). Compiler logic is pure Java
 ## Language & testing
 - Spanish keywords only (`clase`, `principal`, `funcion`, `imprimir`, `si`, `sino`,
   `para`, `mientras`, `segun`, `retornar`, ...). Sample programs: root `*.txt` files.
-- No test suite. Errors surface via JavaFX `Alert` dialogs (and `Reporter`), not throwable output.
+- No test suite, and no lint/typecheck step. The only verification is compiling
+  (`mvnw.cmd compile` or `mvnw.cmd clean package`).
+- Errors surface via JavaFX `Alert` dialogs (and `Reporter`), not throwable output.
 - Resources are under `src/main/resources` (`Imagenes/`, `ui/`); loaded from the classpath.
