@@ -1,3 +1,6 @@
 /out/
 /dist/
 /target/
+.idea
+run.cmd
+AGENTS.md
