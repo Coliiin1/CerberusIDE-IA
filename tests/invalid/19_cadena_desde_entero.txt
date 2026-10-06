@@ -1,0 +1,5 @@
+clase Test(){
+    funcion principal(){
+        cadena s = 5;
+    }
+}

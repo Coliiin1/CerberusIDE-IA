@@ -241,7 +241,9 @@ La documentación formaliza la forma general de declaración como:
 | `caracter x;` / `caracter x = 'a';` | Sí | `IMPLEMENTED` |
 | `booleano x;` | Sí | `IMPLEMENTED` (solo declaración) |
 | `booleano x = verdadero;` | **No** (`TIPO INVALIDO`) | `CONFLICT` |
-| `entero x = 9.5;` | **Sí** (trunca a `9`) | `CONFLICT` (no hay validación de tipos) |
+| `entero x = 9.5;` | **No** (`TIPO INCOMPATIBLE`) | `IMPLEMENTED` |
+| `real r = 5;` (entero→real) | Sí (ensanche) | `IMPLEMENTED` |
+| `cadena b = a;` / `caracter c = d;` | Sí | `IMPLEMENTED` |
 
 ### 5.2 Valores documentados
 
@@ -790,7 +792,7 @@ La siguiente sección reproduce las producciones que aparecen explícitamente en
           | TIPO_CARACTER
 ```
 
-> **Reconciliación:** la inicialización es opcional. `<VALOR>` no incluye `verdadero`/`falso` en la práctica: `booleano x = verdadero;` es rechazado (`TIPO INVALIDO`). Un `entero` acepta además `NUMERO_REAL` (trunca a entero, sin validación de tipos).
+> **Reconciliación:** la inicialización es opcional. `<VALOR>` no incluye `verdadero`/`falso` en la práctica: `booleano x = verdadero;` es rechazado (`TIPO INVALIDO`). Un `entero` **no** acepta `NUMERO_REAL` (rechazado con `TIPO INCOMPATIBLE`); `real` sí acepta entero (ensanche).
 
 ### 13.3 `si`
 
@@ -997,7 +999,7 @@ Las siguientes comprobaciones existen **en el parser**, no en un analizador sem�
 
 ### 16.3 Compatibilidad de tipos
 
-La documentación establece que el análisis semántico verifica compatibilidad de tipos, pero **no está implementado**.
+La documentación establece que el análisis semántico verifica compatibilidad de tipos.
 
 Ejemplo conceptual de error:
 
@@ -1005,11 +1007,9 @@ Ejemplo conceptual de error:
 no se debe intentar sumar un texto con un número
 ```
 
-**Reconciliación:** `entero x = 9.5;` es **aceptado** y trunca a `9`. Sumar un texto con un número produce una excepción en tiempo de análisis (`NumberFormatException`), no un error semántico tipado.
+**Reconciliación (implementado):** las expresiones llevan tipo (entero/real). Reglas: `entero←entero`; `real←entero|real`; `cadena←cadena`; `caracter←caracter`. `entero x = 9.5;` se rechaza (`TIPO INCOMPATIBLE`); sumar un texto con un número se rechaza con `TIPO INCOMPATIBLE` (ya no lanza `NumberFormatException`). El tipo `booleano` queda pendiente (6.3).
 
-No se define en el documento una tabla exhaustiva de conversiones implícitas o explícitas.
-
-**Estado:** `PARTIAL`/no implementado.
+**Estado:** `IMPLEMENTED` (entero/real/cadena/caracter).
 
 ---
 
@@ -1224,7 +1224,7 @@ Una IA que genere Cerberus debe seguir estas reglas.
 13. En `segun`, no usar `predeterminado` y terminar cada `caso` con `salir;`.
 14. No inicializar variables `booleano` (solo `booleano x;`).
 15. No usar operadores compuestos (`+=`, `-=`, `*=`, `/=`), `--` ni `!`.
-16. No asumir validación de tipos: no declarar `entero` con literales reales (el compilador trunca, pero no debe enseñarse como comportamiento correcto).
+16. No declarar `entero` con literales o expresiones reales: el compilador lo rechaza (`TIPO INCOMPATIBLE`).
 
 ### 20.2 Comparaciones con Java
 
@@ -1376,7 +1376,7 @@ Las siguientes características requieren mayor definición antes de utilizarlas
 | Operadores compuestos (`+=`, `-=`, `*=`, `/=`), `--` | `PARTIAL`/no implementado | No tokenizados/usados correctamente; rechazados. |
 | Precedencia completa | `PARTIAL` | Se describe precedencia aritmética, pero no existe tabla completa. |
 | Inicialización booleana | `PARTIAL` | `booleano x = verdadero;` falla (`TIPO INVALIDO`). |
-| Validación de tipos | `PARTIAL`/no implementado | `entero x = 9.5;` se acepta y trunca. |
+| Validación de tipos | `IMPLEMENTED` | `entero x = 9.5;` rechazado (`TIPO INCOMPATIBLE`); `booleano` pendiente. |
 | Scopes | `IMPLEMENTED` | Pila global/función/bloque; shadowing permitido, redeclaración solo en el mismo scope. |
 | `retornar` | `PARTIAL` | Tokenizado, sin gramática. |
 | `predeterminado` en `segun` | `PARTIAL`/no implementado | Documentado pero rechazado. |
@@ -1443,7 +1443,7 @@ Verificación dinámica con `audit.CompilerProbe` (ver `CerberusAI_COMPILER_AUDI
 |---|---|---|
 | `clase programa {` | exige `clase programa()` | `CONFLICT` |
 | `booleano activo = verdadero;` | solo `booleano activo;` | `CONFLICT` |
-| `entero x = 9.5;` es error de tipo | aceptado (trunca a `9`) | `CONFLICT` |
+| `entero x = 9.5;` es error de tipo | rechazado | `IMPLEMENTED` |
 | `para(i = 0; ...)` | exige `para(entero i = 0; ...)` | `CONFLICT` |
 | `segun` con `predeterminado` | no implementado | `CONFLICT` |
 | `salir` sin `;` | exige `salir;` | `CONFLICT` |

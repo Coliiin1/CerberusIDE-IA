@@ -196,18 +196,18 @@ Checklist de lo que funciona hoy (verificado con la suite, 32/32 casos):
 
 ---
 
-### 2.11 Validación de tipos (semántica) — `ALTA`
+### 2.11 Validación de tipos (semántica) — `ALTA` — **HECHO**
 
-- **Dónde falta:** `AnalizadorSemantico` es un stub (`retornarTipo`, `buscar`, `buscarIde`, `verificarIdentificador`). `asignacion()` trunca con `(int)` sin comprobar tipos.
-- **Qué falta:** reglas de compatibilidad de tipos (asignación, operadores, condiciones, retorno). No es BNF sino semántica.
+**Estado:** `HECHO` (entero/real/cadena/caracter). `Tipo` enum + `compatible()` en `AnalizadorSemantico`; expresiones tipadas (`Expresion`) en el parser. Reglas: `entero←entero`; `real←entero|real`; `cadena←cadena`; `caracter←caracter`. `entero x = 9.5;` → `TIPO INCOMPATIBLE`. RHS de `cadena`/`caracter` acepta variables del mismo tipo. Pendiente: `booleano` (2.4/2.5) y `retornar` contra tipo de retorno (2.2/2.3). Verificado por la suite (`17`–`21`, `13`).
 
-**Reglas mínimas propuestas:**
+<details>
+<summary>Descripción original del hueco</summary>
 
-1. `entero` no acepta literales reales sin conversión explícita (hoy trunca: `entero x = 9.5;`).
-2. `+ - * / %` solo sobre `entero`/`real`.
-3. Condiciones y `&`/`|`/`!` solo sobre booleanos.
-4. `retornar` debe coincidir con el tipo de retorno declarado.
-5. No redeclarar en el mismo scope (hoy la búsqueda es global, ver 2.12).
+- **Dónde falta:** `AnalizadorSemantico` era un stub; `asignacion()` truncaba con `(int)` sin comprobar tipos.
+- **Qué falta:** reglas de compatibilidad de tipos (asignación, operadores, condiciones, retorno).
+- Reglas propuestas (parcialmente cubiertas): 1) `entero` no acepta reales; 2) `+ - * / %` solo numéricos; 3) condiciones booleanas (pendiente 2.5); 4) `retornar` (pendiente 2.3); 5) no redeclarar en el mismo scope (HECHO en 2.12).
+
+</details>
 
 ---
 
@@ -330,7 +330,7 @@ Estas se marcarían como `PENDING`/`DOCUMENTED` en `language_spec.md` y **no** g
 | 2.7 | Asignación compuesta `+= -= *= /=` | ALTA | PENDIENTE |
 | 2.9 | `para` generalizado | ALTA | PENDIENTE |
 | 2.10 | `segun` con `predeterminado` | ALTA | PENDIENTE |
-| 2.11 | Validación de tipos | ALTA | PENDIENTE |
+| 2.11 | Validación de tipos | ALTA | HECHO |
 | 2.12 | Scopes reales | ALTA | HECHO |
 | 2.8 | Decremento `--` | MEDIA | PENDIENTE |
 | 2.13 | Llamada a funciones | MEDIA | PENDIENTE |

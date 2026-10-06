@@ -81,6 +81,60 @@ public class AnalizadorSemantico {
         }
         return true;
     }
-    
+
+    /** Mapea un token de tipo (palabra reservada) al tipo semantico. */
+    public Tipo tipoDeToken(Tokens token){
+        switch (token) {
+            case PALABRA_RESERVADA_ENT: return Tipo.ENTERO;
+            case PALABRA_RESERVADA_REA: return Tipo.REAL;
+            case PALABRA_RESERVADA_CAD: return Tipo.CADENA;
+            case PALABRA_RESERVADA_CAR: return Tipo.CARACTER;
+            case PALABRA_RESERVADA_BOO: return Tipo.BOOLEANO;
+            default: return null;
+        }
+    }
+
+    /** Mapea el tipo textual guardado en un identificador al tipo semantico. */
+    public Tipo tipoDeIdentificador(Identificadores identificador){
+        return tipoDeNombre(identificador.getTipo());
+    }
+
+    public Tipo tipoDeNombre(String tipo){
+        if (tipo == null) {
+            return null;
+        }
+        switch (tipo) {
+            case "ENTERO": return Tipo.ENTERO;
+            case "REAL": return Tipo.REAL;
+            case "CADENA": return Tipo.CADENA;
+            case "CARACTER": return Tipo.CARACTER;
+            case "BOLEANO":
+            case "BOOLEANO": return Tipo.BOOLEANO;
+            default: return null;
+        }
+    }
+
+    /**
+     * Reglas de compatibilidad de asignacion (tipo destino - tipo origen):
+     *   entero   <- entero
+     *   real     <- entero | real
+     *   cadena   <- cadena
+     *   caracter <- caracter
+     *   booleano <- booleano
+     */
+    public boolean compatible(Tipo destino, Tipo origen){
+        if (destino == null || origen == null) {
+            return false;
+        }
+        switch (destino) {
+            case ENTERO: return origen == Tipo.ENTERO;
+            case REAL: return origen == Tipo.ENTERO || origen == Tipo.REAL;
+            case CADENA: return origen == Tipo.CADENA;
+            case CARACTER: return origen == Tipo.CARACTER;
+            case BOOLEANO: return origen == Tipo.BOOLEANO;
+            default: return false;
+        }
+    }
+
 
 }

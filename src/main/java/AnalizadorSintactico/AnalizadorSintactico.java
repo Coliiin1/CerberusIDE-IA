@@ -5,6 +5,7 @@ import AnalizadorLexico.Token;
 import AnalizadorLexico.Tokens;
 import static AnalizadorLexico.Tokens.*;
 import AnalizadorSemantico.AnalizadorSemantico;
+import AnalizadorSemantico.Tipo;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
@@ -36,6 +37,17 @@ public class AnalizadorSintactico {
         tabla=new ArrayList<>();
         sem=new AnalizadorSemantico();
         documentador=new Documentador();
+    }
+
+    /** Valor de una expresion aritmetica con su tipo (entero o real). */
+    private static final class Expresion {
+        final double valor;
+        final boolean esReal;
+
+        Expresion(double valor, boolean esReal) {
+            this.valor = valor;
+            this.esReal = esReal;
+        }
     }
 
     private void reportar(String mensaje) {
@@ -353,31 +365,71 @@ public class AnalizadorSintactico {
         }
     }
     
-    //aqui lo que hice fue cambiar como asiganamos retonando valores numericos no tome en cnta valores como strings y caracteres 
     private void asignacion(Tokens variable,String identificador){
         match(ASIGNACION);
         switch (variable) {
             case PALABRA_RESERVADA_ENT:
-                double valorEntero =
-                expresionAritmetica();
-                asignarValor(identificador,String.valueOf((int)valorEntero));
+                Expresion valorEntero = expresionAritmetica();
+                if (valorEntero.esReal) {
+                    throw new RuntimeException("TIPO INCOMPATIBLE: no se puede asignar REAL a ENTERO en "+identificador);
+                }
+                asignarValor(identificador,String.valueOf((int)valorEntero.valor));
                 break;
             case PALABRA_RESERVADA_REA:
-                double valorReal =
-                expresionAritmetica();
-                asignarValor(identificador,String.valueOf(valorReal));
+                Expresion valorReal = expresionAritmetica();
+                asignarValor(identificador,String.valueOf(valorReal.valor));
                 break;
             case PALABRA_RESERVADA_CAD:
-                match(TIPO_CADENA);
-                asignarValor(identificador,tokensDetectados.get(posicion-1).getLexema());
+                asignarValor(identificador,expresionCadena(identificador));
                 break;
             case PALABRA_RESERVADA_CAR:
-                match(TIPO_CARACTER);
-                asignarValor(identificador,tokensDetectados.get(posicion-1).getLexema());
+                asignarValor(identificador,expresionCaracter(identificador));
                 break;
             default:
                 throw new AssertionError("TIPO INVALIDO");
         }
+    }
+
+    /** Lado derecho de una asignacion a cadena: literal o variable de tipo cadena. */
+    private String expresionCadena(String identificador){
+        Token actual = tokensDetectados.get(posicion);
+        if (actual.getTipo() == TIPO_CADENA) {
+            posicion++;
+            return actual.getLexema();
+        }
+        if (actual.getTipo() == IDENTIFICADOR) {
+            posicion++;
+            Identificadores ide = sem.buscarIde(tabla, actual.getLexema(), scopeActual());
+            if (ide == null) {
+                throw new RuntimeException("Variable no encontrada: "+ actual.getLexema());
+            }
+            if (sem.tipoDeIdentificador(ide) != Tipo.CADENA) {
+                throw new RuntimeException("TIPO INCOMPATIBLE: no se puede asignar "+ide.getTipo()+" a CADENA en "+identificador);
+            }
+            return ide.getValor();
+        }
+        throw new RuntimeException("TIPO INCOMPATIBLE: se esperaba CADENA en "+identificador);
+    }
+
+    /** Lado derecho de una asignacion a caracter: literal o variable de tipo caracter. */
+    private String expresionCaracter(String identificador){
+        Token actual = tokensDetectados.get(posicion);
+        if (actual.getTipo() == TIPO_CARACTER) {
+            posicion++;
+            return actual.getLexema();
+        }
+        if (actual.getTipo() == IDENTIFICADOR) {
+            posicion++;
+            Identificadores ide = sem.buscarIde(tabla, actual.getLexema(), scopeActual());
+            if (ide == null) {
+                throw new RuntimeException("Variable no encontrada: "+ actual.getLexema());
+            }
+            if (sem.tipoDeIdentificador(ide) != Tipo.CARACTER) {
+                throw new RuntimeException("TIPO INCOMPATIBLE: no se puede asignar "+ide.getTipo()+" a CARACTER en "+identificador);
+            }
+            return ide.getValor();
+        }
+        throw new RuntimeException("TIPO INCOMPATIBLE: se esperaba CARACTER en "+identificador);
     }
     
     private void tipo(){
@@ -562,63 +614,77 @@ public class AnalizadorSintactico {
             throw new RuntimeException("Operador relacional inválido");
         }
     }
-    private double expresionAritmetica(){
-        double valor = termino();
+    private Expresion expresionAritmetica(){
+        Expresion actual = termino();
         while(
             tokensDetectados.get(posicion).getTipo()==OPERADOR_SUMA ||tokensDetectados.get(posicion).getTipo()==OPERADOR_RESTA){
             Tokens operador =tokensDetectados.get(posicion).getTipo();
             posicion++;
-            double valor2 = termino();
+            Expresion siguiente = termino();
+            boolean esReal = actual.esReal || siguiente.esReal;
+            double valor;
             if(operador == OPERADOR_SUMA){
-                valor += valor2;
+                valor = actual.valor + siguiente.valor;
             }else{
-                valor -= valor2;
+                valor = actual.valor - siguiente.valor;
             }
+            actual = new Expresion(valor, esReal);
         }
-        return valor;
+        return actual;
     }
     
-    private double termino(){
-        double valor = factor();
+    private Expresion termino(){
+        Expresion actual = factor();
         while(
             tokensDetectados.get(posicion).getTipo()==OPERADOR_MULTIPLICAR ||tokensDetectados.get(posicion).getTipo()==OPERADOR_DIVISION ||tokensDetectados.get(posicion).getTipo()==OPERADOR_MODULO){
             Tokens operador =tokensDetectados.get(posicion).getTipo();
             posicion++;
-            double valor2 = factor();
+            Expresion siguiente = factor();
+            boolean esReal = actual.esReal || siguiente.esReal;
+            double valor;
             switch(operador){
                 case OPERADOR_MULTIPLICAR:
-                    valor *= valor2;
+                    valor = actual.valor * siguiente.valor;
                     break;
                 case OPERADOR_DIVISION:
-                    valor /= valor2;
+                    valor = actual.valor / siguiente.valor;
                     break;
-                case OPERADOR_MODULO:
-                    valor %= valor2;
+                default:
+                    valor = actual.valor % siguiente.valor;
                     break;
             }
+            actual = new Expresion(valor, esReal);
         }
-        return valor;
+        return actual;
     }
     
-    private double factor(){
+    private Expresion factor(){
         Token actual = tokensDetectados.get(posicion);
         switch(actual.getTipo()){
             case NUMERO_ENTERO:
                 posicion++;
-                return Double.parseDouble(actual.getLexema());
+                return new Expresion(Double.parseDouble(actual.getLexema()), false);
             case NUMERO_REAL:
                 posicion++;
-                return Double.parseDouble(actual.getLexema());
+                return new Expresion(Double.parseDouble(actual.getLexema()), true);
             case IDENTIFICADOR:
                 posicion++;
                 Identificadores ide =
                 sem.buscarIde(tabla, actual.getLexema(), scopeActual());
                 if(ide == null){
-                    throw new RuntimeException("Variable no encontrada: "+ actual.getLexema());}
-                return Double.parseDouble(ide.getValor());
+                    throw new RuntimeException("Variable no encontrada: "+ actual.getLexema());
+                }
+                Tipo tipo = sem.tipoDeIdentificador(ide);
+                if(tipo != Tipo.ENTERO && tipo != Tipo.REAL){
+                    throw new RuntimeException("TIPO INCOMPATIBLE: la variable "+actual.getLexema()+" no es numerica");
+                }
+                if(ide.getValor() == null){
+                    throw new RuntimeException("Variable sin valor: "+ actual.getLexema());
+                }
+                return new Expresion(Double.parseDouble(ide.getValor()), tipo == Tipo.REAL);
             case PARENTESIS_ABRE:
                 match(PARENTESIS_ABRE);
-                double valor = expresionAritmetica();
+                Expresion valor = expresionAritmetica();
                 match(PARENTESIS_CIERRA);
                 return valor;
             default:

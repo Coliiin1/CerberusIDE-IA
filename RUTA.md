@@ -32,7 +32,7 @@
 | # | Feature | Ref. `GramaticasAttendance.md` | Estado |
 |---|---|---|---|
 | 6.1 | Scopes reales | 2.12 | HECHO |
-| 6.2 | Validación de tipos | 2.11 | PENDIENTE |
+| 6.2 | Validación de tipos | 2.11 | HECHO |
 | 6.3 | Booleano: inicialización + condición | 2.4, 2.5 | PENDIENTE |
 | 6.4 | Negación `!` | 2.6 | PENDIENTE |
 | 6.5 | Asignación compuesta `+= -= *= /=` | 2.7 | PENDIENTE |

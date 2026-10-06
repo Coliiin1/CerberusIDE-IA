@@ -1,0 +1,5 @@
+clase Test(){
+    funcion principal(){
+        entero x = 9.5;
+    }
+}

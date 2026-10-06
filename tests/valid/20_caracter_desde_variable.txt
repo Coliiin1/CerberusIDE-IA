@@ -1,0 +1,7 @@
+clase Test(){
+    funcion principal(){
+        caracter a = 'x';
+        caracter b = a;
+        imprimir(b);
+    }
+}
