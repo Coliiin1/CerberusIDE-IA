@@ -385,6 +385,9 @@ public class AnalizadorSintactico {
             case PALABRA_RESERVADA_CAR:
                 asignarValor(identificador,expresionCaracter(identificador));
                 break;
+            case PALABRA_RESERVADA_BOO:
+                asignarValor(identificador,expresionBooleana(identificador));
+                break;
             default:
                 throw new AssertionError("TIPO INVALIDO");
         }
@@ -430,6 +433,27 @@ public class AnalizadorSintactico {
             return ide.getValor();
         }
         throw new RuntimeException("TIPO INCOMPATIBLE: se esperaba CARACTER en "+identificador);
+    }
+
+    /** Lado derecho de una asignacion a booleano: verdadero/falso o variable booleana. */
+    private String expresionBooleana(String identificador){
+        Token actual = tokensDetectados.get(posicion);
+        if (actual.getTipo() == PALABRA_RESERVADA_VER || actual.getTipo() == PALABRA_RESERVADA_FAL) {
+            posicion++;
+            return actual.getLexema();
+        }
+        if (actual.getTipo() == IDENTIFICADOR) {
+            posicion++;
+            Identificadores ide = sem.buscarIde(tabla, actual.getLexema(), scopeActual());
+            if (ide == null) {
+                throw new RuntimeException("Variable no encontrada: "+ actual.getLexema());
+            }
+            if (sem.tipoDeIdentificador(ide) != Tipo.BOOLEANO) {
+                throw new RuntimeException("TIPO INCOMPATIBLE: no se puede asignar "+ide.getTipo()+" a BOOLEANO en "+identificador);
+            }
+            return ide.getValor();
+        }
+        throw new RuntimeException("TIPO INCOMPATIBLE: se esperaba BOOLEANO en "+identificador);
     }
     
     private void tipo(){
@@ -582,20 +606,62 @@ public class AnalizadorSintactico {
     
     
     private void expresionLogica(){
-        condicion();  
-        Token actual=tokensDetectados.get(posicion);
-        while (actual.getTipo()==AND||actual.getTipo()==OR) {
+        condicion();
+        while (tokensDetectados.get(posicion).getTipo()==AND || tokensDetectados.get(posicion).getTipo()==OR) {
             posicion++;
             condicion();
         }
     }
     
     private void condicion(){
+        if (esPrimarioBooleano()) {
+            primarioBooleano();
+            Token actual = tokensDetectados.get(posicion);
+            if (actual.getTipo()==IGUAL || actual.getTipo()==DIFERENTE) {
+                posicion++;
+                primarioBooleano();
+            }
+            return;
+        }
         expresionAritmetica();
 
         operadorRelacional();
 
         expresionAritmetica();
+    }
+
+    /** true si el token actual es verdadero/falso o un identificador de tipo booleano. */
+    private boolean esPrimarioBooleano(){
+        Token actual = tokensDetectados.get(posicion);
+        if (actual.getTipo()==PALABRA_RESERVADA_VER || actual.getTipo()==PALABRA_RESERVADA_FAL) {
+            return true;
+        }
+        if (actual.getTipo()==IDENTIFICADOR) {
+            Identificadores ide = sem.buscarIde(tabla, actual.getLexema(), scopeActual());
+            return ide != null && sem.tipoDeIdentificador(ide) == Tipo.BOOLEANO;
+        }
+        return false;
+    }
+
+    /** Consume verdadero/falso o un identificador de tipo booleano. */
+    private void primarioBooleano(){
+        Token actual = tokensDetectados.get(posicion);
+        if (actual.getTipo()==PALABRA_RESERVADA_VER || actual.getTipo()==PALABRA_RESERVADA_FAL) {
+            posicion++;
+            return;
+        }
+        if (actual.getTipo()==IDENTIFICADOR) {
+            Identificadores ide = sem.buscarIde(tabla, actual.getLexema(), scopeActual());
+            if (ide == null) {
+                throw new RuntimeException("Variable no encontrada: "+ actual.getLexema());
+            }
+            if (sem.tipoDeIdentificador(ide) != Tipo.BOOLEANO) {
+                throw new RuntimeException("TIPO INCOMPATIBLE: "+actual.getLexema()+" no es booleano");
+            }
+            posicion++;
+            return;
+        }
+        throw new RuntimeException("TIPO INCOMPATIBLE: se esperaba un valor booleano");
     }
     
     private void operadorRelacional(){

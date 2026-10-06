@@ -67,10 +67,10 @@ Operadores/tokenización presentes:
 - `real`: IMPLEMENTED.
 - `cadena`: IMPLEMENTED para asignación simple e impresión.
 - `caracter`: IMPLEMENTED para asignación simple e impresión.
-- `booleano`: PARTIAL/CONFLICT. `booleano x;` se acepta, pero `booleano x = verdadero;` falla con `TIPO INVALIDO` porque `asignacion()` no tiene caso para `PALABRA_RESERVADA_BOO`. `AnalizadorSemantico.retornarTipo()` tampoco contempla booleano.
+- `booleano`: IMPLEMENTED. `booleano x;` y `booleano x = verdadero;`/`= falso;` se aceptan; RHS admite también una variable booleana. El booleano participa como condición (`si(activo)`, `si(activo == verdadero)`) y en `&`/`|`. No participa en aritmética (`entero y = b + 1;` → `TIPO INCOMPATIBLE`).
 - `nulo` y `vacio`: DOCUMENTED/PARTIAL. Reconocidos léxicamente, sin semántica completa. `entero x = nulo;` falla con `Factor invalido`.
 
-**Validación de tipos (implementada):** las expresiones llevan tipo (entero/real) y las asignaciones se validan: `entero x = 9.5;` es **rechazado** (`TIPO INCOMPATIBLE: no se puede asignar REAL a ENTERO`). `real` acepta entero y real; `cadena`/`caracter` aceptan literales o variables del mismo tipo. `booleano` sigue pendiente (ver 6.3).
+**Validación de tipos (implementada):** las expresiones llevan tipo (entero/real) y las asignaciones se validan: `entero x = 9.5;` es **rechazado** (`TIPO INCOMPATIBLE: no se puede asignar REAL a ENTERO`). `real` acepta entero y real; `cadena`/`caracter`/`booleano` aceptan literales o variables del mismo tipo.
 
 ### Clase y programa
 
@@ -94,7 +94,7 @@ Estado: IMPLEMENTED para funciones sin parámetros y sin retorno funcional compl
 
 ### Variables y asignación
 
-Declaraciones aceptadas: `entero x;`, `real x;`, `cadena x;`, `caracter x;`, `booleano x;`, con inicialización opcional mediante `=`. Las asignaciones numéricas pasan por `expresionAritmetica()`. Las de cadena/carácter aceptan sus tokens. Las booleanas no están implementadas.
+Declaraciones aceptadas: `entero x;`, `real x;`, `cadena x;`, `caracter x;`, `booleano x;`, con inicialización opcional mediante `=`. Las asignaciones numéricas pasan por `expresionAritmetica()`; cadena/carácter/booleano aceptan literal o variable del mismo tipo.
 
 ### `imprimir`
 
@@ -140,17 +140,17 @@ Las expresiones lógicas se construyen a partir de condiciones y operadores `&` 
 
 **`factor()` tipado:** identifica el tipo de cada operando. Un identificador `cadena`/`caracter` en aritmética se rechaza con `TIPO INCOMPATIBLE: la variable X no es numerica` (ya no lanza `NumberFormatException`).
 
-Estado: IMPLEMENTED para el subconjunto anterior; PARTIAL para lógica completa (sin `!`, sin booleano desnudo como condición).
+Estado: IMPLEMENTED para el subconjunto anterior (incluye booleanos desnudos y comparaciones booleanas `==`/`!=`); `!` pendiente.
 
 ### Tabla de símbolos / semántica
 
 El parser mantiene `ArrayList<Identificadores> tabla` y usa `AnalizadorSemantico` para buscar identificadores, obtener información, detectar referencias inexistentes y asociar tipo/valor.
 
-- `AnalizadorSemantico` implementa tipo (`Tipo`), compatibilidad de asignación, búsqueda por scope y `existeEnScope()`. El parser usa expresiones tipadas (`Expresion`) y valida asignaciones. El `booleano` aún no participa (ver 6.3). La UI sigue mostrando "AÚN NO IMPLEMENTADO" (pendiente de UI, fuera del compilador).
+- `AnalizadorSemantico` implementa tipo (`Tipo`), compatibilidad de asignación, búsqueda por scope y `existeEnScope()`. El parser usa expresiones tipadas (`Expresion`) y valida asignaciones, además de condiciones booleanas (`condicion()`/`primarioBooleano()`). `&`/`|` corregidos. La UI sigue mostrando "AÚN NO IMPLEMENTADO" (pendiente de UI, fuera del compilador).
 - **Scopes implementados:** el parser mantiene una pila de scopes (`global` → función → bloque) y `buscar()`/`buscarIde()` resuelven al identificador visible más interno. Se permite *shadowing* (una variable local puede ocultar una global o de un bloque externo). La redeclaración solo se rechaza dentro del **mismo** scope (`YA EXISTE ESE IDENTIFICADOR`). Verificado por la suite (`17_shadowing_global_local`, `18_shadowing_bloque`, `16_redeclaracion_scope`).
 - **`generarTabla()` del lexer es código muerto:** reporta `"MAMO"` y tiene la inserción comentada; la tabla real la construye el parser en `agregarTabla()`.
 
-Estado: `IMPLEMENTED` para scopes (global/función/bloque con shadowing) y para validación de tipos (entero/real/cadena/caracter); `PENDING` para booleanos.
+Estado: `IMPLEMENTED` para scopes (global/función/bloque con shadowing), validación de tipos (entero/real/cadena/caracter) y booleanos (inicialización y condiciones).
 
 ### POO
 
@@ -170,7 +170,9 @@ Resultados de `audit.CompilerProbe` (32/33 casos coinciden; la única discrepanc
 | `entero x = 5;` / `entero x;` | Sí | — |
 | `real x = 2.5;` / `cadena x = "hola";` / `caracter x = 'a';` | Sí | — |
 | `booleano x;` | Sí | — |
-| `booleano x = verdadero;` | No | `TIPO INVALIDO` |
+| `booleano x = verdadero;` | Sí | — |
+| `si(activo)` / `si(activo == verdadero)` | Sí | — |
+| `si(edad >= 18 & activo == verdadero)` | Sí | — |
 | `entero x = 9.5;` | No | `TIPO INCOMPATIBLE: no se puede asignar REAL a ENTERO` |
 | `para(entero i = 0; i < 10; i++){...}` | Sí | — |
 | `para(i = 0; ...)` | No | `Se esperaba PALABRA_RESERVADA_ENT` |
@@ -190,7 +192,7 @@ Resultados de `audit.CompilerProbe` (32/33 casos coinciden; la única discrepanc
 | Característica | `language_spec` / PDF | Compilador real | Estado |
 |---|---|---|---|
 | `clase Nombre {` | ejemplos sin paréntesis | exige `clase Nombre()` | CONFLICT |
-| `booleano activo = verdadero;` | documentado | solo `booleano x;` | CONFLICT |
+| `booleano activo = verdadero;` | documentado | implementado | `IMPLEMENTED` |
 | `entero x = 9.5;` | error de tipo | rechazado | `IMPLEMENTED` |
 | `para(i = 0; ...)` | documentado | exige `para(entero i = 0; ...)` | CONFLICT |
 | `segun` con `predeterminado` | documentado | no implementado | CONFLICT |
@@ -210,19 +212,19 @@ Entradas de `cerberus_dataset_v1.jsonl` inválidas contra el compilador real:
 - **#16** `entero [] arreglo1;` → arreglos no implementados.
 - **#19** `clase programa{` → falta `()`.
 - **#20** `clase MiPrograma() { instrucciones }` → placeholder no ejecutable.
-- **#5** `booleano activo = verdadero;` → inicialización booleana no soportada.
+- **#5** `booleano activo = verdadero;` → ahora **válido** (inicialización booleana implementada).
 - **#46** afirma que `entero edad = 9.5;` es error → ahora **coincide** con el compilador (lo rechaza).
 
 ## Riesgos para el dataset de IA
 
 1. No usar la documentación como única fuente de verdad.
 2. No generar ejemplos de POO avanzada hasta confirmar implementación.
-3. No entrenar booleanos como si fueran completamente funcionales.
+3. Booleanos ya funcionales (inicialización y condiciones); no usarlos en aritmética.
 4. No generar `para` genérico.
 5. No generar `predeterminado` hasta confirmar su soporte real.
 6. No asumir parámetros o retornos en funciones.
-7. No asumir operadores compuestos (`+=`, `-=`, `*=`, `/=`) ni `!`.
-8. La validación de tipos ya rechaza `entero x = 9.5;`; el tipo `booleano` sigue pendiente.
+7. No asumir operadores compuestos (`+=`, `-=`, `*=`, `/=`); falta `!`.
+8. Validación de tipos y booleanos implementados; pendientes `!`, `retornar`, parámetros y `predeterminado`.
 9. Mantener una lista explícita de características futuras.
 
 ## Próximo paso técnico

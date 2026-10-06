@@ -1,5 +1,5 @@
 clase Test(){
     funcion principal(){
-        booleano x = verdadero;
+        booleano activo = verdadero;
     }
 }

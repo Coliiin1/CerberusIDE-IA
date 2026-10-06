@@ -1,0 +1,6 @@
+clase Test(){
+    funcion principal(){
+        booleano b = verdadero;
+        entero y = b + 1;
+    }
+}

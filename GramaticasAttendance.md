@@ -19,7 +19,7 @@
 Checklist de lo que funciona hoy (verificado con la suite, 32/32 casos):
 
 - `clase Nombre() { ... }` (paréntesis obligatorios).
-- Declaraciones `entero / real / cadena / caracter` con inicialización opcional; `booleano` solo declaración.
+- Declaraciones `entero / real / cadena / caracter / booleano` con inicialización opcional; condiciones booleanas (desnudas y comparaciones) y `&`/`|`.
 - Variables globales antes de `clase`.
 - Asignación directa numérica (`x = expr;`).
 - `imprimir(expr ( + expr)*);` con `IDENTIFICADOR`, `TIPO_CADENA`, `TIPO_CARACTER`, `NUMERO_ENTERO`, `NUMERO_REAL`.
@@ -81,36 +81,31 @@ Checklist de lo que funciona hoy (verificado con la suite, 32/32 casos):
 
 ---
 
-### 2.4 Inicialización booleana — `ALTA`
+### 2.4 Inicialización booleana — `ALTA` — **HECHO**
+
+**Estado:** `HECHO`. `asignacion()` tiene case `PALABRA_RESERVADA_BOO`; RHS admite `verdadero`/`falso` o variable booleana (valida con `sem.compatible`). Verificado por `23_booleano_init`, `26_booleano_desde_variable`.
+
+<details>
+<summary>Descripción original del hueco</summary>
 
 - **Token:** `PALABRA_RESERVADA_BOO`, `PALABRA_RESERVADA_VER`, `PALABRA_RESERVADA_FAL` (lexer OK).
-- **Dónde falta:** `AnalizadorSintactico.asignacion()` — el `switch` cubre `ENT`, `REA`, `CAD`, `CAR` pero **no** `BOO`.
-- **Qué falta:** aceptar `verdadero`/`falso` como valor y almacenarlo.
+- **Dónde falta:** `AnalizadorSintactico.asignacion()` — el `switch` cubría `ENT`, `REA`, `CAD`, `CAR` pero no `BOO`.
 
-**BNF propuesto:**
-
-```text
-<VALOR_BOOLEANO> ::= "verdadero" | "falso"
-
-<DECLARACION> ::= "booleano" IDENTIFICADOR [ "=" <VALOR_BOOLEANO> ] ";"
-```
+</details>
 
 ---
 
-### 2.5 Booleano como condición — `ALTA`
+### 2.5 Booleano como condición — `ALTA` — **HECHO**
 
-- **Dónde falta:** `AnalizadorSintactico.condicion()` y `factor()`. Hoy toda condición exige `exprAritmetica opRelacional exprAritmetica`; `si(verdadero)` o `si(activo)` fallan (`Factor invalido`).
-- **Qué falta:** permitir una expresión lógica primaria (valor booleano o identificador booleano) como condición completa.
+**Estado:** `HECHO`. `condicion()` acepta booleano desnudo (`si(activo)`, `si(verdadero)`) y comparaciones booleanas (`activo == verdadero`, `activo != falso`). Además se corrigió `expresionLogica()` (el `while` no releía el token), por lo que `&`/`|` funcionan. Verificado por `24_booleano_condicion`, `25_booleano_comparacion`, `27_logico_and`.
 
-**BNF propuesto:**
+<details>
+<summary>Descripción original del hueco</summary>
 
-```text
-<CONDICION> ::= <EXPRESION_LOGICA_PRIMARIA> [ <OPERADOR_RELACIONAL> <EXPRESION_ARITMETICA> ]
+- **Dónde falta:** `condicion()`/`factor()` exigían `exprAritmetica opRelacional exprAritmetica`; `si(verdadero)`/`si(activo)` fallaban.
+- **BNF objetivo:** `<CONDICION> ::= <EXPRESION_LOGICA_PRIMARIA> [ ("=="|"!=") <EXPRESION_LOGICA_PRIMARIA> ] | <EXPRESION_ARITMETICA> opRelacional <EXPRESION_ARITMETICA>`.
 
-<EXPRESION_LOGICA_PRIMARIA> ::= <EXPRESION_ARITMETICA>
-                               | <VALOR_BOOLEANO>
-                               | IDENTIFICADOR   // de tipo booleano
-```
+</details>
 
 ---
 
@@ -324,8 +319,8 @@ Estas se marcarían como `PENDING`/`DOCUMENTED` en `language_spec.md` y **no** g
 | 2.1 | Parámetros de funciones | ALTA | PENDIENTE |
 | 2.2 | Tipo de retorno | ALTA | PENDIENTE |
 | 2.3 | `retornar` | ALTA | PENDIENTE |
-| 2.4 | Inicialización booleana | ALTA | PENDIENTE |
-| 2.5 | Booleano como condición | ALTA | PENDIENTE |
+| 2.4 | Inicialización booleana | ALTA | HECHO |
+| 2.5 | Booleano como condición | ALTA | HECHO |
 | 2.6 | Negación `!` | ALTA | PENDIENTE |
 | 2.7 | Asignación compuesta `+= -= *= /=` | ALTA | PENDIENTE |
 | 2.9 | `para` generalizado | ALTA | PENDIENTE |

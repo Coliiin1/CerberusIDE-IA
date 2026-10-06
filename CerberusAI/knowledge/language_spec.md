@@ -239,8 +239,8 @@ La documentación formaliza la forma general de declaración como:
 | `real x;` / `real x = 9.5;` | Sí | `IMPLEMENTED` |
 | `cadena x;` / `cadena x = "hola";` | Sí | `IMPLEMENTED` |
 | `caracter x;` / `caracter x = 'a';` | Sí | `IMPLEMENTED` |
-| `booleano x;` | Sí | `IMPLEMENTED` (solo declaración) |
-| `booleano x = verdadero;` | **No** (`TIPO INVALIDO`) | `CONFLICT` |
+| `booleano x;` | Sí | `IMPLEMENTED` |
+| `booleano x = verdadero;` | Sí | `IMPLEMENTED` |
 | `entero x = 9.5;` | **No** (`TIPO INCOMPATIBLE`) | `IMPLEMENTED` |
 | `real r = 5;` (entero→real) | Sí (ensanche) | `IMPLEMENTED` |
 | `cadena b = a;` / `caracter c = d;` | Sí | `IMPLEMENTED` |
@@ -262,7 +262,7 @@ falso
 
 La documentación también describe `verdadero` como equivalente a un 1 lógico y `falso` como equivalente a un 0 lógico.
 
-**Reconciliación:** el lexer reconoce `booleano`, `verdadero` y `falso`, y se acepta `booleano x;`, pero **no** se implementa la inicialización booleana (`booleano x = verdadero;` falla con `TIPO INVALIDO`). El tipo booleano no participa en condiciones ni en aritmética. Estado: `PARTIAL`/`CONFLICT`.
+**Reconciliación (implementado):** `booleano x = verdadero;`/`= falso;` se aceptan, y el RHS admite una variable booleana. El booleano participa como condición desnuda (`si(activo)`) y en comparaciones (`activo == verdadero`, `activo != falso`) y en `&`/`|`. No participa en aritmética. Estado: `IMPLEMENTED`.
 
 ---
 
@@ -282,7 +282,7 @@ También se documenta la declaración sin valor inicial:
 entero edad;
 ```
 
-**Estado:** `IMPLEMENTED`. El parser acepta tanto `entero edad = 20;` como `entero edad;` (la inicialización es opcional, salvo para `booleano`, que solo admite declaración sin valor).
+**Estado:** `IMPLEMENTED`. El parser acepta tanto `entero edad = 20;` como `entero edad;` (la inicialización es opcional en todos los tipos, incluido `booleano`).
 
 ### 6.2 Asignación
 
@@ -421,15 +421,17 @@ si (edad >= 18 & activo == verdadero) {
 }
 ```
 
-**Reconciliación:** cada condición exige `expresionAritmetica operadorRelacional expresionAritmetica`. No se soportan condiciones booleanas desnudas (`si(verdadero)`, `si(activo)`), ni `!`. El ejemplo anterior con `activo == verdadero` **no compila** en el compilador actual (los booleanos no tienen valor numérico y `verdadero` no es un factor válido). Ejemplo válido equivalente:
+**Reconciliación (implementado):** se soportan condiciones booleanas desnudas (`si(activo)`, `si(verdadero)`) y comparaciones booleanas (`activo == verdadero`, `activo != falso`), además de la condición numérica `exprAritmetica opRelacional exprAritmetica`. Los operadores `&`/`|` combinan condiciones. El ejemplo documentado `edad >= 18 & activo == verdadero` **ya compila** con `activo` de tipo `booleano`:
 
 ```cerberus
 entero edad = 20;
-entero activo = 1;
-si (edad >= 18 & activo == 1) {
+booleano activo = verdadero;
+si (edad >= 18 & activo == verdadero) {
     imprimir("Acceso permitido");
 }
 ```
+
+Falta el operador `!` (ver 6.4).
 
 ### 8.4 Condición
 
@@ -792,7 +794,7 @@ La siguiente sección reproduce las producciones que aparecen explícitamente en
           | TIPO_CARACTER
 ```
 
-> **Reconciliación:** la inicialización es opcional. `<VALOR>` no incluye `verdadero`/`falso` en la práctica: `booleano x = verdadero;` es rechazado (`TIPO INVALIDO`). Un `entero` **no** acepta `NUMERO_REAL` (rechazado con `TIPO INCOMPATIBLE`); `real` sí acepta entero (ensanche).
+> **Reconciliación:** la inicialización es opcional. `<VALOR>` admite también `verdadero`/`falso` para `booleano` (implementado). Un `entero` **no** acepta `NUMERO_REAL` (rechazado con `TIPO INCOMPATIBLE`); `real` sí acepta entero (ensanche).
 
 ### 13.3 `si`
 
@@ -1007,9 +1009,9 @@ Ejemplo conceptual de error:
 no se debe intentar sumar un texto con un número
 ```
 
-**Reconciliación (implementado):** las expresiones llevan tipo (entero/real). Reglas: `entero←entero`; `real←entero|real`; `cadena←cadena`; `caracter←caracter`. `entero x = 9.5;` se rechaza (`TIPO INCOMPATIBLE`); sumar un texto con un número se rechaza con `TIPO INCOMPATIBLE` (ya no lanza `NumberFormatException`). El tipo `booleano` queda pendiente (6.3).
+**Reconciliación (implementado):** las expresiones llevan tipo. Reglas: `entero←entero`; `real←entero|real`; `cadena←cadena`; `caracter←caracter`; `booleano←booleano`. `entero x = 9.5;` se rechaza (`TIPO INCOMPATIBLE`); sumar un texto con un número se rechaza con `TIPO INCOMPATIBLE`. Las condiciones booleanas desnudas y `&`/`|` están implementadas; falta `!` (6.4).
 
-**Estado:** `IMPLEMENTED` (entero/real/cadena/caracter).
+**Estado:** `IMPLEMENTED` (entero/real/cadena/caracter/booleano).
 
 ---
 
@@ -1137,12 +1139,14 @@ resultado = (a + b) * c;
 ### 18.9 Expresión lógica
 
 ```cerberus
-si (edad >= 18 & activo == 1) {
+entero edad = 20;
+booleano activo = verdadero;
+si (edad >= 18 & activo == verdadero) {
     imprimir("Acceso permitido");
 }
 ```
 
-> **Reconciliación:** la forma documentada `activo == verdadero` no compila (los booleanos no son un factor válido). Se usa `activo == 1` como equivalente.
+> **Reconciliación:** implementado. La forma documentada `activo == verdadero` compila con `activo` de tipo `booleano`.
 
 ---
 
@@ -1222,7 +1226,7 @@ Una IA que genere Cerberus debe seguir estas reglas.
 11. Escribir siempre la clase con paréntesis: `clase Nombre()`.
 12. En `para`, incluir la palabra `entero`: `para(entero i = 0; i < 10; i++)`.
 13. En `segun`, no usar `predeterminado` y terminar cada `caso` con `salir;`.
-14. No inicializar variables `booleano` (solo `booleano x;`).
+14. Las variables `booleano` se inicializan con `verdadero`/`falso` y se usan en condiciones; no se usan en aritmética.
 15. No usar operadores compuestos (`+=`, `-=`, `*=`, `/=`), `--` ni `!`.
 16. No declarar `entero` con literales o expresiones reales: el compilador lo rechaza (`TIPO INCOMPATIBLE`).
 
@@ -1375,7 +1379,7 @@ Las siguientes características requieren mayor definición antes de utilizarlas
 | Operador `!` | `PARTIAL` | Tokenizado pero no usado en el parser (`si(!x)` falla). |
 | Operadores compuestos (`+=`, `-=`, `*=`, `/=`), `--` | `PARTIAL`/no implementado | No tokenizados/usados correctamente; rechazados. |
 | Precedencia completa | `PARTIAL` | Se describe precedencia aritmética, pero no existe tabla completa. |
-| Inicialización booleana | `PARTIAL` | `booleano x = verdadero;` falla (`TIPO INVALIDO`). |
+| Inicialización booleana | `IMPLEMENTED` | `booleano x = verdadero;` y variables booleanas; condiciones booleanas. |
 | Validación de tipos | `IMPLEMENTED` | `entero x = 9.5;` rechazado (`TIPO INCOMPATIBLE`); `booleano` pendiente. |
 | Scopes | `IMPLEMENTED` | Pila global/función/bloque; shadowing permitido, redeclaración solo en el mismo scope. |
 | `retornar` | `PARTIAL` | Tokenizado, sin gramática. |
@@ -1403,7 +1407,7 @@ pero la producción formal disponible de `<DECLARACION>` es:
 <DECLARACION> ::= <TIPO> IDENTIFICADOR "=" <VALOR> ";"
 ```
 
-**Resolución:** el parser acepta ambas formas (`entero edad;` y `entero edad = 20;`), salvo para `booleano`, que solo admite declaración sin valor.
+**Resolución:** el parser acepta ambas formas (`entero edad;` y `entero edad = 20;`), también para `booleano`.
 
 **Estado:** `IMPLEMENTED` (la inicialización es opcional).
 
@@ -1442,14 +1446,14 @@ Verificación dinámica con `audit.CompilerProbe` (ver `CerberusAI_COMPILER_AUDI
 | Documentación | Compilador real | Estado |
 |---|---|---|
 | `clase programa {` | exige `clase programa()` | `CONFLICT` |
-| `booleano activo = verdadero;` | solo `booleano activo;` | `CONFLICT` |
+| `booleano activo = verdadero;` | implementado | `IMPLEMENTED` |
 | `entero x = 9.5;` es error de tipo | rechazado | `IMPLEMENTED` |
 | `para(i = 0; ...)` | exige `para(entero i = 0; ...)` | `CONFLICT` |
 | `segun` con `predeterminado` | no implementado | `CONFLICT` |
 | `salir` sin `;` | exige `salir;` | `CONFLICT` |
 | `+=`, `-=`, `*=`, `/=` | no implementados | `CONFLICT` |
 | `!` (negación) | tokenizado, no usado | `CONFLICT`/`PARTIAL` |
-| `si (... & activo == verdadero)` | booleano no es factor válido | `CONFLICT` |
+| `si (... & activo == verdadero)` | implementado (booleano) | `IMPLEMENTED` |
 
 ---
 

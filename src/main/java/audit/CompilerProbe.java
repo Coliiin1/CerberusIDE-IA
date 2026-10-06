@@ -116,7 +116,7 @@ public class CompilerProbe {
                 prog("booleano x;"), true));
 
         casos.add(new Caso("booleano con inicializacion",
-                prog("booleano x = verdadero;"), false));
+                prog("booleano x = verdadero;"), true));
 
         casos.add(new Caso("asignacion directa numerica",
                 prog("entero x = 5;\nx = 10;"), true));

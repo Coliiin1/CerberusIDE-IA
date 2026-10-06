@@ -1,0 +1,9 @@
+clase Test(){
+    funcion principal(){
+        entero edad = 20;
+        booleano activo = verdadero;
+        si(edad >= 18 & activo == verdadero){
+            imprimir("acceso");
+        }
+    }
+}
