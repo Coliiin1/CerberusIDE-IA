@@ -1,0 +1,9 @@
+clase Test(){
+    funcion principal(){
+        entero x = 1;
+        si(x == 1){
+            entero x = 2;
+            imprimir(x);
+        }
+    }
+}

@@ -1,0 +1,8 @@
+clase Test(){
+    funcion principal(){
+        entero x = 0;
+        mientras(x < 5){
+            x = x + 1;
+        }
+    }
+}

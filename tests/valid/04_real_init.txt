@@ -1,0 +1,5 @@
+clase Test(){
+    funcion principal(){
+        real x = 2.5;
+    }
+}

@@ -1,0 +1,8 @@
+clase Test(){
+    funcion principal(){
+        imprimir("hola");
+    }
+    funcion f(){
+        entero y = 1;
+    }
+}

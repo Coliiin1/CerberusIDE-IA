@@ -18,7 +18,8 @@ public class AnalizadorSintactico {
     private boolean resultado;
     private AnalizadorSemantico sem;
     private boolean existePrincipal = false;
-    private String scope;
+    private final ArrayList<String> pilaScopes = new ArrayList<>();
+    private int contadorBloques = 0;
     private Documentador documentador;
     private Reporter reporter;
 
@@ -41,6 +42,32 @@ public class AnalizadorSintactico {
         if (reporter != null) {
             reporter.reportar(mensaje);
         }
+    }
+
+    private void entrarScope(String nombre) {
+        pilaScopes.add(nombre);
+    }
+
+    private void salirScope() {
+        if (!pilaScopes.isEmpty()) {
+            pilaScopes.remove(pilaScopes.size() - 1);
+        }
+    }
+
+    private String scopeActual() {
+        return String.join("/", pilaScopes);
+    }
+
+    private void entrarBloque() {
+        entrarScope("b" + (++contadorBloques));
+    }
+
+    private void salirBloque() {
+        salirScope();
+    }
+
+    private boolean esGlobal() {
+        return pilaScopes.size() == 1 && pilaScopes.get(0).equals("global");
     }
     
     
@@ -124,6 +151,7 @@ public class AnalizadorSintactico {
     }
     //mis gramaticas 
     private void programa(){
+        entrarScope("global");
         globales();
         inicio();
         funciones();
@@ -131,6 +159,7 @@ public class AnalizadorSintactico {
         if(posicion<tokensDetectados.size()){
             throw new RuntimeException("Codigo fuera de la clase");
         }
+        salirScope();
     }
 
     private void inicio(){
@@ -143,7 +172,6 @@ public class AnalizadorSintactico {
         documentador.agregar(obtenerLinea(tokensDetectados.get(posicion-1))+"SE CREA UNA CLASE LLAMADA: "+clase);
     }
     private void globales(){
-        scope="global";
         while(true){
             switch((tokensDetectados.get(posicion).getTipo())){
                 case PALABRA_RESERVADA_ENT:
@@ -151,7 +179,7 @@ public class AnalizadorSintactico {
                 case PALABRA_RESERVADA_CAD:
                 case PALABRA_RESERVADA_CAR:
                 case PALABRA_RESERVADA_BOO:
-                    declaracion(tokensDetectados.get(posicion).getTipo(),scope);
+                    declaracion(tokensDetectados.get(posicion).getTipo());
                     break;
                 default:
                     return;
@@ -177,12 +205,13 @@ public class AnalizadorSintactico {
     private void funcionComun(){        
         match(IDENTIFICADOR);
         String funcion=tokensDetectados.get(posicion-1).getLexema();
-        scope=tokensDetectados.get(posicion-1).getLexema();
         match(PARENTESIS_ABRE);
         match(PARENTESIS_CIERRA);
         match(LLAVE_ABRE);
         documentador.agregar(obtenerLinea(tokensDetectados.get(posicion-1))+"SE CREA UNA FUNCION LLAMADA: "+funcion);
+        entrarScope(funcion);
         instrucciones();
+        salirScope();
         match(LLAVE_CIERRA);
         
     }
@@ -190,14 +219,15 @@ public class AnalizadorSintactico {
         if(existePrincipal){
             throw new RuntimeException("Ya existe una funcion principal");
         }
-        scope="principal";
         existePrincipal = true;
         match(PALABRA_RESERVADA_PRIN);
         match(PARENTESIS_ABRE);
         match(PARENTESIS_CIERRA);
         match(LLAVE_ABRE);
         documentador.agregar(obtenerLinea(tokensDetectados.get(posicion-1))+"SE CREA LA FUNCION PRINCIPAL DEL CODIGO");
+        entrarScope("principal");
         instrucciones();
+        salirScope();
         match(LLAVE_CIERRA);
         
     }
@@ -213,7 +243,7 @@ public class AnalizadorSintactico {
         Token actual=tokensDetectados.get(posicion);
         switch (actual.getTipo()) {
             case PALABRA_RESERVADA_ENT: case PALABRA_RESERVADA_REA: case PALABRA_RESERVADA_CAD: case PALABRA_RESERVADA_CAR: case PALABRA_RESERVADA_BOO:
-                declaracion(actual.getTipo(),scope);
+                declaracion(actual.getTipo());
                 break;
             case PALABRA_RESERVADA_FUN:
                 funciones();
@@ -236,7 +266,9 @@ public class AnalizadorSintactico {
             case PALABRA_RESERVADA_MIE:
                 mientras();
                 match(LLAVE_ABRE);
+                entrarBloque();
                 instruccionesSi(LLAVE_CIERRA);
+                salirBloque();
                 match(LLAVE_CIERRA);
                 break;
             case PALABRA_RESERVADA_HAC:
@@ -253,7 +285,7 @@ public class AnalizadorSintactico {
                 asignacionDirecta();
 
                 Identificadores variable =
-                    sem.buscarIde(tabla, iden);
+                    sem.buscarIde(tabla, iden, scopeActual());
 
                 match(PUNTO_COMA);
 
@@ -280,14 +312,16 @@ public class AnalizadorSintactico {
         match(PALABRA_RESERVADA_HAC);
         match(LLAVE_ABRE);
         documentador.agregar(obtenerLinea(tokensDetectados.get(posicion-1))+"SE CREA UN CICLO HACER MIENTRAS QUE EVALUARA EL SIGUIENTE MIENTRAS ");
+        entrarBloque();
         instruccionesSi(LLAVE_CIERRA);
+        salirBloque();
         match(LLAVE_CIERRA);
         mientras();
         match(PUNTO_COMA);
         
     }
     
-    private void declaracion(Tokens tipo, String scope){
+    private void declaracion(Tokens tipo){
         String identificador;
         agregarTabla();
         tipo();
@@ -297,12 +331,13 @@ public class AnalizadorSintactico {
             asignacion(tokensDetectados.get(posicion-2).getTipo(),identificador);
         }
         match(PUNTO_COMA);
-        if(scope=="global"){
-            documentador.agregar(obtenerLinea(tokensDetectados.get(posicion-1))+"SE CREA UNA VARIABLE GLOBAL LLAMADA: "+identificador+" DE TIPO: "+sem.buscarIde(tabla, identificador).getTipo()
-                    +" CON VALOR: "+sem.buscarIde(tabla, identificador).getValor());
+        Identificadores declarado = sem.buscarIde(tabla, identificador, scopeActual());
+        if(esGlobal()){
+            documentador.agregar(obtenerLinea(tokensDetectados.get(posicion-1))+"SE CREA UNA VARIABLE GLOBAL LLAMADA: "+identificador+" DE TIPO: "+declarado.getTipo()
+                    +" CON VALOR: "+declarado.getValor());
         }else{
-            documentador.agregar(obtenerLinea(tokensDetectados.get(posicion-1))+"SE CREA UNA VARIABLE LLAMADA: "+identificador+" DE TIPO: "+sem.buscarIde(tabla, identificador).getTipo()
-                    +" CON VALOR: "+sem.buscarIde(tabla, identificador).getValor());
+            documentador.agregar(obtenerLinea(tokensDetectados.get(posicion-1))+"SE CREA UNA VARIABLE LLAMADA: "+identificador+" DE TIPO: "+declarado.getTipo()
+                    +" CON VALOR: "+declarado.getValor());
         }
 
     }
@@ -310,10 +345,10 @@ public class AnalizadorSintactico {
     private void asignacionDirecta(){
         match(IDENTIFICADOR);
         if (tokensDetectados.get(posicion).getTipo()==ASIGNACION) {
-            if (!sem.buscar(tabla, tokensDetectados.get(posicion-1).getLexema())) {
+            if (!sem.buscar(tabla, tokensDetectados.get(posicion-1).getLexema(), scopeActual())) {
                 throw new AssertionError("NO SE ENCONTRO EL IDENTIFICADOR: "+tokensDetectados.get(posicion-1).getLexema());
             }
-            Tokens tok= sem.buscarIde(tabla, tokensDetectados.get(posicion-1).getLexema()).getToken();
+            Tokens tok= sem.buscarIde(tabla, tokensDetectados.get(posicion-1).getLexema(), scopeActual()).getToken();
             asignacion(tok,tokensDetectados.get(posicion-1).getLexema());
         }
     }
@@ -356,12 +391,9 @@ public class AnalizadorSintactico {
         }
     }
     public void asignarValor(String identificador, String valor){
-        if (!tabla.isEmpty()) {
-            for(Identificadores iden: tabla){
-                if(iden.getIdentificador().equals(identificador)){
-                    iden.setValor(valor);
-                }
-            }
+        Identificadores iden = sem.buscarIde(tabla, identificador, scopeActual());
+        if (iden != null) {
+            iden.setValor(valor);
         }
     }
     
@@ -409,7 +441,9 @@ public class AnalizadorSintactico {
         match(PARENTESIS_CIERRA);
         match(LLAVE_ABRE);
         documentador.agregar(obtenerLinea(tokensDetectados.get(posicion-1))+"SE CREA UNA CONDICION SI QUE EVALUA: "+recorrerGenerarCadena(x));
+        entrarBloque();
         instruccionesSi(LLAVE_CIERRA);
+        salirBloque();
         match(LLAVE_CIERRA);
         if(tokensDetectados.get(posicion).getTipo()==PALABRA_RESERVADA_SIN){
             sino();
@@ -425,7 +459,9 @@ public class AnalizadorSintactico {
                 break;
             case LLAVE_ABRE:
                 match(LLAVE_ABRE);
+                entrarBloque();
                 instruccionesSi(LLAVE_CIERRA);
+                salirBloque();
                 match(LLAVE_CIERRA);
                 break;
             default:
@@ -440,17 +476,16 @@ public class AnalizadorSintactico {
         documentador.agregar(obtenerLinea(tokensDetectados.get(posicion-1))+"SE CREA UN SEGUN QUE EJECUTARA UN BUCLE PARA EL VALOR DE: "+identificador);
         match(PARENTESIS_CIERRA);
         match(LLAVE_ABRE);
-        if (!sem.buscar(tabla, identificador)) {
+        if (!sem.buscar(tabla, identificador, scopeActual())) {
             resultado=false;
             reportar("no se encontro el identificador "+identificador);
             return;
         }
+        entrarBloque();
         while(tokensDetectados.get(posicion).getTipo()==PALABRA_RESERVADA_CAS){
-            casos(sem.retornarTipo(sem.buscarIde(tabla, identificador)));
+            casos(sem.retornarTipo(sem.buscarIde(tabla, identificador, scopeActual())));
         }
-//        while(tokensDetectados.get(posicion)!=LLAVE_CIERRA){
-//            casos(sem.retornarTipo(sem.buscarIde(tabla, identificador)));
-//        }
+        salirBloque();
         match(LLAVE_CIERRA);
     }
     
@@ -487,7 +522,9 @@ public class AnalizadorSintactico {
         match(PARENTESIS_CIERRA );
         documentador.agregar(obtenerLinea(tokensDetectados.get(posicion-1))+"SE CREA UN BUCLE DE TIPO PARA CON LAS REGLAS: "+recorrerGenerarCadena(x));
         match(LLAVE_ABRE);
+        entrarBloque();
         instruccionesSi(LLAVE_CIERRA);
+        salirBloque();
         match(LLAVE_CIERRA);
     }
     
@@ -575,7 +612,7 @@ public class AnalizadorSintactico {
             case IDENTIFICADOR:
                 posicion++;
                 Identificadores ide =
-                sem.buscarIde(tabla, actual.getLexema());
+                sem.buscarIde(tabla, actual.getLexema(), scopeActual());
                 if(ide == null){
                     throw new RuntimeException("Variable no encontrada: "+ actual.getLexema());}
                 return Double.parseDouble(ide.getValor());
@@ -639,8 +676,9 @@ public class AnalizadorSintactico {
     }
     
     private void agregarTabla(){
-        if (sem.buscar(tabla, tokensDetectados.get(posicion+1).getLexema())) {
-            throw new AssertionError("YA EXISTE ESE IDENTIFICADOR: "+tokensDetectados.get(posicion+1).getLexema());
+        String nombre = tokensDetectados.get(posicion+1).getLexema();
+        if (sem.existeEnScope(tabla, nombre, scopeActual())) {
+            throw new AssertionError("YA EXISTE ESE IDENTIFICADOR: "+nombre);
         }
         Tokens token;
         if (tokensDetectados.get(posicion+1).getTipo()==null) {
@@ -649,7 +687,7 @@ public class AnalizadorSintactico {
         }
         if (tokensDetectados.get(posicion+1).getTipo()==IDENTIFICADOR) {
             token=tokensDetectados.get(posicion).getTipo();
-            tabla.add(new Identificadores(token,tokensDetectados.get(posicion+1).getLexema(),scope));
+            tabla.add(new Identificadores(token,nombre,scopeActual()));
         }else{
             reportar("NO SE PUDO AGREGAR A LA TABLA: "+tokensDetectados.get(posicion).getLinea()+" "+tokensDetectados.get(posicion).getLexema());
         }

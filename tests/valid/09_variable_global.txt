@@ -1,0 +1,6 @@
+entero a = 2;
+clase Test(){
+    funcion principal(){
+        imprimir(a);
+    }
+}

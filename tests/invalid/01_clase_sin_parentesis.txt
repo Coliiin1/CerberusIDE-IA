@@ -1,0 +1,4 @@
+clase Test{
+    funcion principal(){
+    }
+}

@@ -28,34 +28,55 @@ public class AnalizadorSemantico {
         }
         return token;
     }
-    
-    
-    public boolean buscar(ArrayList<Identificadores> tabla,String nombre){
-        if (tabla.isEmpty()) {
-            return false;
-        }
+
+    /**
+     * Un identificador declarado en el scope {@code scopeIdentificador} es visible
+     * desde {@code scopeActual} si el scope actual es el mismo o un descendiente
+     * (rutas separadas por "/", p. ej. "global/principal/b1").
+     */
+    public boolean esVisible(String scopeIdentificador, String scopeActual){
+        return scopeActual.equals(scopeIdentificador)
+            || scopeActual.startsWith(scopeIdentificador + "/");
+    }
+
+    /**
+     * Busca el identificador visible mas interno (el de scope mas profundo) con
+     * ese nombre desde {@code scopeActual}. Devuelve {@code null} si no existe.
+     */
+    public Identificadores buscarIde(ArrayList<Identificadores> tabla,String nombre,String scopeActual){
+        Identificadores encontrado=null;
         for(Identificadores identificador: tabla){
-            if(identificador.getIdentificador().equals(nombre)){
+            if(identificador.getIdentificador().equals(nombre)
+                    && esVisible(identificador.getScope(), scopeActual)){
+                if(encontrado==null
+                        || identificador.getScope().length()>encontrado.getScope().length()){
+                    encontrado=identificador;
+                }
+            }
+        }
+        return encontrado;
+    }
+
+    public boolean buscar(ArrayList<Identificadores> tabla,String nombre,String scopeActual){
+        return buscarIde(tabla,nombre,scopeActual)!=null;
+    }
+
+    /**
+     * Comprueba si el nombre ya esta declarado en el scope EXACTO indicado
+     * (redeclaracion en el mismo scope).
+     */
+    public boolean existeEnScope(ArrayList<Identificadores> tabla,String nombre,String scope){
+        for(Identificadores identificador: tabla){
+            if(identificador.getIdentificador().equals(nombre)
+                    && scope.equals(identificador.getScope())){
                 return true;
             }
         }
         return false;
     }
-    
-    public Identificadores buscarIde(ArrayList<Identificadores> tabla,String nombre){
-        if (tabla.isEmpty()) {
-            return null;
-        }
-        for(Identificadores identificador: tabla){
-            if(identificador.getIdentificador().equals(nombre)){
-                return identificador;
-            }
-        }
-        return null;
-    }
-    
-    public boolean verificarIdentificador(ArrayList<Identificadores> tabla,String nombre){
-        if (buscar(tabla,nombre)) {
+
+    public boolean verificarIdentificador(ArrayList<Identificadores> tabla,String nombre,String scopeActual){
+        if (buscar(tabla,nombre,scopeActual)) {
             return false;
         }
         return true;

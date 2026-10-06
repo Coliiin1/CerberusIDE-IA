@@ -1,0 +1,10 @@
+clase Test(){
+    funcion principal(){
+        cadena x = "hola";
+        segun(x){
+            caso "hola":
+                imprimir("ok");
+            salir;
+        }
+    }
+}

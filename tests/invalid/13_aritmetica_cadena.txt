@@ -1,0 +1,6 @@
+clase Test(){
+    funcion principal(){
+        cadena x = "hola";
+        entero y = 1 + x;
+    }
+}

@@ -69,6 +69,10 @@ public class Identificadores {
         return valor;
     }
 
+    public String getScope() {
+        return scope;
+    }
+
     
 }
 

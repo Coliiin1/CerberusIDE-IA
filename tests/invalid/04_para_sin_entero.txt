@@ -1,0 +1,6 @@
+clase Test(){
+    funcion principal(){
+        para(i = 0; i < 10; i++){
+        }
+    }
+}
