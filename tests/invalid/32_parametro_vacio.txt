@@ -1,0 +1,6 @@
+clase Test(){
+    funcion principal(){
+    }
+    funcion f(vacio x){
+    }
+}

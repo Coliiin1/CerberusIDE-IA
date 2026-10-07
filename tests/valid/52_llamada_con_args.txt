@@ -1,0 +1,8 @@
+clase Test(){
+    funcion principal(){
+        suma(1, 2);
+    }
+    funcion suma(entero a, entero b){
+        imprimir(a);
+    }
+}

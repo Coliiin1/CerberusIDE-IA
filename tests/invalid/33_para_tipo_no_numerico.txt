@@ -1,0 +1,6 @@
+clase Test(){
+    funcion principal(){
+        para(cadena s = "a"; s < 5; s++){
+        }
+    }
+}

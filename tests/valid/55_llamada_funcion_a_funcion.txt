@@ -1,0 +1,11 @@
+clase Test(){
+    funcion principal(){
+        g();
+    }
+    funcion g(){
+        f();
+    }
+    funcion f(){
+        imprimir("x");
+    }
+}

@@ -7,7 +7,9 @@ import static AnalizadorLexico.Tokens.*;
 import AnalizadorSemantico.AnalizadorSemantico;
 import AnalizadorSemantico.Tipo;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Stack;
 import Util.Reporter;
 
@@ -21,8 +23,10 @@ public class AnalizadorSintactico {
     private boolean existePrincipal = false;
     private final ArrayList<String> pilaScopes = new ArrayList<>();
     private int contadorBloques = 0;
+    private Tipo tipoRetornoActual;
     private Documentador documentador;
     private Reporter reporter;
+    private final Map<String, Firma> firmas = new HashMap<>();
 
     public AnalizadorSintactico(List<Token> tokensDetectados) {
         this(tokensDetectados, null);
@@ -37,6 +41,19 @@ public class AnalizadorSintactico {
         tabla=new ArrayList<>();
         sem=new AnalizadorSemantico();
         documentador=new Documentador();
+    }
+
+    /** Firma de una funcion: nombre, tipo de retorno (null = void) y tipos de parametros. */
+    private static final class Firma {
+        final String nombre;
+        final Tipo retorno;
+        final List<Tipo> parametros;
+
+        Firma(String nombre, Tipo retorno, List<Tipo> parametros) {
+            this.nombre = nombre;
+            this.retorno = retorno;
+            this.parametros = parametros;
+        }
     }
 
     /** Valor de una expresion aritmetica con su tipo (entero o real). */
@@ -54,6 +71,176 @@ public class AnalizadorSintactico {
         if (reporter != null) {
             reporter.reportar(mensaje);
         }
+    }
+
+    /** Construye un ErrorSintactico apuntando al token actual. */
+    private ErrorSintactico error(String mensaje) {
+        return error(mensaje, tokenActual());
+    }
+
+    /** Construye un ErrorSintactico con el token indicado (fila/columna/lexema). */
+    private ErrorSintactico error(String mensaje, Token tok) {
+        if (tok == null) {
+            return new ErrorSintactico(mensaje, -1, -1, null);
+        }
+        return new ErrorSintactico(mensaje, tok.getLinea(), tok.getColumna(), tok.getLexema());
+    }
+
+    /** Token actual, o el ultimo si la posicion se paso del final. */
+    private Token tokenActual() {
+        if (posicion >= 0 && posicion < tokensDetectados.size()) {
+            return tokensDetectados.get(posicion);
+        }
+        if (!tokensDetectados.isEmpty()) {
+            return tokensDetectados.get(tokensDetectados.size() - 1);
+        }
+        return null;
+    }
+
+    /**
+     * Pre-escaneo de tokens para registrar las firmas de las funciones antes de
+     * parsear los cuerpos, lo que permite llamadas hacia adelante desde principal.
+     */
+    private void recolectarFirmas() {
+        firmas.clear();
+        for (int i = 0; i < tokensDetectados.size(); i++) {
+            if (tokensDetectados.get(i).getTipo() != PALABRA_RESERVADA_FUN) {
+                continue;
+            }
+            int j = i + 1;
+            if (j < tokensDetectados.size()
+                    && tokensDetectados.get(j).getTipo() == PALABRA_RESERVADA_PRIN) {
+                continue;
+            }
+            Tipo retorno = null;
+            if (j < tokensDetectados.size()) {
+                Tipo posible = sem.tipoDeToken(tokensDetectados.get(j).getTipo());
+                if (posible != null) {
+                    retorno = posible;
+                    j++;
+                } else if (tokensDetectados.get(j).getTipo() == PALABRA_RESERVADA_VAC) {
+                    j++;
+                }
+            }
+            if (j >= tokensDetectados.size()
+                    || tokensDetectados.get(j).getTipo() != IDENTIFICADOR) {
+                continue;
+            }
+            String nombre = tokensDetectados.get(j).getLexema();
+            j++;
+            if (j >= tokensDetectados.size()
+                    || tokensDetectados.get(j).getTipo() != PARENTESIS_ABRE) {
+                continue;
+            }
+            j++;
+            List<Tipo> parametros = new ArrayList<>();
+            while (j < tokensDetectados.size()
+                    && tokensDetectados.get(j).getTipo() != PARENTESIS_CIERRA) {
+                Tipo p = sem.tipoDeToken(tokensDetectados.get(j).getTipo());
+                if (p != null) {
+                    parametros.add(p);
+                }
+                j++;
+            }
+            firmas.put(nombre, new Firma(nombre, retorno, parametros));
+        }
+    }
+
+    /** true si el token actual es una llamada: IDENTIFICADOR seguido de "(". */
+    private boolean esLlamadaActual() {
+        return posicion + 1 < tokensDetectados.size()
+                && tokensDetectados.get(posicion).getTipo() == IDENTIFICADOR
+                && tokensDetectados.get(posicion + 1).getTipo() == PARENTESIS_ABRE;
+    }
+
+    /**
+     * Parsea IDENTIFICADOR "(" [ <ARGUMENTOS> ] ")" y devuelve el tipo de retorno
+     * (null = void). Valida existencia, aridad y tipos de los argumentos.
+     */
+    private Tipo llamadaFuncion() {
+        Token nombreToken = tokensDetectados.get(posicion);
+        String nombre = nombreToken.getLexema();
+        Firma firma = firmas.get(nombre);
+        if (firma == null) {
+            throw error("Funcion no encontrada: " + nombre, nombreToken);
+        }
+        posicion++;
+        match(PARENTESIS_ABRE);
+        List<Tipo> parametros = firma.parametros;
+        int indice = 0;
+        while (tokensDetectados.get(posicion).getTipo() != PARENTESIS_CIERRA) {
+            if (indice >= parametros.size()) {
+                throw error("La funcion " + nombre + " espera " + parametros.size()
+                        + " argumentos y se recibieron mas");
+            }
+            argumento(parametros.get(indice), nombre, indice + 1);
+            indice++;
+            if (tokensDetectados.get(posicion).getTipo() == COMA) {
+                posicion++;
+            } else {
+                break;
+            }
+        }
+        match(PARENTESIS_CIERRA);
+        if (indice != parametros.size()) {
+            throw error("La funcion " + nombre + " espera " + parametros.size()
+                    + " argumentos y se recibieron " + indice);
+        }
+        return firma.retorno;
+    }
+
+    /** Parsea un argumento segun el tipo esperado del parametro. */
+    private void argumento(Tipo esperado, String funcion, int numero) {
+        switch (esperado) {
+            case ENTERO:
+                Expresion entero = expresionAritmetica();
+                if (entero.esReal) {
+                    throw error("TIPO INCOMPATIBLE: argumento " + numero + " de "
+                            + funcion + " esperaba ENTERO");
+                }
+                break;
+            case REAL:
+                expresionAritmetica();
+                break;
+            case CADENA:
+                expresionCadena(funcion);
+                break;
+            case CARACTER:
+                expresionCaracter(funcion);
+                break;
+            case BOOLEANO:
+                expresionBooleana(funcion);
+                break;
+            default:
+                throw error("TIPO DE PARAMETRO INVALIDO en " + funcion);
+        }
+    }
+
+    /** Llamada usada como expresion numerica: exige retorno ENTERO/REAL. */
+    private Expresion llamadaNumerica() {
+        Token tok = tokensDetectados.get(posicion);
+        Tipo retorno = llamadaFuncion();
+        if (retorno == Tipo.ENTERO) {
+            return new Expresion(0, false);
+        }
+        if (retorno == Tipo.REAL) {
+            return new Expresion(0, true);
+        }
+        String desc = (retorno == null) ? "vacio" : retorno.toString();
+        throw error("TIPO INCOMPATIBLE: la funcion " + tok.getLexema()
+                + " retorna " + desc + " y se usa como valor numerico", tok);
+    }
+
+    /** Llamada usada como valor de un tipo concreto; devuelve un placeholder. */
+    private String llamadaTipo(Tipo esperado, String contexto, String placeholder) {
+        Token tok = tokensDetectados.get(posicion);
+        Tipo retorno = llamadaFuncion();
+        if (retorno != esperado) {
+            String desc = (retorno == null) ? "vacio" : retorno.toString();
+            throw error("TIPO INCOMPATIBLE: la funcion " + tok.getLexema()
+                    + " retorna " + desc + " y no " + esperado + " en " + contexto, tok);
+        }
+        return placeholder;
     }
 
     private void entrarScope(String nombre) {
@@ -127,8 +314,14 @@ public class AnalizadorSintactico {
     
     public boolean analizar(){
         try{
+            recolectarFirmas();
             programa();
             return true;
+        }catch(ErrorSintactico e){
+            reportar("OCURRIO UN ERROR: "+e.getMessage()
+                +"\nEn la linea: "+e.getFila()
+                +"\nColumna: "+e.getColumna()
+                +"\nLexema: "+e.getLexema());
         }catch(RuntimeException | AssertionError e){
             reportar("OCURRIO UN ERROR: "+e.getMessage());
         }
@@ -146,7 +339,7 @@ public class AnalizadorSintactico {
         }else{
             System.out.println("SE ESPERABA "+esperado.name()+" Y SE ENCONTRO: "+tokensDetectados.get(posicion).getTipo().name());
             falso();
-             throw new RuntimeException(
+             throw error(
             "Se esperaba "
             + esperado.name()
             + " y se encontró "
@@ -169,7 +362,7 @@ public class AnalizadorSintactico {
         funciones();
         match(LLAVE_CIERRA);
         if(posicion<tokensDetectados.size()){
-            throw new RuntimeException("Codigo fuera de la clase");
+            throw error("Codigo fuera de la clase");
         }
         salirScope();
     }
@@ -204,7 +397,7 @@ public class AnalizadorSintactico {
             funcion();
         }
         if(!existePrincipal){
-            throw new RuntimeException("No se encontro una funcion principal");
+            throw error("No se encontro una funcion principal");
         }
     }
     private void funcion(){
@@ -215,21 +408,93 @@ public class AnalizadorSintactico {
         }
     }
     private void funcionComun(){        
+        Tipo tipoRetorno = leerTipoRetorno();
         match(IDENTIFICADOR);
         String funcion=tokensDetectados.get(posicion-1).getLexema();
-        match(PARENTESIS_ABRE);
-        match(PARENTESIS_CIERRA);
+        entrarScope(funcion);
+        parametros();
         match(LLAVE_ABRE);
         documentador.agregar(obtenerLinea(tokensDetectados.get(posicion-1))+"SE CREA UNA FUNCION LLAMADA: "+funcion);
-        entrarScope(funcion);
+        tipoRetornoActual = tipoRetorno;
         instrucciones();
         salirScope();
+        tipoRetornoActual = null;
         match(LLAVE_CIERRA);
         
     }
+
+    /** Parametros: "(" [ <TIPO> IDENTIFICADOR { "," <TIPO> IDENTIFICADOR } ] ")". */
+    private void parametros(){
+        match(PARENTESIS_ABRE);
+        while (tokensDetectados.get(posicion).getTipo() != PARENTESIS_CIERRA) {
+            Token tipoParam = tokensDetectados.get(posicion);
+            switch (tipoParam.getTipo()) {
+                case PALABRA_RESERVADA_ENT:
+                case PALABRA_RESERVADA_REA:
+                case PALABRA_RESERVADA_CAD:
+                case PALABRA_RESERVADA_CAR:
+                case PALABRA_RESERVADA_BOO:
+                    posicion++;
+                    break;
+                default:
+                    throw error("Se esperaba un tipo de parametro");
+            }
+            match(IDENTIFICADOR);
+            String nombre = tokensDetectados.get(posicion-1).getLexema();
+            agregarParametro(tipoParam.getTipo(), nombre);
+            if (tokensDetectados.get(posicion).getTipo() == COMA) {
+                posicion++;
+            }
+        }
+        match(PARENTESIS_CIERRA);
+    }
+
+    private void agregarParametro(Tokens tipo, String nombre){
+        if (sem.existeEnScope(tabla, nombre, scopeActual())) {
+            throw error("YA EXISTE ESE IDENTIFICADOR: "+nombre);
+        }
+        Identificadores parametro = new Identificadores(tipo, nombre, scopeActual());
+        parametro.setValor(valorPlaceholder(tipo));
+        tabla.add(parametro);
+    }
+
+    /**
+     * Valor placeholder para un parametro (no recibe valor real). Permite usarlo
+     * en expresiones sin disparar "Variable sin valor".
+     */
+    private String valorPlaceholder(Tokens tipo){
+        switch (tipo) {
+            case PALABRA_RESERVADA_ENT: return "0";
+            case PALABRA_RESERVADA_REA: return "0.0";
+            case PALABRA_RESERVADA_BOO: return "verdadero";
+            case PALABRA_RESERVADA_CAD:
+            case PALABRA_RESERVADA_CAR: return "";
+            default: return null;
+        }
+    }
+
+    /** Lee el tipo de retorno opcional tras "funcion". Devuelve null si es void. */
+    private Tipo leerTipoRetorno(){
+        Token actual = tokensDetectados.get(posicion);
+        switch (actual.getTipo()) {
+            case PALABRA_RESERVADA_ENT:
+            case PALABRA_RESERVADA_REA:
+            case PALABRA_RESERVADA_CAD:
+            case PALABRA_RESERVADA_CAR:
+            case PALABRA_RESERVADA_BOO:
+                posicion++;
+                return sem.tipoDeToken(actual.getTipo());
+            case PALABRA_RESERVADA_VAC:
+                posicion++;
+                return null;
+            default:
+                return null;
+        }
+    }
+
     private void principal(){
         if(existePrincipal){
-            throw new RuntimeException("Ya existe una funcion principal");
+            throw error("Ya existe una funcion principal");
         }
         existePrincipal = true;
         match(PALABRA_RESERVADA_PRIN);
@@ -237,9 +502,11 @@ public class AnalizadorSintactico {
         match(PARENTESIS_CIERRA);
         match(LLAVE_ABRE);
         documentador.agregar(obtenerLinea(tokensDetectados.get(posicion-1))+"SE CREA LA FUNCION PRINCIPAL DEL CODIGO");
+        tipoRetornoActual = null;
         entrarScope("principal");
         instrucciones();
         salirScope();
+        tipoRetornoActual = null;
         match(LLAVE_CIERRA);
         
     }
@@ -257,6 +524,11 @@ public class AnalizadorSintactico {
             case PALABRA_RESERVADA_ENT: case PALABRA_RESERVADA_REA: case PALABRA_RESERVADA_CAD: case PALABRA_RESERVADA_CAR: case PALABRA_RESERVADA_BOO:
                 declaracion(actual.getTipo());
                 break;
+            case PALABRA_RESERVADA_NUE:
+            case PALABRA_RESERVADA_EST:
+            case PALABRA_RESERVADA_PUB:
+            case PALABRA_RESERVADA_PRI:
+                throw error("POO no implementada en v1: " + actual.getLexema());
             case PALABRA_RESERVADA_FUN:
                 funciones();
                 break;
@@ -289,7 +561,26 @@ public class AnalizadorSintactico {
             case PALABRA_RESERVADA_SEG:
                 segun();
                 break;
+            case PALABRA_RESERVADA_RET:
+                retornar();
+                break;
             case IDENTIFICADOR:
+
+                if (esLlamadaActual()) {
+                    String nombreLlamada = tokensDetectados.get(posicion).getLexema();
+                    llamadaFuncion();
+                    match(PUNTO_COMA);
+                    documentador.agregar(
+                        obtenerLinea(tokensDetectados.get(posicion-1))
+                        + "SE LLAMA A LA FUNCION: " + nombreLlamada
+                    );
+                    break;
+                }
+
+                if (posicion + 1 < tokensDetectados.size()
+                        && tokensDetectados.get(posicion + 1).getTipo() == PUNTO) {
+                    throw error("POO no implementada en v1: acceso a miembro");
+                }
 
                 String iden =
                     tokensDetectados.get(posicion).getLexema();
@@ -315,8 +606,7 @@ public class AnalizadorSintactico {
 
                 break;
             default:
-                System.out.println("no se ha puesto el token");
-                throw new AssertionError();
+                throw error("No se reconoce la instruccion");
         }
     }
     
@@ -335,6 +625,9 @@ public class AnalizadorSintactico {
     
     private void declaracion(Tokens tipo){
         String identificador;
+        if (tokensDetectados.get(posicion + 1).getTipo() == CORCHETE_ABRE) {
+            throw error("Arreglos no implementados en v1");
+        }
         agregarTabla();
         tipo();
         match(IDENTIFICADOR);
@@ -360,7 +653,7 @@ public class AnalizadorSintactico {
         Token siguiente = tokensDetectados.get(posicion);
         if (siguiente.getTipo()==ASIGNACION) {
             if (!sem.buscar(tabla, nombre, scopeActual())) {
-                throw new AssertionError("NO SE ENCONTRO EL IDENTIFICADOR: "+nombre);
+                throw error("NO SE ENCONTRO EL IDENTIFICADOR: "+nombre);
             }
             Tokens tok= sem.buscarIde(tabla, nombre, scopeActual()).getToken();
             asignacion(tok,nombre);
@@ -376,19 +669,19 @@ public class AnalizadorSintactico {
         posicion++;
         Identificadores ide = sem.buscarIde(tabla, identificador, scopeActual());
         if (ide == null) {
-            throw new RuntimeException("NO SE ENCONTRO EL IDENTIFICADOR: "+identificador);
+            throw error("NO SE ENCONTRO EL IDENTIFICADOR: "+identificador);
         }
         Tipo tipo = sem.tipoDeIdentificador(ide);
         if (tipo != Tipo.ENTERO && tipo != Tipo.REAL) {
-            throw new RuntimeException("TIPO INCOMPATIBLE: la asignacion compuesta solo aplica a ENTERO/REAL en "+identificador);
+            throw error("TIPO INCOMPATIBLE: la asignacion compuesta solo aplica a ENTERO/REAL en "+identificador);
         }
         if (ide.getValor() == null) {
-            throw new RuntimeException("Variable sin valor: "+identificador);
+            throw error("Variable sin valor: "+identificador);
         }
         double base = Double.parseDouble(ide.getValor());
         Expresion valor = expresionAritmetica();
         if (tipo == Tipo.ENTERO && valor.esReal) {
-            throw new RuntimeException("TIPO INCOMPATIBLE: no se puede asignar REAL a ENTERO en "+identificador);
+            throw error("TIPO INCOMPATIBLE: no se puede asignar REAL a ENTERO en "+identificador);
         }
         double resultado;
         switch (operador.getTipo()) {
@@ -410,7 +703,7 @@ public class AnalizadorSintactico {
             case PALABRA_RESERVADA_ENT:
                 Expresion valorEntero = expresionAritmetica();
                 if (valorEntero.esReal) {
-                    throw new RuntimeException("TIPO INCOMPATIBLE: no se puede asignar REAL a ENTERO en "+identificador);
+                    throw error("TIPO INCOMPATIBLE: no se puede asignar REAL a ENTERO en "+identificador);
                 }
                 asignarValor(identificador,String.valueOf((int)valorEntero.valor));
                 break;
@@ -428,13 +721,16 @@ public class AnalizadorSintactico {
                 asignarValor(identificador,expresionBooleana(identificador));
                 break;
             default:
-                throw new AssertionError("TIPO INVALIDO");
+                throw error("TIPO INVALIDO");
         }
     }
 
-    /** Lado derecho de una asignacion a cadena: literal o variable de tipo cadena. */
+    /** Lado derecho de una asignacion a cadena: literal, variable o llamada de tipo cadena. */
     private String expresionCadena(String identificador){
         Token actual = tokensDetectados.get(posicion);
+        if (esLlamadaActual()) {
+            return llamadaTipo(Tipo.CADENA, identificador, "");
+        }
         if (actual.getTipo() == TIPO_CADENA) {
             posicion++;
             return actual.getLexema();
@@ -443,19 +739,22 @@ public class AnalizadorSintactico {
             posicion++;
             Identificadores ide = sem.buscarIde(tabla, actual.getLexema(), scopeActual());
             if (ide == null) {
-                throw new RuntimeException("Variable no encontrada: "+ actual.getLexema());
+                throw error("Variable no encontrada: "+ actual.getLexema());
             }
             if (sem.tipoDeIdentificador(ide) != Tipo.CADENA) {
-                throw new RuntimeException("TIPO INCOMPATIBLE: no se puede asignar "+ide.getTipo()+" a CADENA en "+identificador);
+                throw error("TIPO INCOMPATIBLE: no se puede asignar "+ide.getTipo()+" a CADENA en "+identificador);
             }
             return ide.getValor();
         }
-        throw new RuntimeException("TIPO INCOMPATIBLE: se esperaba CADENA en "+identificador);
+        throw error("TIPO INCOMPATIBLE: se esperaba CADENA en "+identificador);
     }
 
-    /** Lado derecho de una asignacion a caracter: literal o variable de tipo caracter. */
+    /** Lado derecho de una asignacion a caracter: literal, variable o llamada de tipo caracter. */
     private String expresionCaracter(String identificador){
         Token actual = tokensDetectados.get(posicion);
+        if (esLlamadaActual()) {
+            return llamadaTipo(Tipo.CARACTER, identificador, "");
+        }
         if (actual.getTipo() == TIPO_CARACTER) {
             posicion++;
             return actual.getLexema();
@@ -464,19 +763,22 @@ public class AnalizadorSintactico {
             posicion++;
             Identificadores ide = sem.buscarIde(tabla, actual.getLexema(), scopeActual());
             if (ide == null) {
-                throw new RuntimeException("Variable no encontrada: "+ actual.getLexema());
+                throw error("Variable no encontrada: "+ actual.getLexema());
             }
             if (sem.tipoDeIdentificador(ide) != Tipo.CARACTER) {
-                throw new RuntimeException("TIPO INCOMPATIBLE: no se puede asignar "+ide.getTipo()+" a CARACTER en "+identificador);
+                throw error("TIPO INCOMPATIBLE: no se puede asignar "+ide.getTipo()+" a CARACTER en "+identificador);
             }
             return ide.getValor();
         }
-        throw new RuntimeException("TIPO INCOMPATIBLE: se esperaba CARACTER en "+identificador);
+        throw error("TIPO INCOMPATIBLE: se esperaba CARACTER en "+identificador);
     }
 
-    /** Lado derecho de una asignacion a booleano: verdadero/falso, variable booleana o negacion. */
+    /** Lado derecho de una asignacion a booleano: verdadero/falso, variable, negacion o llamada. */
     private String expresionBooleana(String identificador){
         Token actual = tokensDetectados.get(posicion);
+        if (esLlamadaActual()) {
+            return llamadaTipo(Tipo.BOOLEANO, identificador, "verdadero");
+        }
         if (actual.getTipo() == NEGAR) {
             posicion++;
             return negarBooleano(expresionBooleana(identificador));
@@ -495,17 +797,17 @@ public class AnalizadorSintactico {
             posicion++;
             Identificadores ide = sem.buscarIde(tabla, actual.getLexema(), scopeActual());
             if (ide == null) {
-                throw new RuntimeException("Variable no encontrada: "+ actual.getLexema());
+                throw error("Variable no encontrada: "+ actual.getLexema());
             }
             if (sem.tipoDeIdentificador(ide) != Tipo.BOOLEANO) {
-                throw new RuntimeException("TIPO INCOMPATIBLE: no se puede asignar "+ide.getTipo()+" a BOOLEANO en "+identificador);
+                throw error("TIPO INCOMPATIBLE: no se puede asignar "+ide.getTipo()+" a BOOLEANO en "+identificador);
             }
             if (ide.getValor() == null) {
-                throw new RuntimeException("Variable sin valor: "+ actual.getLexema());
+                throw error("Variable sin valor: "+ actual.getLexema());
             }
             return ide.getValor();
         }
-        throw new RuntimeException("TIPO INCOMPATIBLE: se esperaba BOOLEANO en "+identificador);
+        throw error("TIPO INCOMPATIBLE: se esperaba BOOLEANO en "+identificador);
     }
 
     private String negarBooleano(String valor){
@@ -535,7 +837,8 @@ public class AnalizadorSintactico {
         match(PALABRA_RESERVADA_IMP);
         match(PARENTESIS_ABRE);
         valor=expresionImprimible();
-        while (tokensDetectados.get(posicion).getTipo()==OPERADOR_SUMA) {
+        while (tokensDetectados.get(posicion).getTipo()==OPERADOR_SUMA
+                || tokensDetectados.get(posicion).getTipo()==COMA) {
             posicion++;
             valor=valor+expresionImprimible();
         }
@@ -545,14 +848,24 @@ public class AnalizadorSintactico {
     }
     private String expresionImprimible(){
         String resul="";
+        if (esLlamadaActual()) {
+            Token tok = tokensDetectados.get(posicion);
+            Tipo retorno = llamadaFuncion();
+            if (retorno == null) {
+                throw error("TIPO INCOMPATIBLE: la funcion " + tok.getLexema()
+                        + " no retorna un valor", tok);
+            }
+            return "";
+        }
         switch (tokensDetectados.get(posicion).getTipo()) {
             case IDENTIFICADOR: case TIPO_CADENA: case TIPO_CARACTER: case NUMERO_REAL: case NUMERO_ENTERO:
+            case PALABRA_RESERVADA_VER: case PALABRA_RESERVADA_FAL:
                 resul=tokensDetectados.get(posicion).getLexema();
                 posicion++;
                 break;
             default:
                 falso();
-                throw new AssertionError("NO SE RECONOCE EL TIPO: "+mostrarLineaError(tokensDetectados.get(posicion)));
+                throw error("NO SE RECONOCE EL TIPO: "+mostrarLineaError(tokensDetectados.get(posicion)));
         }
         return resul;
     }
@@ -597,7 +910,7 @@ public class AnalizadorSintactico {
                 match(LLAVE_CIERRA);
                 break;
             default:
-                throw new AssertionError("PROBELAMS EN IF");
+                throw error("PROBELAMS EN IF");
         }
     }
     public void segun(){
@@ -649,24 +962,63 @@ public class AnalizadorSintactico {
         documentador.agregar(obtenerLinea(tokensDetectados.get(posicion-1))+"SE TERMINA EL CASO");
         match(PUNTO_COMA);
     }
+
+    /** Sentencia "retornar" [ <expresion> ] ";". */
+    private void retornar(){
+        match(PALABRA_RESERVADA_RET);
+        boolean sinValor = tokensDetectados.get(posicion).getTipo()==PUNTO_COMA;
+        if (sinValor) {
+            if (tipoRetornoActual != null) {
+                throw error("TIPO INCOMPATIBLE: falta el valor de retorno en funcion "+tipoRetornoActual);
+            }
+            match(PUNTO_COMA);
+            return;
+        }
+        if (tipoRetornoActual == null) {
+            throw error("TIPO INCOMPATIBLE: la funcion no retorna valor");
+        }
+        switch (tipoRetornoActual) {
+            case ENTERO:
+                Expresion valorEntero = expresionAritmetica();
+                if (valorEntero.esReal) {
+                    throw error("TIPO INCOMPATIBLE: no se puede retornar REAL en funcion ENTERO");
+                }
+                break;
+            case REAL:
+                expresionAritmetica();
+                break;
+            case CADENA:
+                expresionCadena("retorno");
+                break;
+            case CARACTER:
+                expresionCaracter("retorno");
+                break;
+            case BOOLEANO:
+                expresionBooleana("retorno");
+                break;
+            default:
+                throw error("TIPO INCOMPATIBLE");
+        }
+        match(PUNTO_COMA);
+    }
     public void para(){
         match(PALABRA_RESERVADA_PAR);
         match(PARENTESIS_ABRE);
         int x=posicion;
-        match(PALABRA_RESERVADA_ENT);
-        String v=tokensDetectados.get(posicion).getLexema();
-        match(IDENTIFICADOR);
-        match(ASIGNACION);
-        String valor=tokensDetectados.get(posicion).getLexema();
-        match(NUMERO_ENTERO);
-        asignarValor(v,valor);
-        match(PUNTO_COMA);
-        match(IDENTIFICADOR);
+        entrarBloque();
+        declaracionPara();
+        expresionAritmetica();
         operadorRelacional();
-        match(NUMERO_ENTERO);
+        expresionAritmetica();
         match(PUNTO_COMA);
         match(IDENTIFICADOR);
-        match(INCREMENTO);
+        if (tokensDetectados.get(posicion).getTipo()==INCREMENTO) {
+            posicion++;
+        } else if (tokensDetectados.get(posicion).getTipo()==DECREMENTO) {
+            posicion++;
+        } else {
+            throw error("Se esperaba ++ o -- en el para");
+        }
         match(PARENTESIS_CIERRA );
         documentador.agregar(obtenerLinea(tokensDetectados.get(posicion-1))+"SE CREA UN BUCLE DE TIPO PARA CON LAS REGLAS: "+recorrerGenerarCadena(x));
         match(LLAVE_ABRE);
@@ -674,6 +1026,46 @@ public class AnalizadorSintactico {
         instruccionesSi(LLAVE_CIERRA);
         salirBloque();
         match(LLAVE_CIERRA);
+        salirBloque();
+    }
+
+    /** Contador del para: <entero|real> IDENTIFICADOR "=" <EXPRESION_ARITMETICA> ";". */
+    private void declaracionPara(){
+        Token tipoToken = tokensDetectados.get(posicion);
+        Tipo tipo;
+        switch (tipoToken.getTipo()) {
+            case PALABRA_RESERVADA_ENT:
+                tipo = Tipo.ENTERO;
+                break;
+            case PALABRA_RESERVADA_REA:
+                tipo = Tipo.REAL;
+                break;
+            default:
+                throw error("El contador del para debe ser entero o real");
+        }
+        posicion++;
+        match(IDENTIFICADOR);
+        String nombre = tokensDetectados.get(posicion-1).getLexema();
+        match(ASIGNACION);
+        Expresion inicial = expresionAritmetica();
+        if (tipo == Tipo.ENTERO && inicial.esReal) {
+            throw error("TIPO INCOMPATIBLE: no se puede asignar REAL a ENTERO en "+nombre);
+        }
+        match(PUNTO_COMA);
+        String valorInicial = (tipo == Tipo.ENTERO)
+                ? String.valueOf((int)inicial.valor)
+                : String.valueOf(inicial.valor);
+        agregarVariable(tipoToken.getTipo(), nombre, valorInicial);
+    }
+
+    /** Registra una variable con valor inicial en el scope actual. */
+    private void agregarVariable(Tokens tipo, String nombre, String valor){
+        if (sem.existeEnScope(tabla, nombre, scopeActual())) {
+            throw error("YA EXISTE ESE IDENTIFICADOR: "+nombre);
+        }
+        Identificadores id = new Identificadores(tipo, nombre, scopeActual());
+        id.setValor(valor);
+        tabla.add(id);
     }
     
     
@@ -718,20 +1110,24 @@ public class AnalizadorSintactico {
         expresionAritmetica();
     }
 
-    /** true si el token actual es verdadero/falso o un identificador de tipo booleano. */
+    /** true si el token actual es verdadero/falso, un identificador booleano o una llamada booleana. */
     private boolean esPrimarioBooleano(){
         Token actual = tokensDetectados.get(posicion);
         if (actual.getTipo()==PALABRA_RESERVADA_VER || actual.getTipo()==PALABRA_RESERVADA_FAL) {
             return true;
         }
         if (actual.getTipo()==IDENTIFICADOR) {
+            if (esLlamadaActual()) {
+                Firma firma = firmas.get(actual.getLexema());
+                return firma != null && firma.retorno == Tipo.BOOLEANO;
+            }
             Identificadores ide = sem.buscarIde(tabla, actual.getLexema(), scopeActual());
             return ide != null && sem.tipoDeIdentificador(ide) == Tipo.BOOLEANO;
         }
         return false;
     }
 
-    /** Consume verdadero/falso o un identificador de tipo booleano. */
+    /** Consume verdadero/falso, un identificador booleano o una llamada booleana. */
     private void primarioBooleano(){
         Token actual = tokensDetectados.get(posicion);
         if (actual.getTipo()==PALABRA_RESERVADA_VER || actual.getTipo()==PALABRA_RESERVADA_FAL) {
@@ -739,17 +1135,21 @@ public class AnalizadorSintactico {
             return;
         }
         if (actual.getTipo()==IDENTIFICADOR) {
+            if (esLlamadaActual()) {
+                llamadaTipo(Tipo.BOOLEANO, "condicion", "verdadero");
+                return;
+            }
             Identificadores ide = sem.buscarIde(tabla, actual.getLexema(), scopeActual());
             if (ide == null) {
-                throw new RuntimeException("Variable no encontrada: "+ actual.getLexema());
+                throw error("Variable no encontrada: "+ actual.getLexema());
             }
             if (sem.tipoDeIdentificador(ide) != Tipo.BOOLEANO) {
-                throw new RuntimeException("TIPO INCOMPATIBLE: "+actual.getLexema()+" no es booleano");
+                throw error("TIPO INCOMPATIBLE: "+actual.getLexema()+" no es booleano");
             }
             posicion++;
             return;
         }
-        throw new RuntimeException("TIPO INCOMPATIBLE: se esperaba un valor booleano");
+        throw error("TIPO INCOMPATIBLE: se esperaba un valor booleano");
     }
     
     private void operadorRelacional(){
@@ -765,7 +1165,7 @@ public class AnalizadorSintactico {
             posicion++;
             break;
         default:
-            throw new RuntimeException("Operador relacional inválido");
+            throw error("Operador relacional inválido");
         }
     }
     private Expresion expresionAritmetica(){
@@ -822,18 +1222,21 @@ public class AnalizadorSintactico {
                 posicion++;
                 return new Expresion(Double.parseDouble(actual.getLexema()), true);
             case IDENTIFICADOR:
+                if (esLlamadaActual()) {
+                    return llamadaNumerica();
+                }
                 posicion++;
                 Identificadores ide =
                 sem.buscarIde(tabla, actual.getLexema(), scopeActual());
                 if(ide == null){
-                    throw new RuntimeException("Variable no encontrada: "+ actual.getLexema());
+                    throw error("Variable no encontrada: "+ actual.getLexema());
                 }
                 Tipo tipo = sem.tipoDeIdentificador(ide);
                 if(tipo != Tipo.ENTERO && tipo != Tipo.REAL){
-                    throw new RuntimeException("TIPO INCOMPATIBLE: la variable "+actual.getLexema()+" no es numerica");
+                    throw error("TIPO INCOMPATIBLE: la variable "+actual.getLexema()+" no es numerica");
                 }
                 if(ide.getValor() == null){
-                    throw new RuntimeException("Variable sin valor: "+ actual.getLexema());
+                    throw error("Variable sin valor: "+ actual.getLexema());
                 }
                 return new Expresion(Double.parseDouble(ide.getValor()), tipo == Tipo.REAL);
             case PARENTESIS_ABRE:
@@ -841,8 +1244,10 @@ public class AnalizadorSintactico {
                 Expresion valor = expresionAritmetica();
                 match(PARENTESIS_CIERRA);
                 return valor;
+            case PALABRA_RESERVADA_NUE:
+                throw error("POO no implementada en v1: nuevo");
             default:
-                throw new RuntimeException("Factor invalido");
+                throw error("Factor invalido");
         }
 }
     
@@ -898,7 +1303,7 @@ public class AnalizadorSintactico {
     private void agregarTabla(){
         String nombre = tokensDetectados.get(posicion+1).getLexema();
         if (sem.existeEnScope(tabla, nombre, scopeActual())) {
-            throw new AssertionError("YA EXISTE ESE IDENTIFICADOR: "+nombre);
+            throw error("YA EXISTE ESE IDENTIFICADOR: "+nombre);
         }
         Tokens token;
         if (tokensDetectados.get(posicion+1).getTipo()==null) {
@@ -936,7 +1341,7 @@ public class AnalizadorSintactico {
                 case OPERADOR_SUMA:
                     numero=Double.parseDouble(pila.peek());
                 default:
-                    throw new AssertionError();
+                    throw error("Expresion no soportada");
             }
             x++;
         }

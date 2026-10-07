@@ -43,6 +43,7 @@ public class AnalizadorLexico {
     
     public boolean seccionarCadena(String cadena){
         cadena=cadena.replace(";", " ; ");
+        cadena=cadena.replace(",", " , ");
         cadena=cadena.replace(":", " : ");
         cadena=cadena.replace("{", " { ");
         cadena=cadena.replace("}", " } ");
@@ -60,7 +61,7 @@ public class AnalizadorLexico {
         cadena=cadena.replace("<", " < ");
         cadena=cadena.replace(">", " > ");
         cadena=cadena.replace(" +  + ", " ++ ");
-        cadena=cadena.replace("--", " -- ");
+        cadena=cadena.replace(" -  - ", " -- ");
         cadena=cadena.replace("+  =", " += ");
         cadena=cadena.replace("-  =", " -= ");
         cadena=cadena.replace("*  =", " *= ");
@@ -139,6 +140,7 @@ public class AnalizadorLexico {
             case "{": return LLAVE_ABRE;
             case "}": return LLAVE_CIERRA;
             case ";": return PUNTO_COMA;
+            case ",": return COMA;
             case ":": return DOS_PUNTOS;
             case "caso": return PALABRA_RESERVADA_CAS;
             case "predeterminado": return PALABRA_RESERVADA_PRE;

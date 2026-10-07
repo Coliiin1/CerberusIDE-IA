@@ -1,0 +1,7 @@
+clase Test(){
+    funcion principal(){
+        para(entero i = 1 + 1; i < 10 * 2; i++){
+            imprimir(i);
+        }
+    }
+}

@@ -1,0 +1,8 @@
+clase Test(){
+    funcion principal(){
+        imprimir(f(1), "x");
+    }
+    funcion entero f(entero a){
+        retornar a;
+    }
+}

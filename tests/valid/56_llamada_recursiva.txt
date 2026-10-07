@@ -1,0 +1,11 @@
+clase Test(){
+    funcion principal(){
+        f(3);
+    }
+    funcion entero f(entero n){
+        si(n > 0){
+            retornar f(n - 1);
+        }
+        retornar 0;
+    }
+}

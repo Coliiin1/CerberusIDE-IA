@@ -1,0 +1,7 @@
+clase Test(){
+    funcion principal(){
+    }
+    funcion entero id(entero a){
+        retornar 1;
+    }
+}

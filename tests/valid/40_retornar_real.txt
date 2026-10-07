@@ -1,0 +1,7 @@
+clase Test(){
+    funcion principal(){
+    }
+    funcion real f(){
+        retornar 2.5;
+    }
+}

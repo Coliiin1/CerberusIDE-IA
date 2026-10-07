@@ -1,8 +1,14 @@
 entero l = 7;
 clase main(){
+	funcion entero hola(){
+		imprimir("hola");
+
+		retornar 5;
+	}
+
     funcion principal(){
         entero l = 25;
-        entero x = 4 + 23.7;
+        entero x = 4;
         x = 98;
         real y = 8.9 + 65.4;
         caracter d = 'd';
