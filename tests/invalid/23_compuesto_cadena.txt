@@ -1,6 +1,6 @@
 clase Test(){
     funcion principal(){
-        entero x = 5;
-        x /= 2;
+        cadena s = "a";
+        s += "b";
     }
 }

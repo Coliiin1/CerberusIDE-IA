@@ -1,0 +1,6 @@
+clase Test(){
+    funcion principal(){
+        booleano a = falso;
+        booleano b = !a;
+    }
+}

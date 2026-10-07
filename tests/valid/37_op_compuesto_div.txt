@@ -1,0 +1,6 @@
+clase Test(){
+    funcion principal(){
+        real x = 5.0;
+        x /= 2;
+    }
+}

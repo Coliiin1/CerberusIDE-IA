@@ -1,0 +1,8 @@
+clase Test(){
+    funcion principal(){
+        booleano activo = falso;
+        si(!activo){
+            imprimir("si");
+        }
+    }
+}

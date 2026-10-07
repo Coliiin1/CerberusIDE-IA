@@ -336,7 +336,7 @@ NO SE HA DECLARADO EL IDENTIFICADOR: x
 
 La documentación indica que los operadores aritméticos utilizan operandos `entero` y `real` y producen un resultado numérico.
 
-**Reconciliación:** implementados en el parser `+`, `-`, `*`, `/`, `%`. `++` se usa únicamente como incremento en `para`. Los operadores compuestos (`+=`, `-=`, `*=`, `/=`) y `--` **no están implementados**: el lexer no los tokeniza correctamente y el parser los rechaza. Estado: `IMPLEMENTED` para `+ - * / %` y `++` (en `para`); `CONFLICT`/no implementado para `+=`, `-=`, `*=`, `/=`, `--`.
+**Reconciliación:** implementados en el parser `+`, `-`, `*`, `/`, `%` y la asignación compuesta `+=`, `-=`, `*=`, `/=` (solo sobre `entero`/`real`). `++` se usa únicamente como incremento en `para`. `--` sigue sin gramática. Estado: `IMPLEMENTED` para `+ - * / %`, `++` (en `para`) y los compuestos numéricos; `--` pendiente.
 
 ### 7.2 Relacionales
 
@@ -356,13 +356,21 @@ Los operadores relacionales producen un resultado booleano.
 ```text
 &
 |
+!
 ```
 
-El parser solo implementa `&` (AND) y `|` (OR) en `expresionLogica()`.
+`expresionLogica()` implementa `&` (AND) y `|` (OR) sobre términos lógicos, y `terminoLogico()` implementa la negación `!`:
 
-La documentación también lista `!` dentro del conjunto de operadores, pero el parser **no lo consume** en ninguna producción: `si(!x)` es rechazado (`Factor invalido`).
+```cerberus
+si(!activo) { ... }
+si(!!a) { ... }
+si(!(x > 5)) { ... }
+si(!a & x > 0) { ... }
+```
 
-**Estado:** `IMPLEMENTED` para `&` y `|`; `DOCUMENTED/PARTIAL` para `!` (tokenizado pero no usado).
+La negación también funciona en el RHS de una asignación booleana (`booleano b = !a;`). `!` sobre un valor no booleano (`si(!x)` con `x` entero) es rechazado.
+
+**Estado:** `IMPLEMENTED` para `&`, `|` y `!`.
 
 ### 7.4 Precedencia
 
@@ -431,7 +439,7 @@ si (edad >= 18 & activo == verdadero) {
 }
 ```
 
-Falta el operador `!` (ver 6.4).
+Se soporta además la negación `!` (`terminoLogico()`): `!activo`, `!!a`, `!(x > 5)`, `!(a & b)`, y en el RHS booleano (`booleano b = !a;`).
 
 ### 8.4 Condición
 
@@ -1009,7 +1017,7 @@ Ejemplo conceptual de error:
 no se debe intentar sumar un texto con un número
 ```
 
-**Reconciliación (implementado):** las expresiones llevan tipo. Reglas: `entero←entero`; `real←entero|real`; `cadena←cadena`; `caracter←caracter`; `booleano←booleano`. `entero x = 9.5;` se rechaza (`TIPO INCOMPATIBLE`); sumar un texto con un número se rechaza con `TIPO INCOMPATIBLE`. Las condiciones booleanas desnudas y `&`/`|` están implementadas; falta `!` (6.4).
+**Reconciliación (implementado):** las expresiones llevan tipo. Reglas: `entero←entero`; `real←entero|real`; `cadena←cadena`; `caracter←caracter`; `booleano←booleano`. `entero x = 9.5;` se rechaza (`TIPO INCOMPATIBLE`); sumar un texto con un número se rechaza con `TIPO INCOMPATIBLE`. Las condiciones booleanas desnudas, `&`/`|` y la negación `!` están implementadas.
 
 **Estado:** `IMPLEMENTED` (entero/real/cadena/caracter/booleano).
 
@@ -1227,7 +1235,7 @@ Una IA que genere Cerberus debe seguir estas reglas.
 12. En `para`, incluir la palabra `entero`: `para(entero i = 0; i < 10; i++)`.
 13. En `segun`, no usar `predeterminado` y terminar cada `caso` con `salir;`.
 14. Las variables `booleano` se inicializan con `verdadero`/`falso` y se usan en condiciones; no se usan en aritmética.
-15. No usar operadores compuestos (`+=`, `-=`, `*=`, `/=`), `--` ni `!`.
+15. Los operadores compuestos (`+=`, `-=`, `*=`, `/=`), `!` sí están implementados; no usar `--`.
 16. No declarar `entero` con literales o expresiones reales: el compilador lo rechaza (`TIPO INCOMPATIBLE`).
 
 ### 20.2 Comparaciones con Java
@@ -1376,8 +1384,8 @@ Las siguientes características requieren mayor definición antes de utilizarlas
 | Arrays | `PENDING` | No implementados (`entero [] a;` es rechazado). |
 | `nulo` | `PARTIAL` | Tokenizado, sin semántica; `entero x = nulo;` falla (`Factor invalido`). |
 | `vacio` | `PARTIAL` | Tokenizado, sin semántica. |
-| Operador `!` | `PARTIAL` | Tokenizado pero no usado en el parser (`si(!x)` falla). |
-| Operadores compuestos (`+=`, `-=`, `*=`, `/=`), `--` | `PARTIAL`/no implementado | No tokenizados/usados correctamente; rechazados. |
+| Operador `!` | `IMPLEMENTED` | Negación en condiciones y RHS booleano; `!` sobre no booleano se rechaza. |
+| Operadores compuestos (`+=`, `-=`, `*=`, `/=`), `--` | `IMPLEMENTED` (compuestos numéricos) | Solo `entero`/`real`; `--` pendiente. |
 | Precedencia completa | `PARTIAL` | Se describe precedencia aritmética, pero no existe tabla completa. |
 | Inicialización booleana | `IMPLEMENTED` | `booleano x = verdadero;` y variables booleanas; condiciones booleanas. |
 | Validación de tipos | `IMPLEMENTED` | `entero x = 9.5;` rechazado (`TIPO INCOMPATIBLE`); `booleano` pendiente. |
@@ -1451,8 +1459,8 @@ Verificación dinámica con `audit.CompilerProbe` (ver `CerberusAI_COMPILER_AUDI
 | `para(i = 0; ...)` | exige `para(entero i = 0; ...)` | `CONFLICT` |
 | `segun` con `predeterminado` | no implementado | `CONFLICT` |
 | `salir` sin `;` | exige `salir;` | `CONFLICT` |
-| `+=`, `-=`, `*=`, `/=` | no implementados | `CONFLICT` |
-| `!` (negación) | tokenizado, no usado | `CONFLICT`/`PARTIAL` |
+| `+=`, `-=`, `*=`, `/=` | implementados (solo numérico) | `IMPLEMENTED` |
+| `!` (negación) | implementado | `IMPLEMENTED` |
 | `si (... & activo == verdadero)` | implementado (booleano) | `IMPLEMENTED` |
 
 ---

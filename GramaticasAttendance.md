@@ -109,38 +109,31 @@ Checklist de lo que funciona hoy (verificado con la suite, 32/32 casos):
 
 ---
 
-### 2.6 Negación lógica `!` — `ALTA`
+### 2.6 Negación lógica `!` — `ALTA` — **HECHO**
+
+**Estado:** `HECHO`. `terminoLogico()` implementa `!` sobre un término (`!activo`, `!!a`) y sobre un grupo `!( <expresionLogica> )` (`!(x > 5)`, `!(a & b)`); combinable con `&`/`|`. `expresionBooleana()` también acepta `!` en el RHS (`booleano b = !a;`). `!` sobre un no booleano se rechaza. Verificado por `28`–`33` y por la sonda.
+
+<details>
+<summary>Descripción original del hueco</summary>
 
 - **Token:** `NEGAR` (lexer OK).
-- **Dónde falta:** `AnalizadorSintactico.expresionLogica()` solo consume `&` (AND) y `|` (OR).
-- **Qué falta:** factor lógico con `!`.
+- **Dónde falta:** `expresionLogica()` solo consumía `&`/`|`.
 
-**BNF propuesto:**
-
-```text
-<EXPRESION_LOGICA> ::= <CONDICION> { ( "&" | "|" ) <CONDICION> }
-
-<FACTOR_LOGICO> ::= "!" <FACTOR_LOGICO>
-                  | <CONDICION>
-```
+</details>
 
 ---
 
-### 2.7 Operadores de asignación compuesta `+= -= *= /=` — `ALTA`
+### 2.7 Operadores de asignación compuesta `+= -= *= /=` — `ALTA` — **HECHO**
 
-- **Token:** `MUL_VARIABLE`, `DIV_VARIABLE` existen en `Tokens`; `INC_VARIABLE`, `DEC_VARIABLE` declarados pero sin uso. `+=` y `-=` **no** están tokenizados.
-- **Dónde falta:**
-  - Lexer: `AnalizadorLexico.seccionarCadena()` no colapsa correctamente `+=`/`-=` y `analizador()` no tiene cases.
-  - Parser: no existe producción de asignación compuesta.
-- **Qué falta:** tokens y gramática completos.
+**Estado:** `HECHO`. Tokens `MAS_VARIABLE`/`MENOS_VARIABLE` (renombrados desde `INC_VARIABLE`/`DEC_VARIABLE`) + `MUL_VARIABLE`/`DIV_VARIABLE`. `seccionarCadena()` colapsa los cuatro (pautas de doble espacio) y `analizador()` los mapea. `asignacionCompuesta()` en el parser los aplica solo a `entero`/`real`; otros tipos o `entero += real` → `TIPO INCOMPATIBLE`. Verificado por `34`–`37`, inválidos `23`–`25` y la sonda.
 
-**BNF propuesto:**
+<details>
+<summary>Descripción original del hueco</summary>
 
-```text
-<ASIGNACION_COMPUESTA> ::= IDENTIFICADOR ( "+=" | "-=" | "*=" | "/=" ) <EXPRESION_ARITMETICA> ";"
-```
+- **Token:** `MUL_VARIABLE`, `DIV_VARIABLE` existían; `INC_VARIABLE`/`DEC_VARIABLE` sin uso; `+=`/`-=` no tokenizados.
+- **Dónde faltaba:** lexer (`seccionarCadena()`/`analizador()`) y parser (sin producción).
 
-> Nota: reutilizar `INC_VARIABLE`/`DEC_VARIABLE` para `+=`/`-=` y `MUL_VARIABLE`/`DIV_VARIABLE` para `*=`/`/=`.
+</details>
 
 ---
 
@@ -321,8 +314,8 @@ Estas se marcarían como `PENDING`/`DOCUMENTED` en `language_spec.md` y **no** g
 | 2.3 | `retornar` | ALTA | PENDIENTE |
 | 2.4 | Inicialización booleana | ALTA | HECHO |
 | 2.5 | Booleano como condición | ALTA | HECHO |
-| 2.6 | Negación `!` | ALTA | PENDIENTE |
-| 2.7 | Asignación compuesta `+= -= *= /=` | ALTA | PENDIENTE |
+| 2.6 | Negación `!` | ALTA | HECHO |
+| 2.7 | Asignación compuesta `+= -= *= /=` | ALTA | HECHO |
 | 2.9 | `para` generalizado | ALTA | PENDIENTE |
 | 2.10 | `segun` con `predeterminado` | ALTA | PENDIENTE |
 | 2.11 | Validación de tipos | ALTA | HECHO |

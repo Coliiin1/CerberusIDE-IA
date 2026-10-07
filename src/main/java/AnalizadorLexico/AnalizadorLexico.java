@@ -61,9 +61,10 @@ public class AnalizadorLexico {
         cadena=cadena.replace(">", " > ");
         cadena=cadena.replace(" +  + ", " ++ ");
         cadena=cadena.replace("--", " -- ");
-        cadena=cadena.replace("+ =", " += ");
-        cadena=cadena.replace("* =", " *= ");
-        cadena=cadena.replace("/ =", " /= ");
+        cadena=cadena.replace("+  =", " += ");
+        cadena=cadena.replace("-  =", " -= ");
+        cadena=cadena.replace("*  =", " *= ");
+        cadena=cadena.replace("/  =", " /= ");
         cadena=cadena.replace("=  =", " == ");
         cadena=cadena.replace("!  =", " != ");
         cadena=cadena.replace("<  =", " <= ");
@@ -167,6 +168,8 @@ public class AnalizadorLexico {
             case "--": return DECREMENTO;
             case "*=": return MUL_VARIABLE;
             case "/=": return DIV_VARIABLE;
+            case "+=": return MAS_VARIABLE;
+            case "-=": return MENOS_VARIABLE;
             case "==": return IGUAL;
             case "!=": return DIFERENTE;
             case "<=": return MENOR_IGUAL;

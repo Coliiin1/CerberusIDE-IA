@@ -57,9 +57,9 @@ Operadores/tokenización presentes:
 
 `+ - * / %`, `=`, `++ --`, `*= /=`, `== != < > <= >=`, `& | !`, delimitadores `() {} [] ; :`, identificadores, enteros, reales, cadenas y caracteres.
 
-**Operadores compuestos (`+=`, `-=`, `*=`, `/=`):** `ROTO/CONFLICT`. El `switch` de `analizador()` solo tiene `case "*="` (MUL_VARIABLE) y `case "/="` (DIV_VARIABLE); no existen `case "+="` ni `case "-="`. Además, `seccionarCadena()` intenta colapsar `+ =` → `+=`, `* =` → `*=`, `/ =` → `/=` (nunca `- =`), pero por el espaciado generado (`+`→` + `, luego `=`→` = `) el patrón con un solo espacio **no coincide**. La sonda confirma que los cuatro (`+=`, `-=`, `*=`, `/=`) son rechazados (error `Se esperaba PUNTO_COMA y se encontró OPERADOR_*`). En ningún caso se usan en la gramática del parser.
+**Operadores compuestos (`+=`, `-=`, `*=`, `/=`):** implementados. El lexer colapsa correctamente los cuatro (`seccionarCadena()` con las pautas de doble espacio) y `analizador()` mapea `+=`→`MAS_VARIABLE`, `-=`→`MENOS_VARIABLE`, `*=`→`MUL_VARIABLE`, `/=`→`DIV_VARIABLE`. El parser los acepta vía `asignacionCompuesta()` solo sobre `entero`/`real`; sobre otros tipos o con RHS real hacia `entero` → `TIPO INCOMPATIBLE`.
 
-**Operador `!` (NEGAR):** tokenizado pero inutilizado. `expresionLogica()` solo consume `&` (AND) y `|` (OR). La sonda confirma que `si(!x)` falla con `Factor invalido`.
+**Operador `!` (NEGAR):** implementado en `terminoLogico()`: negación de un término (`!activo`, `!!a`), de un grupo `!( ... )` (`!(x > 5)`, `!(a & b)`), y en el RHS de asignación booleana (`booleano b = !a;`). `!` sobre un valor no booleano (`si(!x)` con `x` entero) se rechaza (`Operador relacional inválido`).
 
 ### Tipos
 
@@ -136,11 +136,11 @@ Estado: PARTIAL/CONFLICT si la documentación promete `predeterminado`.
 
 Existe evaluación de expresiones aritméticas con precedencia (`expresionAritmetica()`, `termino()`, `factor()`), con `+ - * / %`, números, identificadores y paréntesis.
 
-Las expresiones lógicas se construyen a partir de condiciones y operadores `&` y `|`, con operadores relacionales `> < >= <= == !=`. `!` no se usa.
+Las expresiones lógicas se construyen a partir de términos y operadores `&` y `|`, con operadores relacionales `> < >= <= == !=` y negación `!` (`terminoLogico()`).
 
 **`factor()` tipado:** identifica el tipo de cada operando. Un identificador `cadena`/`caracter` en aritmética se rechaza con `TIPO INCOMPATIBLE: la variable X no es numerica` (ya no lanza `NumberFormatException`).
 
-Estado: IMPLEMENTED para el subconjunto anterior (incluye booleanos desnudos y comparaciones booleanas `==`/`!=`); `!` pendiente.
+Estado: IMPLEMENTED para el subconjunto anterior (booleanos desnudos, comparaciones `==`/`!=`, `&`/`|` y negación `!`).
 
 ### Tabla de símbolos / semántica
 
@@ -180,8 +180,10 @@ Resultados de `audit.CompilerProbe` (32/33 casos coinciden; la única discrepanc
 | `segun` con `predeterminado:` | No | `Se esperaba LLAVE_CIERRA` |
 | `segun` con `salir` (sin `;`) | No | `Se esperaba PUNTO_COMA` |
 | `retornar 1;` | No | `no se ha puesto el token` |
-| `x += 2;` / `x -= 2;` / `x *= 2;` / `x /= 2;` | No | `Se esperaba PUNTO_COMA y se encontró OPERADOR_*` |
-| `si(!x){...}` | No | `Factor invalido` |
+| `x += 2;` / `x -= 2;` / `x *= 2;` / `x /= 2;` (x numérico) | Sí | — (asignación compuesta) |
+| compuesto sobre `cadena`/`booleano` o `entero += real` | No | `TIPO INCOMPATIBLE` |
+| `si(!x){...}` (x entero) | No | `Operador relacional inválido` |
+| `si(!activo)`, `si(!!a)`, `si(!(x > 5))`, `booleano b = !a;` | Sí | — (negación implementada) |
 | `entero y = 1 + x;` (x cadena) | No | `TIPO INCOMPATIBLE: la variable x no es numerica` |
 | `entero x = nulo;` | No | `Factor invalido` |
 | shadowing: `x` global + `x` local | Sí | — (scopes implementados) |
@@ -197,8 +199,8 @@ Resultados de `audit.CompilerProbe` (32/33 casos coinciden; la única discrepanc
 | `para(i = 0; ...)` | documentado | exige `para(entero i = 0; ...)` | CONFLICT |
 | `segun` con `predeterminado` | documentado | no implementado | CONFLICT |
 | `salir` | ejemplos sin `;` | exige `salir;` | CONFLICT |
-| `+=`, `-=` | documentados | no implementados | CONFLICT |
-| `!` (negación lógica) | documentado | tokenizado, no usado | DOCUMENTED/PARTIAL |
+| `+=`, `-=`, `*=`, `/=` | implementados (solo numérico) | `IMPLEMENTED` |
+| `!` (negación lógica) | documentado | implementado | `IMPLEMENTED` |
 | parámetros de función | PENDING | no implementados | PENDING |
 | `retornar` | documentado | solo tokenizado | DOCUMENTED/PARTIAL |
 | arreglos (`entero [] a;`) | mencionados | no implementados | PENDING |
@@ -223,8 +225,8 @@ Entradas de `cerberus_dataset_v1.jsonl` inválidas contra el compilador real:
 4. No generar `para` genérico.
 5. No generar `predeterminado` hasta confirmar su soporte real.
 6. No asumir parámetros o retornos en funciones.
-7. No asumir operadores compuestos (`+=`, `-=`, `*=`, `/=`); falta `!`.
-8. Validación de tipos y booleanos implementados; pendientes `!`, `retornar`, parámetros y `predeterminado`.
+7. Asignación compuesta (`+=`, `-=`, `*=`, `/=`) implementada solo para `entero`/`real`.
+8. Negación `!` implementada; pendientes `retornar`, parámetros y `predeterminado`.
 9. Mantener una lista explícita de características futuras.
 
 ## Próximo paso técnico

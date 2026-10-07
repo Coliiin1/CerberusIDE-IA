@@ -118,6 +118,9 @@ public class CompilerProbe {
         casos.add(new Caso("booleano con inicializacion",
                 prog("booleano x = verdadero;"), true));
 
+        casos.add(new Caso("negacion booleana valida",
+                prog("booleano a = falso;\nsi(!a){\n}"), true));
+
         casos.add(new Caso("asignacion directa numerica",
                 prog("entero x = 5;\nx = 10;"), true));
 
@@ -158,18 +161,18 @@ public class CompilerProbe {
                 progConFunciones("", "funcion f(){\n retornar 1;\n}"), false));
 
         casos.add(new Caso("operador compuesto +=",
-                prog("entero x = 5;\nx += 2;"), false));
+                prog("entero x = 5;\nx += 2;"), true));
 
         casos.add(new Caso("operador compuesto -=",
-                prog("entero x = 5;\nx -= 2;"), false));
+                prog("entero x = 5;\nx -= 2;"), true));
 
         casos.add(new Caso("operador compuesto *=",
-                prog("entero x = 5;\nx *= 2;"), false));
+                prog("entero x = 5;\nx *= 2;"), true));
 
         casos.add(new Caso("operador compuesto /=",
-                prog("entero x = 5;\nx /= 2;"), false));
+                prog("entero x = 5;\nx /= 2;"), true));
 
-        casos.add(new Caso("operador logico ! (negacion)",
+        casos.add(new Caso("negacion de entero (invalida)",
                 prog("entero x = 5;\nsi(!x){\n}"), false));
 
         casos.add(new Caso("aritmetica con variable cadena",

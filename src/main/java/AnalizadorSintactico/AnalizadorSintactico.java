@@ -356,12 +356,51 @@ public class AnalizadorSintactico {
     
     private void asignacionDirecta(){
         match(IDENTIFICADOR);
-        if (tokensDetectados.get(posicion).getTipo()==ASIGNACION) {
-            if (!sem.buscar(tabla, tokensDetectados.get(posicion-1).getLexema(), scopeActual())) {
-                throw new AssertionError("NO SE ENCONTRO EL IDENTIFICADOR: "+tokensDetectados.get(posicion-1).getLexema());
+        String nombre = tokensDetectados.get(posicion-1).getLexema();
+        Token siguiente = tokensDetectados.get(posicion);
+        if (siguiente.getTipo()==ASIGNACION) {
+            if (!sem.buscar(tabla, nombre, scopeActual())) {
+                throw new AssertionError("NO SE ENCONTRO EL IDENTIFICADOR: "+nombre);
             }
-            Tokens tok= sem.buscarIde(tabla, tokensDetectados.get(posicion-1).getLexema(), scopeActual()).getToken();
-            asignacion(tok,tokensDetectados.get(posicion-1).getLexema());
+            Tokens tok= sem.buscarIde(tabla, nombre, scopeActual()).getToken();
+            asignacion(tok,nombre);
+        } else if (siguiente.getTipo()==MAS_VARIABLE || siguiente.getTipo()==MENOS_VARIABLE
+                || siguiente.getTipo()==MUL_VARIABLE || siguiente.getTipo()==DIV_VARIABLE) {
+            asignacionCompuesta(nombre);
+        }
+    }
+
+    /** Asignacion compuesta: IDENTIFICADOR ( "+=" | "-=" | "*=" | "/=" ) <EXPRESION_ARITMETICA> ";". */
+    private void asignacionCompuesta(String identificador){
+        Token operador = tokensDetectados.get(posicion);
+        posicion++;
+        Identificadores ide = sem.buscarIde(tabla, identificador, scopeActual());
+        if (ide == null) {
+            throw new RuntimeException("NO SE ENCONTRO EL IDENTIFICADOR: "+identificador);
+        }
+        Tipo tipo = sem.tipoDeIdentificador(ide);
+        if (tipo != Tipo.ENTERO && tipo != Tipo.REAL) {
+            throw new RuntimeException("TIPO INCOMPATIBLE: la asignacion compuesta solo aplica a ENTERO/REAL en "+identificador);
+        }
+        if (ide.getValor() == null) {
+            throw new RuntimeException("Variable sin valor: "+identificador);
+        }
+        double base = Double.parseDouble(ide.getValor());
+        Expresion valor = expresionAritmetica();
+        if (tipo == Tipo.ENTERO && valor.esReal) {
+            throw new RuntimeException("TIPO INCOMPATIBLE: no se puede asignar REAL a ENTERO en "+identificador);
+        }
+        double resultado;
+        switch (operador.getTipo()) {
+            case MAS_VARIABLE: resultado = base + valor.valor; break;
+            case MENOS_VARIABLE: resultado = base - valor.valor; break;
+            case MUL_VARIABLE: resultado = base * valor.valor; break;
+            default: resultado = base / valor.valor; break;
+        }
+        if (tipo == Tipo.ENTERO) {
+            asignarValor(identificador, String.valueOf((int)resultado));
+        } else {
+            asignarValor(identificador, String.valueOf(resultado));
         }
     }
     
@@ -435,9 +474,19 @@ public class AnalizadorSintactico {
         throw new RuntimeException("TIPO INCOMPATIBLE: se esperaba CARACTER en "+identificador);
     }
 
-    /** Lado derecho de una asignacion a booleano: verdadero/falso o variable booleana. */
+    /** Lado derecho de una asignacion a booleano: verdadero/falso, variable booleana o negacion. */
     private String expresionBooleana(String identificador){
         Token actual = tokensDetectados.get(posicion);
+        if (actual.getTipo() == NEGAR) {
+            posicion++;
+            return negarBooleano(expresionBooleana(identificador));
+        }
+        if (actual.getTipo() == PARENTESIS_ABRE) {
+            posicion++;
+            String valor = expresionBooleana(identificador);
+            match(PARENTESIS_CIERRA);
+            return valor;
+        }
         if (actual.getTipo() == PALABRA_RESERVADA_VER || actual.getTipo() == PALABRA_RESERVADA_FAL) {
             posicion++;
             return actual.getLexema();
@@ -451,9 +500,16 @@ public class AnalizadorSintactico {
             if (sem.tipoDeIdentificador(ide) != Tipo.BOOLEANO) {
                 throw new RuntimeException("TIPO INCOMPATIBLE: no se puede asignar "+ide.getTipo()+" a BOOLEANO en "+identificador);
             }
+            if (ide.getValor() == null) {
+                throw new RuntimeException("Variable sin valor: "+ actual.getLexema());
+            }
             return ide.getValor();
         }
         throw new RuntimeException("TIPO INCOMPATIBLE: se esperaba BOOLEANO en "+identificador);
+    }
+
+    private String negarBooleano(String valor){
+        return "verdadero".equals(valor) ? "falso" : "verdadero";
     }
     
     private void tipo(){
@@ -606,11 +662,27 @@ public class AnalizadorSintactico {
     
     
     private void expresionLogica(){
-        condicion();
+        terminoLogico();
         while (tokensDetectados.get(posicion).getTipo()==AND || tokensDetectados.get(posicion).getTipo()==OR) {
             posicion++;
-            condicion();
+            terminoLogico();
         }
+    }
+
+    /** Termino logico: negacion (con o sin parentesis) o condicion. */
+    private void terminoLogico(){
+        if (tokensDetectados.get(posicion).getTipo()==NEGAR) {
+            posicion++;
+            if (tokensDetectados.get(posicion).getTipo()==PARENTESIS_ABRE) {
+                match(PARENTESIS_ABRE);
+                expresionLogica();
+                match(PARENTESIS_CIERRA);
+            } else {
+                terminoLogico();
+            }
+            return;
+        }
+        condicion();
     }
     
     private void condicion(){
