@@ -149,7 +149,7 @@ public class CompilerProbe {
                 prog("cadena x = \"hola\";\nsegun(x){\n caso \"hola\":\n  imprimir(\"ok\");\n salir;\n}"), true));
 
         casos.add(new Caso("segun con predeterminado",
-                prog("entero x = 1;\nsegun(x){\n caso 1:\n  imprimir(\"uno\");\n salir;\n predeterminado:\n  imprimir(\"otro\");\n salir;\n}"), false));
+                prog("entero x = 1;\nsegun(x){\n caso 1:\n  imprimir(\"uno\");\n salir;\n predeterminado:\n  imprimir(\"otro\");\n salir;\n}"), true));
 
         casos.add(new Caso("segun con salir sin punto y coma",
                 prog("entero x = 1;\nsegun(x){\n caso 1:\n  imprimir(\"uno\");\n salir\n}"), false));

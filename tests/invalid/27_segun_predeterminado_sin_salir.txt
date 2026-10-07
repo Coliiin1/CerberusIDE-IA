@@ -1,0 +1,12 @@
+clase Test(){
+    funcion principal(){
+        entero x = 1;
+        segun(x){
+            caso 1:
+                imprimir("uno");
+            salir;
+            predeterminado:
+                imprimir("otro");
+        }
+    }
+}

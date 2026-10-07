@@ -614,6 +614,9 @@ segun(opcion) {
     caso 2:
         imprimir("Dos");
         salir;
+    predeterminado:
+        imprimir("Otro");
+        salir;
 }
 ```
 
@@ -621,11 +624,12 @@ Elementos implementados:
 
 - `segun`
 - `caso`
+- `predeterminado` (caso por defecto, **solo al final**, opcional)
 - `salir` (obligatorio `;` al final)
 
-**Reconciliación:** `predeterminado` **no está implementado** (`Se esperaba LLAVE_CIERRA`). `salir` exige `;` (`Se esperaba PUNTO_COMA`). El selector debe ser un identificador; cada `caso` debe usar un literal del mismo tipo que el selector (`retornarTipo`): selector `entero` → `caso 1`; selector `cadena` → `caso "..."`.
+**Reconciliación:** `predeterminado` **sí está implementado** como caso por defecto, solo al final del `segun`, y exige `salir;`. En otra posición se rechaza (`Se esperaba LLAVE_CIERRA`). `salir` exige `;` (`Se esperaba PUNTO_COMA`). El selector debe ser un identificador; cada `caso` debe usar un literal del mismo tipo que el selector (`retornarTipo`): selector `entero` → `caso 1`; selector `cadena` → `caso "..."`.
 
-**Estado:** `IMPLEMENTED` para `segun`/`caso`/`salir;`; `CONFLICT` para `predeterminado` (documentado pero no implementado).
+**Estado:** `IMPLEMENTED` para `segun`/`caso`/`predeterminado`/`salir;`.
 
 ---
 
@@ -1071,7 +1075,7 @@ El método principal `analizar()` encapsula el proceso en un bloque `try-catch`.
 
 Estos ejemplos deben considerarse ejemplos canónicos para generación y explicación hasta que exista una especificación posterior que los modifique.
 
-> **Reconciliación:** algunos ejemplos de la documentación no compilan con el compilador actual. A continuación se muestran corregidos (con paréntesis en `clase`, `entero` en `para`, `salir;` y sin `predeterminado` en `segun`, y sin inicialización booleana).
+> **Reconciliación:** algunos ejemplos de la documentación no compilan con el compilador actual. A continuación se muestran corregidos (con paréntesis en `clase`, `entero` en `para` y `salir;` en `segun`).
 
 ### 18.1 Hola mundo
 
@@ -1134,6 +1138,9 @@ segun(opcion) {
         salir;
     caso 2:
         imprimir("Dos");
+        salir;
+    predeterminado:
+        imprimir("Otro");
         salir;
 }
 ```
@@ -1233,7 +1240,7 @@ Una IA que genere Cerberus debe seguir estas reglas.
 10. No afirmar que un código compila si la característica utilizada no está confirmada.
 11. Escribir siempre la clase con paréntesis: `clase Nombre()`.
 12. En `para`, incluir la palabra `entero`: `para(entero i = 0; i < 10; i++)`.
-13. En `segun`, no usar `predeterminado` y terminar cada `caso` con `salir;`.
+13. En `segun`, terminar cada `caso` con `salir;`; `predeterminado` (si se usa) va al final y también termina con `salir;`.
 14. Las variables `booleano` se inicializan con `verdadero`/`falso` y se usan en condiciones; no se usan en aritmética.
 15. Los operadores compuestos (`+=`, `-=`, `*=`, `/=`), `!` sí están implementados; no usar `--`.
 16. No declarar `entero` con literales o expresiones reales: el compilador lo rechaza (`TIPO INCOMPATIBLE`).
@@ -1391,9 +1398,9 @@ Las siguientes características requieren mayor definición antes de utilizarlas
 | Validación de tipos | `IMPLEMENTED` | `entero x = 9.5;` rechazado (`TIPO INCOMPATIBLE`); `booleano` pendiente. |
 | Scopes | `IMPLEMENTED` | Pila global/función/bloque; shadowing permitido, redeclaración solo en el mismo scope. |
 | `retornar` | `PARTIAL` | Tokenizado, sin gramática. |
-| `predeterminado` en `segun` | `PARTIAL`/no implementado | Documentado pero rechazado. |
+| `predeterminado` en `segun` | `IMPLEMENTED` | Caso por defecto al final, con `salir;`. |
 | Gramática completa de `para` | `PARTIAL` | Implementación restringida a `para(entero i = N; i <rel> M; i++)`. |
-| Gramática completa de `segun` | `PARTIAL` | Sin `predeterminado`; `salir` exige `;`. |
+| Gramática completa de `segun` | `IMPLEMENTED` | `caso`/`predeterminado`/`salir;`. |
 
 ---
 
@@ -1457,7 +1464,7 @@ Verificación dinámica con `audit.CompilerProbe` (ver `CerberusAI_COMPILER_AUDI
 | `booleano activo = verdadero;` | implementado | `IMPLEMENTED` |
 | `entero x = 9.5;` es error de tipo | rechazado | `IMPLEMENTED` |
 | `para(i = 0; ...)` | exige `para(entero i = 0; ...)` | `CONFLICT` |
-| `segun` con `predeterminado` | no implementado | `CONFLICT` |
+| `segun` con `predeterminado` | implementado (al final) | `IMPLEMENTED` |
 | `salir` sin `;` | exige `salir;` | `CONFLICT` |
 | `+=`, `-=`, `*=`, `/=` | implementados (solo numérico) | `IMPLEMENTED` |
 | `!` (negación) | implementado | `IMPLEMENTED` |

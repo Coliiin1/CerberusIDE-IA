@@ -51,7 +51,7 @@ java -cp target\classes audit.CompilerProbe
 
 Implementados en `AnalizadorLexico.analizador()`:
 
-`clase`, `nuevo`, `este`, `publico`, `privado`, `si`, `sino`, `segun`, `caso`, `salir`, `para`, `mientras`, `verdadero`, `falso`, `funcion`, `retornar`, `imprimir`, `entero`, `real`, `caracter`, `cadena`, `booleano`, `nulo`, `hacer`, `vacio`, `principal`.
+`clase`, `nuevo`, `este`, `publico`, `privado`, `si`, `sino`, `segun`, `caso`, `predeterminado`, `salir`, `para`, `mientras`, `verdadero`, `falso`, `funcion`, `retornar`, `imprimir`, `entero`, `real`, `caracter`, `cadena`, `booleano`, `nulo`, `hacer`, `vacio`, `principal`.
 
 Operadores/tokenización presentes:
 
@@ -128,9 +128,9 @@ La inicialización requiere literalmente `entero`; `para(i = 0; ...)` es rechaza
 
 El selector debe ser un identificador. Cada `caso` debe usar el tipo retornado por el selector (`retornarTipo`): selector `cadena` → `caso "..."`; selector `entero` → `caso NUM`. El bloque continúa hasta `salir` y después exige `;`.
 
-No hay procesamiento de `predeterminado`: la sonda confirma que `predeterminado:` es rechazado (`Se esperaba LLAVE_CIERRA`). `salir` sin `;` también es rechazado (`Se esperaba PUNTO_COMA`).
+`predeterminado` está implementado como caso por defecto opcional, **solo al final** del `segun`, y exige `salir;`. En cualquier otra posición se rechaza (`Se esperaba LLAVE_CIERRA`). `salir` sin `;` se rechaza (`Se esperaba PUNTO_COMA`).
 
-Estado: PARTIAL/CONFLICT si la documentación promete `predeterminado`.
+Estado: IMPLEMENTED.
 
 ### Expresiones
 
@@ -177,7 +177,8 @@ Resultados de `audit.CompilerProbe` (32/33 casos coinciden; la única discrepanc
 | `para(entero i = 0; i < 10; i++){...}` | Sí | — |
 | `para(i = 0; ...)` | No | `Se esperaba PALABRA_RESERVADA_ENT` |
 | `segun` con `caso` + `salir;` | Sí | — |
-| `segun` con `predeterminado:` | No | `Se esperaba LLAVE_CIERRA` |
+| `segun` con `predeterminado:` (al final) | Sí | — |
+| `segun` con `predeterminado` no último | No | `Se esperaba LLAVE_CIERRA` |
 | `segun` con `salir` (sin `;`) | No | `Se esperaba PUNTO_COMA` |
 | `retornar 1;` | No | `no se ha puesto el token` |
 | `x += 2;` / `x -= 2;` / `x *= 2;` / `x /= 2;` (x numérico) | Sí | — (asignación compuesta) |
@@ -197,7 +198,7 @@ Resultados de `audit.CompilerProbe` (32/33 casos coinciden; la única discrepanc
 | `booleano activo = verdadero;` | documentado | implementado | `IMPLEMENTED` |
 | `entero x = 9.5;` | error de tipo | rechazado | `IMPLEMENTED` |
 | `para(i = 0; ...)` | documentado | exige `para(entero i = 0; ...)` | CONFLICT |
-| `segun` con `predeterminado` | documentado | no implementado | CONFLICT |
+| `segun` con `predeterminado` | documentado | implementado (solo al final) | `IMPLEMENTED` |
 | `salir` | ejemplos sin `;` | exige `salir;` | CONFLICT |
 | `+=`, `-=`, `*=`, `/=` | implementados (solo numérico) | `IMPLEMENTED` |
 | `!` (negación lógica) | documentado | implementado | `IMPLEMENTED` |
@@ -210,7 +211,7 @@ Resultados de `audit.CompilerProbe` (32/33 casos coinciden; la única discrepanc
 Entradas de `cerberus_dataset_v1.jsonl` inválidas contra el compilador real:
 
 - **#12** `para(i = 0; i < 10; i++)` → falta `entero`.
-- **#15** `segun` con `predeterminado:` y `salir` sin `;`.
+- **#15** `segun` con `predeterminado:` (ahora válido) pero `salir` sin `;` → sigue inválido por el `;`.
 - **#16** `entero [] arreglo1;` → arreglos no implementados.
 - **#19** `clase programa{` → falta `()`.
 - **#20** `clase MiPrograma() { instrucciones }` → placeholder no ejecutable.
@@ -223,10 +224,10 @@ Entradas de `cerberus_dataset_v1.jsonl` inválidas contra el compilador real:
 2. No generar ejemplos de POO avanzada hasta confirmar implementación.
 3. Booleanos ya funcionales (inicialización y condiciones); no usarlos en aritmética.
 4. No generar `para` genérico.
-5. No generar `predeterminado` hasta confirmar su soporte real.
+5. `predeterminado` implementado (solo al final del `segun`, con `salir;`).
 6. No asumir parámetros o retornos en funciones.
 7. Asignación compuesta (`+=`, `-=`, `*=`, `/=`) implementada solo para `entero`/`real`.
-8. Negación `!` implementada; pendientes `retornar`, parámetros y `predeterminado`.
+8. Negación `!` implementada; pendientes `retornar`, parámetros y `--`.
 9. Mantener una lista explícita de características futuras.
 
 ## Próximo paso técnico

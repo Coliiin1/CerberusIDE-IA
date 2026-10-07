@@ -617,6 +617,9 @@ public class AnalizadorSintactico {
         while(tokensDetectados.get(posicion).getTipo()==PALABRA_RESERVADA_CAS){
             casos(sem.retornarTipo(sem.buscarIde(tabla, identificador, scopeActual())));
         }
+        if(tokensDetectados.get(posicion).getTipo()==PALABRA_RESERVADA_PRE){
+            predeterminado();
+        }
         salirBloque();
         match(LLAVE_CIERRA);
     }
@@ -626,6 +629,19 @@ public class AnalizadorSintactico {
         match(tipo);
         documentador.agregar(obtenerLinea(tokensDetectados.get(posicion-1))+"SE CREA UN CASO PARA EL VALOR: "+tokensDetectados.get(posicion-1).getLexema());
         match(DOS_PUNTOS);
+        cuerpoCaso();
+    }
+
+    /** Caso por defecto de un segun: solo puede ir al final. */
+    private void predeterminado(){
+        match(PALABRA_RESERVADA_PRE);
+        documentador.agregar(obtenerLinea(tokensDetectados.get(posicion-1))+"SE CREA UN CASO PREDETERMINADO");
+        match(DOS_PUNTOS);
+        cuerpoCaso();
+    }
+
+    /** Instrucciones de un caso hasta "salir" ";". */
+    private void cuerpoCaso(){
         while(tokensDetectados.get(posicion).getTipo()!=PALABRA_RESERVADA_SAL){
             instruccion();
         }

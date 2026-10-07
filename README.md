@@ -33,7 +33,7 @@ Cerberus es un lenguaje imperativo y estructurado con palabras reservadas ínteg
 | :--- | :--- |
 | **Estructura** | `clase`, `principal`, `funcion`, `retornar` |
 | **Tipos de Datos** | `entero`, `real`, `cadena`, `caracter`, `booleano`, `vacio`, `nulo` |
-| **Estructuras de Control** | `si`, `sino`, `para`, `mientras`, `hacer`, `segun`, `caso`, `salir` |
+| **Estructuras de Control** | `si`, `sino`, `para`, `mientras`, `hacer`, `segun`, `caso`, `predeterminado`, `salir` |
 | **Entrada / Salida** | `imprimir` |
 | **Literales Booleanos** | `verdadero`, `falso` |
 | **Operadores y Asignación** | `+`, `-`, `*`, `/`, `%`, `++`, `--`, `+=`, `-=`, `*=`, `/=`, `=`, `==`, `!=`, `<`, `>`, `<=`, `>=`, `&`, `|`, `!` |
