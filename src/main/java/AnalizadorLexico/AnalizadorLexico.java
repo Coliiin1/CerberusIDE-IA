@@ -141,6 +141,7 @@ public class AnalizadorLexico {
             case ";": return PUNTO_COMA;
             case ":": return DOS_PUNTOS;
             case "caso": return PALABRA_RESERVADA_CAS;
+            case "predeterminado": return PALABRA_RESERVADA_PRE;
             case "salir": return PALABRA_RESERVADA_SAL;
             case "para": return PALABRA_RESERVADA_PAR;
             case "mientras": return PALABRA_RESERVADA_MIE;

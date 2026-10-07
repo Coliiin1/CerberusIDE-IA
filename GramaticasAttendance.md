@@ -26,7 +26,7 @@ Checklist de lo que funciona hoy (verificado con la suite, 32/32 casos):
 - `si (expr) { ... } [ sino { ... } | sino si(...) ]`.
 - `mientras(expr) { ... }`.
 - `hacer { ... } mientras(expr);`.
-- `segun(id) { caso <tipo>: ... salir; }` (sin `predeterminado`).
+- `segun(id) { caso <tipo>: ... salir; [predeterminado: ... salir;] }`.
 - `para(entero i = N; i <rel> M; i++) { ... }` (forma restringida).
 - Expresiones aritméticas `+ - * / %` con precedencia y paréntesis.
 - Condiciones `exprAritmetica opRelacional exprAritmetica` con `&` y `|`.
@@ -168,19 +168,17 @@ Checklist de lo que funciona hoy (verificado con la suite, 32/32 casos):
 
 ---
 
-### 2.10 `segun` con `predeterminado` — `ALTA`
+### 2.10 `segun` con `predeterminado` — `ALTA` — **HECHO**
 
-- **Token:** `predeterminado` **no** es palabra reservada (hoy se tokeniza como `IDENTIFICADOR`).
-- **Dónde falta:** lexer (nueva palabra reservada) y `AnalizadorSintactico.segun()` (solo itera sobre `caso`).
-- **Qué falta:** case `predeterminado` opcional al final.
+**Estado:** `HECHO`. `predeterminado` es palabra reservada (`PALABRA_RESERVADA_PRE`); `segun()` llama a `predeterminado()` (caso por defecto, solo al final, opcional) y comparte `cuerpoCaso()` con `casos()`. Exige `salir;`; en otra posición se rechaza (`Se esperaba LLAVE_CIERRA`). Verificado por `38`, inválidos `26`–`27` y la sonda.
 
-**BNF propuesto:**
+<details>
+<summary>Descripción original del hueco</summary>
 
-```text
-<SEGUN> ::= "segun" "(" IDENTIFICADOR ")" "{" { <CASO> } [ <PREDETERMINADO> ] "}"
+- **Token:** `predeterminado` no era palabra reservada (se tokenizaba como `IDENTIFICADOR`).
+- **Dónde faltaba:** lexer y `segun()` (solo iteraba sobre `caso`).
 
-<PREDETERMINADO> ::= "predeterminado" ":" <INSTRUCCIONES> "salir" ";"
-```
+</details>
 
 ---
 
@@ -317,7 +315,7 @@ Estas se marcarían como `PENDING`/`DOCUMENTED` en `language_spec.md` y **no** g
 | 2.6 | Negación `!` | ALTA | HECHO |
 | 2.7 | Asignación compuesta `+= -= *= /=` | ALTA | HECHO |
 | 2.9 | `para` generalizado | ALTA | PENDIENTE |
-| 2.10 | `segun` con `predeterminado` | ALTA | PENDIENTE |
+| 2.10 | `segun` con `predeterminado` | ALTA | HECHO |
 | 2.11 | Validación de tipos | ALTA | HECHO |
 | 2.12 | Scopes reales | ALTA | HECHO |
 | 2.8 | Decremento `--` | MEDIA | PENDIENTE |
