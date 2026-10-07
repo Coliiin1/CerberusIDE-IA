@@ -168,13 +168,16 @@ public class InterfazPrincipalController implements Initializable {
         }
 
         // ===== SEMANTICO =====
-        txtSemantico.setText("ANALIZADOR SEMÁNTICO DISPONIBLE\n\nAÚN NO IMPLEMENTADO.");
+        if (sin.getResultado()) {
+            txtSemantico.setText("SE PASO EL ANALIZADOR SEMANTICO");
+        } else {
+            txtSemantico.setText("NO SE EJECUTO EL ANALIZADOR SEMANTICO (fallo el sintactico)");
+        }
 
         // ===== DOCUMENTADOR =====
         if (!sin.getResultado()) {
             txtDocumentador.setText("NO SE PASO NI EL SEMANTICO NI EL SINTACTICO NO SE PUEDE CREAR DOCUMENTADOR");
         } else {
-            txtSemantico.setText("SE PASO EL ANALIZADOR SEMANTICO");
             txtDocumentador.setText(sin.getDocumentador().imprimir());
         }
     }

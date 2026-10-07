@@ -41,6 +41,7 @@ public enum Tokens {
     
     DOS_PUNTOS,
     PUNTO_COMA,
+    COMA,
     OPERADOR_SUMA,
     OPERADOR_RESTA,
     OPERADOR_MULTIPLICAR,

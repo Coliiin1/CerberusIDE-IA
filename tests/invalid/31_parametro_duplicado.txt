@@ -1,0 +1,6 @@
+clase Test(){
+    funcion principal(){
+    }
+    funcion f(entero a, entero a){
+    }
+}

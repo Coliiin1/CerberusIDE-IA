@@ -1,0 +1,7 @@
+clase Test(){
+    funcion principal(){
+    }
+    funcion cadena f(){
+        retornar "hola";
+    }
+}

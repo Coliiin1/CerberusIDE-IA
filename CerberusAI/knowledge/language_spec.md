@@ -4,7 +4,7 @@
 **Documento:** `language_spec.md`  
 **Propósito:** especificación técnica de referencia para el lenguaje Cerberus y para herramientas que analicen, generen, expliquen o corrijan código Cerberus.  
 **Fuente principal:** *Documentación CerberusIDE.pdf*  
-**Estado:** especificación consolidada y **reconciliada con la implementación real del compilador** (ver `CerberusAI_COMPILER_AUDIT.md`, raíz del repositorio).
+**Estado:** especificación consolidada y **reconciliada con la implementación real del compilador** (ver `CerberusAI_COMPILER_AUDIT.md`, raíz del repositorio). Re-auditada el 2026-10-06 (compilador v1 cerrado: ALTA + MEDIA + BAJA acotada).
 
 > **Regla fundamental:** este documento no debe inventar características de Cerberus. Cuando la documentación no define algo con suficiente claridad, se marca como `PENDING` o `PARTIAL`.
 >
@@ -213,9 +213,9 @@ Los tipos documentados son:
 | `caracter` | Valores de carácter. | `DEFINED` |
 | `cadena` | Texto. | `DEFINED` |
 | `booleano` | Valor lógico. | `DEFINED` |
-| `nulo` | Literal/tipo asociado a ausencia de valor. | `PARTIAL` |
-| `vacio` | Tipo/valor asociado a ausencia de retorno. | `PARTIAL` |
-| arreglos | Estructuras de múltiples elementos. | `PARTIAL` |
+| `nulo` | Literal/tipo de ausencia de valor; reservado (fuera de v1). | `DOCUMENTED` |
+| `vacio` | Tipo/valor de ausencia de retorno (retorno de función). | `IMPLEMENTED` |
+| arreglos | Estructuras de múltiples elementos (fuera de v1). | `PENDING` |
 
 ### 5.1 Declaraciones básicas
 
@@ -328,7 +328,7 @@ NO SE HA DECLARADO EL IDENTIFICADOR: x
 | `/` | Binario |
 | `%` | Binario |
 | `++` | Unario |
-| `--` | Unario |
+| `--` | Decremento (solo en `para`) |
 | `+=` | Asignación compuesta |
 | `-=` | Asignación compuesta |
 | `*=` | Asignación compuesta |
@@ -336,7 +336,7 @@ NO SE HA DECLARADO EL IDENTIFICADOR: x
 
 La documentación indica que los operadores aritméticos utilizan operandos `entero` y `real` y producen un resultado numérico.
 
-**Reconciliación:** implementados en el parser `+`, `-`, `*`, `/`, `%` y la asignación compuesta `+=`, `-=`, `*=`, `/=` (solo sobre `entero`/`real`). `++` se usa únicamente como incremento en `para`. `--` sigue sin gramática. Estado: `IMPLEMENTED` para `+ - * / %`, `++` (en `para`) y los compuestos numéricos; `--` pendiente.
+**Reconciliación:** implementados en el parser `+`, `-`, `*`, `/`, `%` y la asignación compuesta `+=`, `-=`, `*=`, `/=` (solo sobre `entero`/`real`). `++`/`--` se usan como incremento/decremento en `para`. Estado: `IMPLEMENTED` para `+ - * / %`, `++`, `--` (en `para`) y los compuestos numéricos.
 
 ### 7.2 Relacionales
 
@@ -496,7 +496,17 @@ También se documenta la posibilidad de concatenar expresiones imprimibles media
 
 La producción de `<CONCATENACION>` no aparece completa en el texto disponible.
 
-**Estado:** `PARTIAL` para la gramática completa.
+**Reconciliación (implementado):** `imprimir` acepta uno o más argumentos separados por `+` o `,`; cada argumento es un `IDENTIFICADOR`, `TIPO_CADENA`, `TIPO_CARACTER`, `NUMERO_ENTERO`, `NUMERO_REAL`, `verdadero`/`falso` o una llamada a función con retorno no-void. Una coma colgante es rechazada.
+
+```text
+<IMPRIMIR> ::= "imprimir" "(" <EXPRESION_IMPRIMIBLE> { ( "," | "+" ) <EXPRESION_IMPRIMIBLE> } ")" ";"
+
+<EXPRESION_IMPRIMIBLE> ::= IDENTIFICADOR | TIPO_CADENA | TIPO_CARACTER
+                         | NUMERO_ENTERO | NUMERO_REAL | "verdadero" | "falso"
+                         | <LLAMADA_EXPR>
+```
+
+**Estado:** `IMPLEMENTED`.
 
 ---
 
@@ -550,16 +560,27 @@ para(entero i = 0; i < 10; i++) {
 }
 ```
 
-**Reconciliación:** la implementación es muy restringida. Exige literalmente:
+**Reconciliación (implementado):** el `para` es generalizado:
 
 ```text
-para( entero IDENTIFICADOR = NUMERO_ENTERO ; IDENTIFICADOR OPERADOR_RELACIONAL NUMERO_ENTERO ; IDENTIFICADOR ++ ) { ... }
+para( (entero|real) IDENTIFICADOR = <EXPRESION_ARITMETICA> ;
+      <EXPRESION_ARITMETICA> <OPERADOR_RELACIONAL> <EXPRESION_ARITMETICA> ;
+      IDENTIFICADOR ( "++" | "--" ) ) { ... }
 ```
 
-- La inicialización requiere la palabra `entero`.
-- El valor inicial y el límite son enteros literales.
-- El incremento es `++` sobre el identificador.
-- `para(i = 0; ...)` es rechazado (`Se esperaba PALABRA_RESERVADA_ENT`).
+- El contador es `entero` o `real`.
+- La inicialización y la condición son expresiones aritméticas.
+- El incremento es `++` o `--`.
+- El contador se registra en el scope del `para` (visible en el cuerpo).
+- `para(i = 0; ...)` (sin tipo) es rechazado (`El contador del para debe ser entero o real`).
+
+Ejemplo con decremento:
+
+```cerberus
+para(entero i = 10; i > 0; i--) {
+    imprimir(i);
+}
+```
 
 Se documenta el operador relacional específico para `para`:
 
@@ -570,9 +591,7 @@ Se documenta el operador relacional específico para `para`:
                               | ">="
 ```
 
-La producción completa de `<PARA>` aparece en la documentación, pero su representación textual presenta detalles de formato ambiguos.
-
-**Estado:** `PARTIAL` para la producción formal completa; comportamiento general `IMPLEMENTED` solo en su forma restringida.
+**Estado:** `IMPLEMENTED`.
 
 ## 10.3 Ciclo `mientras`
 
@@ -655,49 +674,81 @@ funcion principal() {
 
 ### 11.2 Función común
 
-Producción documentada:
+Producción implementada:
 
 ```text
-<FUNCION_COMUN> ::= IDENTIFICADOR "(" ")" "{" <INSTRUCCIONES> "}"
+<FUNCION_COMUN> ::= "funcion" [ <TIPO_RETORNO> ] IDENTIFICADOR "(" ")" "{" <INSTRUCCIONES> "}"
+```
+
+El tipo de retorno es opcional (`entero`, `real`, `cadena`, `caracter`, `booleano`, `vacio`); `vacio` o su ausencia significa que la función no devuelve valor.
+
+Ejemplo:
+
+```cerberus
+funcion entero uno() {
+    retornar 1;
+}
 ```
 
 La documentación también describe `retornar` como mecanismo para devolver un valor desde una función o método.
 
 ### 11.3 Parámetros
 
-**Reconciliación:** el compilador **no implementa parámetros de funciones**. La única forma aceptada es `funcion nombre() { ... }` con paréntesis vacíos.
+**Reconciliación:** implementados. `funcion [<tipo>] nombre(<TIPO> id { , <TIPO> id }) { ... }`; tipos `entero/real/cadena/caracter/booleano` (sin `vacio`). Los parámetros se registran en el scope de la función y no admiten duplicados. Reciben un valor placeholder (no real), por lo que pueden usarse en expresiones sin disparar `Variable sin valor`.
 
-**Estado:** `PENDING` (documentación no define gramática; compilador no lo implementa).
+**Estado:** `IMPLEMENTED` (sintaxis y registro).
 
 ### 11.4 Tipos de retorno
 
-**Reconciliación:** el compilador **no implementa tipos de retorno**. Las funciones se declaran solo como `funcion nombre() { ... }` (sin tipo de retorno).
+**Reconciliación:** el compilador **sí implementa tipos de retorno** opcionales tras `funcion`: `funcion entero nombre() { ... }`. `vacio` o la ausencia de tipo indica retorno nulo.
 
-**Estado:** `PENDING`/no implementado.
+**Estado:** `IMPLEMENTED`.
 
 ### 11.5 `retornar`
 
-Conceptualmente devuelve el valor de una función o método.
+Devuelve el valor de una función.
 
-**Reconciliación:** `retornar` está tokenizado (`PALABRA_RESERVADA_RET`) pero **no tiene gramática**: el parser lo rechaza (`no se ha puesto el token`).
+**Reconciliación:** `retornar [<expresión>] ;` está implementado:
+- En función con tipo → `retornar <expr>;` del tipo compatible (p. ej. `retornar 2.5;` en `funcion entero` → `TIPO INCOMPATIBLE`).
+- En función `vacio`/sin tipo → `retornar;` (sin valor); `retornar 1;` → `TIPO INCOMPATIBLE`.
 
-Ejemplo documentado conceptualmente (no compila en el compilador actual):
+Ejemplo:
 
 ```cerberus
-publico entero uno() {
+funcion entero uno() {
     retornar 1;
 }
 ```
 
 La capitalización mostrada en algunos ejemplos de la documentación no debe tomarse como sintaxis alternativa: Cerberus es sensible a mayúsculas y minúsculas.
 
-**Estado:** `DOCUMENTED/PARTIAL` (tokenizado pero no implementado).
+**Estado:** `IMPLEMENTED`.
+
+### 11.6 Llamada a funciones
+
+**Reconciliación:** implementada. Las funciones se registran en un pre-escaneo global (`recolectarFirmas`), lo que permite llamadas hacia adelante desde `principal`. La llamada `IDENTIFICADOR "(" [ <ARGUMENTOS> ] ")"` verifica:
+
+- que la función exista → si no, `Funcion no encontrada: X`;
+- la aridad (`La funcion X espera N argumentos...`);
+- el tipo de cada argumento (reutiliza las comprobaciones de asignación).
+
+Puede usarse como sentencia (`f();`) o como expresión (asignación, `imprimir`, condición `si(f())`). El **valor retornado no se evalúa** (placeholder tipado). `principal` no es llamable.
+
+```text
+<LLAMADA_FUNCION> ::= IDENTIFICADOR "(" [ <ARGUMENTOS> ] ")" ";"
+
+<LLAMADA_EXPR>    ::= IDENTIFICADOR "(" [ <ARGUMENTOS> ] ")"
+
+<ARGUMENTOS>      ::= <EXPRESION> { "," <EXPRESION> }
+```
+
+**Estado:** `IMPLEMENTED`.
 
 ---
 
 ## 12. Programación orientada a objetos
 
-> **Reconciliación general:** el compilador solo implementa la declaración de clases (`clase Nombre() { ... }`) y funciones. Los tokens `nuevo`, `este`, `publico`, `privado` están **tokenizados pero no tienen gramática**. No hay objetos, instanciación, atributos, métodos con parámetros, constructores, herencia ni control de acceso real. Estado global: `DOCUMENTED/PARTIAL`.
+> **Reconciliación general:** el compilador solo implementa la declaración de clases (`clase Nombre() { ... }`) y funciones. Los tokens `nuevo`, `este`, `publico`, `privado` están **tokenizados pero no implementados**: se rechazan de forma explícita (`POO no implementada en v1`), igual que el acceso a miembro `x.y`. No hay objetos, instanciación, atributos, métodos con parámetros, constructores, herencia ni control de acceso real. Estado global: `ACOTADO` (fuera de v1).
 
 ## 12.1 Clases
 
@@ -766,6 +817,8 @@ Los métodos forman parte del modelo orientado a objetos documentado, pero su gr
 La herencia se menciona como parte de la programación orientada a objetos de Cerberus, pero no se proporciona una sintaxis formal completa en la documentación disponible.
 
 **Estado:** `PENDING`.
+
+> **Reconciliación (alcance v1):** toda la POO (objetos, atributos, `este`, control de acceso, constructores, métodos, herencia y `nuevo`) queda **fuera de v1**. El parser la rechaza de forma explícita: `nuevo`/`este`/`publico`/`privado` → `POO no implementada en v1: <lexema>`; el acceso a miembro `x.y` → `POO no implementada en v1: acceso a miembro`. No se generan ejemplos en el dataset v2.
 
 ---
 
@@ -862,7 +915,7 @@ La producción de `<EXPRESION_LOGICA>` mostrada en la documentación es incomple
 <FUNCION_COMUN> ::= IDENTIFICADOR "(" ")" "{" <INSTRUCCIONES> "}"
 ```
 
-> **Reconciliación:** la clase exige `clase Nombre()` (con paréntesis). Las funciones exigen la palabra `funcion` delante y no admiten parámetros ni tipo de retorno. Se exige exactamente una función `principal`.
+> **Reconciliación:** la clase exige `clase Nombre()` (con paréntesis). Las funciones exigen la palabra `funcion` delante, admiten un tipo de retorno opcional y una lista de parámetros opcional. Se exige exactamente una función `principal` (sin parámetros). Las funciones también admiten **llamadas** como sentencia o expresión (`<LLAMADA_FUNCION>`/`<LLAMADA_EXPR>`, ver §11.6); el valor retornado no se evalúa (placeholder tipado).
 
 ---
 
@@ -927,7 +980,7 @@ TIPO_CARACTER
 
 Los tokens exactos de cada operador deben conservar los nombres definidos por la implementación del lexer.
 
-**Estado:** `PARTIAL` hasta validar la enumeración completa de `Tokens` del código fuente del compilador.
+**Estado:** `IMPLEMENTED` (la enumeración de `Tokens` está validada contra `AnalizadorLexico/Tokens.java`).
 
 ---
 
@@ -989,7 +1042,7 @@ El análisis semántico comprueba que estructuras sintácticamente correctas ten
 
 La documentación menciona una implementación mediante traducción dirigida por la sintaxis y una tabla de símbolos.
 
-> **Reconciliación:** `AnalizadorSemantico` es un **stub real**: solo implementa `retornarTipo()`, `buscar()`, `buscarIde()` y `verificarIdentificador()`. La interfaz gráfica muestra "AÚN NO IMPLEMENTADO". Las comprobaciones de identificadores/redeclaración viven en el parser (`agregarTabla()` y `asignacionDirecta()`), no en un analizador semántico completo.
+> **Reconciliación:** `AnalizadorSemantico` ya **no es un stub**: implementa el tipo (`Tipo`), la compatibilidad de asignación (`compatible`), la resolución de scopes (`esVisible`/`buscarIde`/`buscar`/`existeEnScope`) y el mapeo token↔tipo (`tipoDeToken`/`tipoDeIdentificador`/`tipoDeNombre`). La validación real (tipos, scopes, llamadas y condiciones) la realiza el parser durante el parseo, apoyándose en `AnalizadorSemantico`. La UI muestra el resultado real del análisis (sin texto fijo de "no implementado").
 
 ### 16.1 Tabla de símbolos
 
@@ -1001,15 +1054,16 @@ ArrayList<Identificadores> tabla
 
 El componente `AnalizadorSemantico` utiliza esta información para resolver identificadores y sus tipos.
 
-### 16.2 Validaciones documentadas
+### 16.2 Validaciones implementadas
 
-Las siguientes comprobaciones existen **en el parser**, no en un analizador semántico completo:
+Las siguientes comprobaciones se realizan durante el parseo (parser + `AnalizadorSemantico`):
 
 1. identificadores no declarados (en `asignacionDirecta()` y `factor()`);
-2. redeclaración de variables en el mismo scope y *shadowing* con scopes anidados (en `agregarTabla()` y `AnalizadorSemantico`, con pila de scopes global/función/bloque);
+2. redeclaración de variables en el mismo scope y *shadowing* con scopes anidados (`agregarTabla()` y `AnalizadorSemantico`, con pila de scopes global/función/bloque);
 3. ausencia de la función `principal` (en `funciones()`);
 4. múltiples funciones `principal` (en `principal()`);
-5. tipos inválidos en asignaciones: **no implementado** (ver 16.3).
+5. tipos inválidos en asignaciones y expresiones: **implementado** (ver 16.3);
+6. llamadas a funciones: existencia, aridad y tipos de argumentos (`llamadaFuncion()`).
 
 ### 16.3 Compatibilidad de tipos
 
@@ -1060,6 +1114,8 @@ AssertionError
 
 para detener el análisis ante inconsistencias.
 
+> **Reconciliación (implementado):** el parser lanza `ErrorSintactico` (que extiende `RuntimeException`) con `fila`, `columna` y `lexema`, mediante los helpers `error(mensaje)`/`error(mensaje, token)`. `analizar()` captura `ErrorSintactico` y reporta el mensaje seguido de `En la linea: N`, `Columna: N`, `Lexema: X`. Estado: `IMPLEMENTED`.
+
 ### 17.4 Finalización del análisis
 
 El método principal `analizar()` encapsula el proceso en un bloque `try-catch`. Cuando ocurre un error:
@@ -1068,6 +1124,8 @@ El método principal `analizar()` encapsula el proceso en un bloque `try-catch`.
 2. se muestra el mensaje mediante `JOptionPane`;
 3. se marca el análisis como inválido;
 4. se evita continuar con resultados inconsistentes.
+
+> **Reconciliación:** el mensaje ya no se muestra con `JOptionPane` sino mediante `Util.Reporter` (la UI JavaFX lo presenta con un `Alert`). El resto (marcar inválido y detener) se mantiene.
 
 ---
 
@@ -1233,17 +1291,19 @@ Una IA que genere Cerberus debe seguir estas reglas.
 3. No introducir sintaxis de Java, C, C++, Python u otro lenguaje como si fuera Cerberus.
 4. Utilizar los tipos documentados.
 5. Respetar la gramática formal cuando esté disponible.
-6. No inventar parámetros, herencia, constructores u otras características que estén marcadas como `PENDING`.
+6. No inventar herencia, constructores ni otras características marcadas como `PENDING`.
 7. Si una solicitud requiere una característica no definida, indicarlo explícitamente.
 8. Preferir ejemplos simples y educativos.
 9. Mantener la intención del usuario cuando se corrija código.
 10. No afirmar que un código compila si la característica utilizada no está confirmada.
 11. Escribir siempre la clase con paréntesis: `clase Nombre()`.
-12. En `para`, incluir la palabra `entero`: `para(entero i = 0; i < 10; i++)`.
+12. En `para`, incluir el tipo del contador (`entero`/`real`): `para(entero i = 0; i < 10; i++)`.
 13. En `segun`, terminar cada `caso` con `salir;`; `predeterminado` (si se usa) va al final y también termina con `salir;`.
 14. Las variables `booleano` se inicializan con `verdadero`/`falso` y se usan en condiciones; no se usan en aritmética.
-15. Los operadores compuestos (`+=`, `-=`, `*=`, `/=`), `!` sí están implementados; no usar `--`.
+15. Los operadores compuestos (`+=`, `-=`, `*=`, `/=`), `!` y `--` están implementados; `--` se usa solo como decremento en `para` (no como operador general).
 16. No declarar `entero` con literales o expresiones reales: el compilador lo rechaza (`TIPO INCOMPATIBLE`).
+17. Las llamadas a función se escriben `nombre(argumentos)`; pueden usarse como sentencia o expresión. El valor retornado no se evalúa, pero se validan existencia, aridad y tipos.
+18. No generar POO (objetos, `nuevo`, `este`, `publico`, `privado`, `x.y`), arreglos (`entero [] a;`) ni `nulo`: están fuera de v1 y el compilador los rechaza.
 
 ### 20.2 Comparaciones con Java
 
@@ -1384,22 +1444,23 @@ Las siguientes características requieren mayor definición antes de utilizarlas
 
 | Característica | Estado | Motivo |
 |---|---|---|
-| Parámetros de funciones | `PENDING` | No existe gramática ni implementación. |
-| Tipos de retorno completos | `PENDING` | No implementados en el compilador. |
-| Constructores | `PENDING` | Se mencionan dentro de POO, sin gramática ni implementación. |
-| Herencia | `PENDING` | Se menciona conceptualmente, sin sintaxis ni implementación. |
-| Arrays | `PENDING` | No implementados (`entero [] a;` es rechazado). |
-| `nulo` | `PARTIAL` | Tokenizado, sin semántica; `entero x = nulo;` falla (`Factor invalido`). |
-| `vacio` | `PARTIAL` | Tokenizado, sin semántica. |
+| Parámetros de funciones | `IMPLEMENTED` | `funcion [<tipo>] nombre(<TIPO> id, ...)`; valor placeholder (no real). |
+| Llamada a funciones | `IMPLEMENTED` | Sentencia y expresión; valida existencia, aridad y tipos; retorno no evaluado. |
+| Tipos de retorno completos | `IMPLEMENTED` | Opcionales tras `funcion`; `vacio` para sin retorno. |
+| Constructores | `PENDING` | Fuera de v1; la POO se rechaza explícitamente (`POO no implementada en v1`). |
+| Herencia | `PENDING` | Fuera de v1; la POO se rechaza explícitamente (`POO no implementada en v1`). |
+| Arrays | `PENDING` | Fuera de v1; `entero [] a;` se rechaza (`Arreglos no implementados en v1`). |
+| `nulo` | `DOCUMENTED` | Reservado/fuera de v1 (sin tipos por referencia); `entero x = nulo;` falla (`Factor invalido`). |
+| `vacio` | `IMPLEMENTED` | Tipo de retorno de función sin valor. |
 | Operador `!` | `IMPLEMENTED` | Negación en condiciones y RHS booleano; `!` sobre no booleano se rechaza. |
-| Operadores compuestos (`+=`, `-=`, `*=`, `/=`), `--` | `IMPLEMENTED` (compuestos numéricos) | Solo `entero`/`real`; `--` pendiente. |
+| Operadores compuestos (`+=`, `-=`, `*=`, `/=`), `--` | `IMPLEMENTED` | Compuestos solo `entero`/`real`; `--` implementado en `para`. |
 | Precedencia completa | `PARTIAL` | Se describe precedencia aritmética, pero no existe tabla completa. |
 | Inicialización booleana | `IMPLEMENTED` | `booleano x = verdadero;` y variables booleanas; condiciones booleanas. |
-| Validación de tipos | `IMPLEMENTED` | `entero x = 9.5;` rechazado (`TIPO INCOMPATIBLE`); `booleano` pendiente. |
+| Validación de tipos | `IMPLEMENTED` | `entero x = 9.5;` rechazado (`TIPO INCOMPATIBLE`); `booleano` implementado. |
 | Scopes | `IMPLEMENTED` | Pila global/función/bloque; shadowing permitido, redeclaración solo en el mismo scope. |
-| `retornar` | `PARTIAL` | Tokenizado, sin gramática. |
+| `retornar` | `IMPLEMENTED` | `retornar [<expr>];` validado contra el tipo de retorno. |
 | `predeterminado` en `segun` | `IMPLEMENTED` | Caso por defecto al final, con `salir;`. |
-| Gramática completa de `para` | `PARTIAL` | Implementación restringida a `para(entero i = N; i <rel> M; i++)`. |
+| Gramática completa de `para` | `IMPLEMENTED` | Contador `entero`/`real`, expresiones y `++`/`--`. |
 | Gramática completa de `segun` | `IMPLEMENTED` | `caso`/`predeterminado`/`salir;`. |
 
 ---
@@ -1469,6 +1530,13 @@ Verificación dinámica con `audit.CompilerProbe` (ver `CerberusAI_COMPILER_AUDI
 | `+=`, `-=`, `*=`, `/=` | implementados (solo numérico) | `IMPLEMENTED` |
 | `!` (negación) | implementado | `IMPLEMENTED` |
 | `si (... & activo == verdadero)` | implementado (booleano) | `IMPLEMENTED` |
+| llamada a funciones (`f(a, b);`, `y = f(x)`) | implementada (sentencia y expresión) | `IMPLEMENTED` |
+| `imprimir(a, b)` / `imprimir(verdadero)` | implementado | `IMPLEMENTED` |
+| errores del parser | `ErrorSintactico` con línea/columna/lexema | `IMPLEMENTED` |
+| POO (`nuevo`, `este`, `publico`, `privado`, `x.y`) | rechazada (`POO no implementada en v1`) | `ACOTADO` |
+| arreglos (`entero [] a;`) | rechazados (`Arreglos no implementados en v1`) | `ACOTADO` |
+| `nulo` | reservado / fuera de v1 | `DOCUMENTED` |
+| `vacio` | tipo de retorno de función | `IMPLEMENTED` |
 
 ---
 

@@ -1,0 +1,7 @@
+clase Test(){
+    funcion principal(){
+        para(real i = 0; i < 10; i++){
+            imprimir(i);
+        }
+    }
+}

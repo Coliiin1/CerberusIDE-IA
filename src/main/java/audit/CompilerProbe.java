@@ -130,6 +130,9 @@ public class CompilerProbe {
         casos.add(new Caso("para valido (entero i)",
                 prog("para(entero i = 0; i < 10; i++){\n imprimir(i);\n}"), true));
 
+        casos.add(new Caso("para con decremento",
+                prog("para(entero i = 10; i > 0; i--){\n imprimir(i);\n}"), true));
+
         casos.add(new Caso("para sin palabra entero",
                 prog("para(i = 0; i < 10; i++){\n}"), false));
 
@@ -157,8 +160,14 @@ public class CompilerProbe {
         casos.add(new Caso("funcion comun sin parametros",
                 progConFunciones("imprimir(\"hola\");", "funcion f(){\n entero y = 1;\n}"), true));
 
-        casos.add(new Caso("retornar (tokenizado, sin gramatica)",
+        casos.add(new Caso("funcion con parametros",
+                progConFunciones("", "funcion suma(entero a, entero b){\n imprimir(a);\n}"), true));
+
+        casos.add(new Caso("retornar valor en funcion sin tipo (invalida)",
                 progConFunciones("", "funcion f(){\n retornar 1;\n}"), false));
+
+        casos.add(new Caso("retornar en funcion entero (valida)",
+                progConFunciones("", "funcion entero f(){\n retornar 1;\n}"), true));
 
         casos.add(new Caso("operador compuesto +=",
                 prog("entero x = 5;\nx += 2;"), true));
@@ -189,6 +198,39 @@ public class CompilerProbe {
 
         casos.add(new Caso("shadowing entre scopes (global y local)",
                 progConGlobales("entero x = 1;", "entero x = 2;"), true));
+
+        casos.add(new Caso("llamada a funcion void (sentencia)",
+                progConFunciones("saluda();", "funcion saluda(){\n imprimir(\"hola\");\n}"), true));
+
+        casos.add(new Caso("llamada con argumentos",
+                progConFunciones("suma(1, 2);", "funcion suma(entero a, entero b){\n imprimir(a);\n}"), true));
+
+        casos.add(new Caso("llamada como valor de asignacion",
+                progConFunciones("entero y = f(1, 2);", "funcion entero f(entero a, entero b){\n retornar a;\n}"), true));
+
+        casos.add(new Caso("llamada booleana en condicion",
+                progConFunciones("si(activo()){\n imprimir(\"si\");\n}", "funcion booleano activo(){\n retornar verdadero;\n}"), true));
+
+        casos.add(new Caso("llamada a funcion inexistente",
+                progConFunciones("f();", ""), false));
+
+        casos.add(new Caso("llamada con aridad incorrecta",
+                progConFunciones("suma(1);", "funcion suma(entero a, entero b){\n imprimir(a);\n}"), false));
+
+        casos.add(new Caso("llamada void usada como valor",
+                progConFunciones("entero y = f();", "funcion f(){\n imprimir(\"x\");\n}"), false));
+
+        casos.add(new Caso("imprimir con varios argumentos separados por coma",
+                prog("entero x = 1;\nimprimir(x, 2, \"z\");"), true));
+
+        casos.add(new Caso("imprimir booleano",
+                prog("imprimir(verdadero);\nimprimir(falso);"), true));
+
+        casos.add(new Caso("arreglos (no implementados en v1)",
+                prog("entero [] a;"), false));
+
+        casos.add(new Caso("modificador publico (POO no implementada en v1)",
+                prog("publico entero x;"), false));
 
         int aciertos = 0;
         int fallos = 0;
