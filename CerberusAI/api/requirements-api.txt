@@ -1,0 +1,6 @@
+# Dependencias de la API de CerberusAI (Fase 5).
+#   pip install -r requirements-api.txt
+
+fastapi
+uvicorn[standard]
+requests
