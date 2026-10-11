@@ -1,0 +1,13 @@
+# Entorno de fine-tuning (Fase 3 de CERBERUSIA_IMPLEMENTATION.md).
+# Se instala DENTRO de WSL2 (Linux + CUDA), no en Windows.
+#   python -m venv .venv && source .venv/bin/activate
+#   pip install -r requirements-finetune.txt
+
+torch>=2.2
+transformers>=4.44
+datasets>=2.20
+accelerate>=0.33
+peft>=0.12
+trl>=0.11
+bitsandbytes>=0.43
+sentencepiece

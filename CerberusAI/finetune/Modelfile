@@ -1,0 +1,15 @@
+# Modelfile para Ollama (Fase 3 de CERBERUSIA_IMPLEMENTATION.md)
+# Uso:
+#   1) Genera el GGUF con export_gguf.py (cerberusai-q8_0.gguf).
+#   2) ollama create cerberusai -f Modelfile
+
+FROM ./cerberusai-q8_0.gguf
+
+# Parametros de inferencia (conservadores para generacion de codigo).
+PARAMETER temperature 0.2
+PARAMETER top_p 0.9
+PARAMETER repeat_penalty 1.1
+PARAMETER num_ctx 4096
+
+# Nota: el prompt de sistema se envia desde la API/chat
+# (texto en CerberusAI/finetune/system_prompt.txt).
