@@ -48,6 +48,24 @@ cloudflared tunnel --url http://localhost:8000
 Imprime una URL `https://...trycloudflare.com` (cambia en cada arranque). El chat del IDE (Fase 6)
 apuntará a `http://localhost:8000` (local) o a esa URL (remoto).
 
+## Acceso desde la red local (pruebas)
+
+Por defecto la API escucha solo en `127.0.0.1`. Para probarla desde otra PC de la misma red,
+arráncala en todas las interfaces:
+
+```bash
+uvicorn main:app --host 0.0.0.0 --port 8000
+```
+
+y abre el puerto una vez (PowerShell **como administrador**):
+
+```powershell
+New-NetFirewallRule -DisplayName "CerberusAI API 8000" -Direction Inbound -Action Allow -Protocol TCP -LocalPort 8000 -Profile Private
+```
+
+Desde la otra PC: `http://<IP-del-host>:8000/health` (y apunta el chat del IDE a esa URL).
+La API no tiene autenticación: úsala solo en una red de confianza.
+
 ## Configuración (variables de entorno)
 
 | Variable | Default | Descripción |

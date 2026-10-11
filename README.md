@@ -1,25 +1,23 @@
 # CerberusIDE & CerberusAI
 
-**CerberusIDE** es un Entorno de Desarrollo Integrado (IDE) y analizador para un lenguaje de pseudocódigo en español llamado **Cerberus**. Está construido en **Java 24** utilizando **JavaFX** para su interfaz gráfica y una arquitectura desacoplada para el motor de análisis y compilación.
+**CerberusIDE** es un Entorno de Desarrollo Integrado (IDE) y analizador para un lenguaje de pseudocódigo en español llamado **Cerberus**. Está construido en **Java 24** con **JavaFX** y una arquitectura desacoplada para el motor de análisis y compilación.
 
-El repositorio incluye además el módulo **CerberusAI**, que provee conjuntos de datos preparados para el entrenamiento y fine-tuning de modelos de Inteligencia Artificial orientados a la generación y análisis de código en el lenguaje Cerberus.
+El repositorio incluye además el módulo **CerberusAI**: el pipeline completo de Inteligencia Artificial del lenguaje — dataset validado contra el compilador, fine-tuning QLoRA de un modelo local (Qwen2.5-Coder-7B), evaluación automática, una API (FastAPI + Ollama) y un componente de chat para el IDE.
 
 ---
 
-## Características Principales
+## Características principales
 
-- **Editor de Código Intuitivo**:
+- **Editor de código**:
   - Numeración reactiva de líneas sincronizada con el scroll.
-  - Soporte de temas visuales dinámicos (**Modo Oscuro** por defecto y **Modo Claro**).
-- **Flujo de Análisis por Fases**:
-  - **Analizador Léxico**: Reconocimiento de tokens basado en expresiones regulares y normalización léxica, con visualización de la lista de tokens extraídos.
-  - **Analizador Sintáctico**: Validador sintáctico descendente recursivo con comprobación estricta de balanceo de delimitadores (`()`, `{}`, `[]`) mediante pila.
-  - **Analizador Semántico**: Estructura base para validación de tipos e identificadores en la tabla de símbolos.
-  - **Documentador Automático**: Genera una bitácora en lenguaje natural describiendo las clases, funciones y estructuras creadas durante el análisis.
-- **Gestión de Archivos**:
-  - Creación de nuevos archivos, apertura y persistencia directa en formato `.txt`.
-- **Módulo CerberusAI**:
-  - Dataset en formato JSON Lines (`.jsonl`) con pares de instrucción-código para alimentar modelos de lenguaje.
+  - Temas visuales dinámicos (**Modo Oscuro** por defecto y **Modo Claro**).
+- **Flujo de análisis por fases**:
+  - **Analizador léxico**: tokenizador por expresiones regulares y normalización léxica, con tabla de tokens.
+  - **Analizador sintáctico**: parser descendente recursivo con pilas de scopes; valida balanceo de delimitadores (`()`, `{}`, `[]`), declaraciones, tipos, funciones (parámetros y tipo de retorno), llamadas, estructuras de control y asignaciones compuestas. Los errores son tipados (`ErrorSintactico`) con línea, columna y lexema.
+  - **Analizador semántico**: `AnalizadorSemantico` + `Tipo` resuelven identificadores en el scope visible y validan compatibilidad de tipos; la UI muestra el resultado real del análisis.
+  - **Documentador automático**: bitácora en lenguaje natural de clases, funciones y estructuras creadas.
+- **Gestión de archivos**: creación, apertura y persistencia directa en formato `.txt`.
+- **Chat CerberusAI (componente modular)**: panel de chat con roles **generar / explicar / corregir** que consume la API, con botón "Insertar en editor" mediante callback. Componente listo (`ui/chat_cerberus.fxml`, `ui.ChatCerberusController`, `cliente.ClienteCerberusAI` y `main.PreviewChat`); **integración pendiente por el rediseño de UI**.
 
 ---
 
@@ -38,17 +36,26 @@ Cerberus es un lenguaje imperativo y estructurado con palabras reservadas ínteg
 | **Literales Booleanos** | `verdadero`, `falso` |
 | **Operadores y Asignación** | `+`, `-`, `*`, `/`, `%`, `++`, `--`, `+=`, `-=`, `*=`, `/=`, `=`, `==`, `!=`, `<`, `>`, `<=`, `>=`, `&`, `|`, `!` |
 
+### Alcance v1
+
+- `nulo` está **reservado pero no implementado** (no hay tipos por referencia); `vacio` es el tipo de retorno sin valor.
+- **POO** (`nuevo`, `este`, `publico`, `privado`, acceso a miembros `x.y`) y **arreglos** se rechazan explícitamente (`POO no implementada en v1` / `Arreglos no implementados en v1`).
+- El compilador real es la fuente de verdad: ver [`CerberusAI_COMPILER_AUDIT.md`](CerberusAI_COMPILER_AUDIT.md) y [`CerberusAI/knowledge/language_spec.md`](CerberusAI/knowledge/language_spec.md).
+
 ### Estructura de un Programa
 
 Un programa Cerberus se compone de variables globales opcionales, una definición de clase y un bloque de funciones donde la función `principal()` es obligatoria.
 
 ```cerberus
 clase MiPrograma() {
+    funcion entero doble(entero n) {
+        retornar n * 2;
+    }
+
     funcion principal() {
         entero edad = 20;
-        real promedio = 9.5;
         cadena saludo = "Hola Cerberus";
-        
+
         si (edad >= 18) {
             imprimir(saludo + " - Mayor de edad");
         } sino {
@@ -56,7 +63,7 @@ clase MiPrograma() {
         }
 
         para (entero i = 0; i < 5; i++) {
-            imprimir("Iteracion: " + i);
+            imprimir("Doble de " + i + ": " + doble(i));
         }
     }
 }
@@ -66,45 +73,47 @@ clase MiPrograma() {
 
 ## Arquitectura del Proyecto
 
-El proyecto está diseñado de forma modular, manteniendo la lógica del compilador aislada de la interfaz gráfica mediante la interfaz funcional `Util.Reporter`:
+El proyecto es modular (JPMS, `module-info.java`) y mantiene la lógica del compilador aislada de la interfaz gráfica mediante la interfaz funcional `Util.Reporter`:
 
 ```
 CerberusIDE-IA/
-├── CerberusAI/                        # Módulo de Inteligencia Artificial
+├── CerberusAI/                        # Módulo de Inteligencia Artificial (ver su README)
 │   ├── dataset/
-│   │   └── cerberus_dataset_v1.jsonl  # Dataset de instrucciones y respuestas
+│   │   ├── cerberus_dataset_v1.jsonl  # Dataset original (incluye entradas inválidas)
+│   │   └── cerberus_dataset_v2.jsonl  # Dataset validado contra el compilador (93 entradas)
+│   ├── knowledge/
+│   │   └── language_spec.md           # Especificación del lenguaje (reconciliada)
+│   ├── finetune/                      # Fases 2–3: datos, QLoRA, export GGUF (ver README)
+│   ├── eval/                          # Fase 4: harness y resultados base vs fine-tuned
+│   ├── api/                           # Fase 5: API FastAPI sobre Ollama (ver README)
 │   └── README.md
 ├── src/main/
 │   ├── java/
-│   │   ├── AnalizadorLexico/          # Tokenizador y definiciones de tokens
-│   │   │   ├── AnalizadorLexico.java
-│   │   │   ├── Identificadores.java
-│   │   │   ├── Token.java
-│   │   │   └── Tokens.java
-│   │   ├── AnalizadorSintactico/      # Parser descendente recursivo y documentador
-│   │   │   ├── AnalizadorSintactico.java
-│   │   │   ├── Documentador.java
-│   │   │   └── ErrorSintactico.java
-│   │   ├── AnalizadorSemantico/       # Verificación semántica y tabla de tipos
-│   │   │   └── AnalizadorSemantico.java
-│   │   ├── Archivos/                  # Persistencia y lectura de archivos de texto
-│   │   │   └── Archivo.java
-│   │   ├── main/                      # Punto de entrada y aplicación JavaFX
-│   │   │   ├── CerberusApp.java
-│   │   │   └── Main.java
-│   │   ├── ui/                        # Controlador de la interfaz gráfica
-│   │   │   └── InterfazPrincipalController.java
-│   │   └── Util/                      # Utilerías e interfaces de reporte desacopladas
-│   │       └── Reporter.java
+│   │   ├── module-info.java           # JPMS: JavaFX, java.net.http, Jackson
+│   │   ├── AnalizadorLexico/          # Tokenizador (AnalizadorLexico, Tokens, Token, Identificadores)
+│   │   ├── AnalizadorSintactico/      # Parser + Documentador + ErrorSintactico
+│   │   ├── AnalizadorSemantico/       # Validación semántica (AnalizadorSemantico, Tipo)
+│   │   ├── Archivos/                  # Persistencia de archivos de texto (Archivo)
+│   │   ├── Util/                      # Reporter (desacople UI ↔ compilador)
+│   │   ├── audit/                     # Herramientas headless: CompilerProbe, Evaluador, CompiladorCLI, TestSuite
+│   │   ├── cliente/                   # ClienteCerberusAI (HTTP + Jackson, Java puro)
+│   │   ├── main/                      # Main, CerberusApp y PreviewChat (lanzador dev)
+│   │   └── ui/                        # InterfazPrincipalController, ChatCerberusController
 │   └── resources/
 │       ├── Imagenes/                  # Logotipos e íconos de la aplicación
-│       └── ui/                        # Vistas FXML y hojas de estilo CSS
-│           ├── estilos.css
-│           └── principal.fxml
-├── pom.xml                            # Configuración Maven (Java 24, OpenJFX 24)
+│       └── ui/                        # principal.fxml, chat_cerberus.fxml, estilos.css
+├── Code Examples/                     # Programas Cerberus de ejemplo (.txt)
+├── tests/                             # Suite del compilador (valid/ invalid/ expected/)
+├── pom.xml                            # Maven (Java 24, OpenJFX 24, Jackson)
 ├── mvnw / mvnw.cmd                    # Maven Wrapper
-└── run.cmd                            # Script de ejecución rápida en Windows con SDK local
+├── run.cmd                            # Script de ejecución rápida en Windows (local, no versionado)
+├── RUTA.md                            # Bitácora viva del proyecto
+├── CERBERUSIA_IMPLEMENTATION.md       # Plan del módulo de IA
+├── CerberusAI_COMPILER_AUDIT.md       # Auditoría real del compilador
+└── GramaticasAttendance.md            # Gramáticas pendientes / fuera de v1
 ```
+
+`module-info.java` declara `requires java.net.http` y `requires com.fasterxml.jackson.databind`, con `opens cliente to com.fasterxml.jackson.databind` (Jackson bajo JPMS).
 
 ---
 
@@ -113,6 +122,13 @@ CerberusIDE-IA/
 - **Java Development Kit (JDK)**: Versión **24** o superior.
 - **JavaFX SDK**: Versión **24.0.2** (gestionado automáticamente vía dependencias de Maven).
 - **Maven**: 3.9+ (no requiere instalación global previa gracias al Maven Wrapper incluido).
+
+Módulo CerberusAI (opcional, solo para la IA):
+
+- **Ollama** con el modelo `cerberusai` registrado (ver [`CerberusAI/finetune/README.md`](CerberusAI/finetune/README.md)).
+- **Python** con el venv de la API (`CerberusAI/.venv`) y `CerberusAI/api/requirements-api.txt`.
+- **cloudflared** (opcional) para exponer la API por un quick tunnel de Cloudflare.
+- Re-entrenar el modelo requiere **WSL2 + CUDA** (la inferencia/servicio corre en Windows).
 
 ---
 
@@ -139,18 +155,87 @@ mvnw.cmd clean package
 
 ### Opción 3: Script local de Windows (`run.cmd`)
 
-Si se cuenta con un SDK de JavaFX descargado localmente, se puede utilizar el script [`run.cmd`](run.cmd):
+Si se cuenta con un SDK de JavaFX descargado localmente, se puede utilizar el script `run.cmd` (archivo local, no versionado):
 1. Configurar la variable `PATH_TO_FX` con la ruta local a la carpeta `lib` del SDK de JavaFX dentro de `run.cmd`.
 2. Ejecutar:
 ```cmd
 run.cmd
 ```
 
+### Tests y herramientas headless
+
+```cmd
+mvnw.cmd compile
+java -cp target\classes audit.TestSuite
+java -cp target\classes audit.CompilerProbe
+java -cp target\classes audit.CompiladorCLI tests\valid\01_hola_mundo.txt
+```
+
+- `audit.TestSuite`: suite del compilador (99 casos; exit code 0 = todo OK).
+- `audit.CompilerProbe`: sonda accept/reject de fragmentos.
+- `audit.CompiladorCLI`: oráculo headless (imprime JSON `{aceptado, error, linea, columna, lexema}`).
+
+### Preview del chat (desarrollo)
+
+```powershell
+.\mvnw.cmd javafx:run "-Dmain.class=main.PreviewChat"
+
+# Smoke sin ventana (requiere la API arriba):
+$env:CERBERUS_PREVIEW_CHECK="1"; .\mvnw.cmd javafx:run "-Dmain.class=main.PreviewChat"
+```
+
+### API y evaluación (módulo AI)
+
+```cmd
+cd CerberusAI\api
+..\.venv\Scripts\python.exe -m uvicorn main:app --host 127.0.0.1 --port 8000
+```
+
+```cmd
+py CerberusAI\eval\run_eval.py --base-model qwen2.5-coder:7b
+```
+
+Detalle en [`CerberusAI/api/README.md`](CerberusAI/api/README.md) y [`CerberusAI/finetune/README.md`](CerberusAI/finetune/README.md).
+
+---
+
+## Módulo CerberusAI (resumen)
+
+| Fase | Entregable | Estado |
+| :--- | :--- | :--- |
+| 1. Oráculo | `audit/CompiladorCLI` + `audit/Evaluador` (validación headless) | HECHO |
+| 2. Datos | `to_chat.py` / `split.py` → `train.jsonl` (74) y `eval.jsonl` (19) | HECHO |
+| 3. Fine-tuning | QLoRA 4-bit de Qwen2.5-Coder-7B (loss 0.404) → GGUF Q8_0 → Ollama `cerberusai` | HECHO |
+| 4. Evaluación | 44% → **89%** de compilación (exact-match 33%) — `eval/resultados_base_vs_ft.txt` | HECHO |
+| 5. API | FastAPI `GET /health` y `POST /chat` (roles + validación con el oráculo) | HECHO |
+| 6. Chat IDE | Componente modular `chat_cerberus` + `PreviewChat`; integración pendiente | EN CURSO |
+| 7. Expansión | Ampliar dataset (generación + corrección), re-entrenar, dominio estable | FUTURO |
+
+- **Dataset v2**: 93 entradas; los 45 programas de categoría `generation` compilan contra el compilador.
+- **Exposición remota**: quick tunnel de Cloudflare (`cloudflared tunnel --url http://localhost:8000`); la URL cambia en cada arranque y el chat la acepta desde su campo de URL o la variable `CERBERUSAI_API_URL`.
+- Detalles completos en [`CerberusAI/README.md`](CerberusAI/README.md).
+
 ---
 
 ## Archivos de Prueba
 
-En la raíz del proyecto se incluyen ejemplos listos para cargar en el IDE o probar en el analizador:
-- [`prueba 1.txt`](prueba%201.txt): Ejemplo exhaustivo con variables, condicionales (`si`/`sino`), ciclos (`para`, `mientras`, `hacer mientras`), selección (`segun`/`caso`) e impresiones.
-- [`cicloPara.txt`](cicloPara.txt): Ejemplo enfocado en variables globales y ciclos `para`.
-- [`imprimir.txt`](imprimir.txt): Ejemplo de sintaxis básica de impresión.
+En la carpeta [`Code Examples/`](Code%20Examples/) hay programas de ejemplo listos para cargar
+en el IDE o probar en el analizador:
+- [`prueba 1.txt`](Code%20Examples/prueba%201.txt): Ejemplo exhaustivo con variables, condicionales (`si`/`sino`), ciclos (`para`, `mientras`, `hacer mientras`), selección (`segun`/`caso`) e impresiones.
+- [`cicloPara.txt`](Code%20Examples/cicloPara.txt): Ejemplo enfocado en variables globales y ciclos `para`.
+- [`imprimir.txt`](Code%20Examples/imprimir.txt): Ejemplo de sintaxis básica de impresión.
+
+Además, [`tests/`](tests/) contiene la suite headless del compilador: `valid/` (deben aceptarse), `invalid/` (deben rechazarse) y `expected/invalid/` (subcadena de error esperada).
+
+---
+
+## Documentación
+
+- [`RUTA.md`](RUTA.md) — bitácora viva del avance (pasos y entregables).
+- [`CERBERUSIA_IMPLEMENTATION.md`](CERBERUSIA_IMPLEMENTATION.md) — plan de implementación del módulo de IA (Fases 0–7).
+- [`CerberusAI_COMPILER_AUDIT.md`](CerberusAI_COMPILER_AUDIT.md) — auditoría de lo que el compilador acepta realmente.
+- [`GramaticasAttendance.md`](GramaticasAttendance.md) — gramáticas incompletas o fuera de v1, con prioridades.
+- [`CerberusAI/knowledge/language_spec.md`](CerberusAI/knowledge/language_spec.md) — especificación consolidada del lenguaje.
+- [`CerberusAI/README.md`](CerberusAI/README.md) — hub del módulo de IA.
+- [`CerberusAI/finetune/README.md`](CerberusAI/finetune/README.md) — datos y fine-tuning QLoRA (Fases 2–3).
+- [`CerberusAI/api/README.md`](CerberusAI/api/README.md) — API FastAPI, configuración y túnel.
