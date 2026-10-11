@@ -1,5 +1,7 @@
 package audit;
 
+import java.io.FileDescriptor;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
@@ -33,7 +35,10 @@ public class CompiladorCLI {
         } finally {
             System.setOut(realOut);
         }
-        System.out.println(aJson(r));
+        // Salida JSON en UTF-8 explicito (independiente de la codificacion de consola).
+        PrintStream utf8 = new PrintStream(new FileOutputStream(FileDescriptor.out), true, StandardCharsets.UTF_8);
+        utf8.println(aJson(r));
+        utf8.flush();
         System.exit(r.aceptado ? 0 : 1);
     }
 

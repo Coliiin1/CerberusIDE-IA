@@ -21,7 +21,7 @@
 | 7 | Re-auditar y re-ejecutar suite | HECHO | `CerberusAI_COMPILER_AUDIT.md` re-auditado; `TestSuite` 99/99, `CompilerProbe` 48/48; fix UI semántico |
 | 8 | Actualizar `language_spec.md` con lo implementado | HECHO | spec consolidada y re-auditada (`CerberusAI/knowledge/language_spec.md`) |
 | 9 | Construir `cerberus_dataset_v2.jsonl` | HECHO | `CerberusAI/dataset/cerberus_dataset_v2.jsonl` (93 entradas; 45 programas `generation` validados contra el compilador) |
-| 10 | Evaluación automática + elección de modelo base local | EN CURSO | Fases 1–3: oráculo `audit/CompiladorCLI.java`+`audit/Evaluador.java`; datos `CerberusAI/finetune/` (74/19); scripts de fine-tuning (`train_qlora.py`, `export_gguf.py`, `Modelfile`, `README.md`) |
+| 10 | Evaluación automática + elección de modelo base local | EN CURSO | Fases 1–4: oráculo `audit/CompiladorCLI.java`+`audit/Evaluador.java`; datos `CerberusAI/finetune/` (74/19); fine-tuning (`train_qlora.py`, `export_gguf.py`, `Modelfile`); evaluación `CerberusAI/eval/` (`eval_harness.py`, `run_eval.py`) |
 | 11 | Servicio Python/FastAPI | PENDIENTE | — |
 | 12 | Integración con el IDE JavaFX | PENDIENTE | — |
 
