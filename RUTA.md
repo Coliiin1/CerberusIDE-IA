@@ -21,7 +21,7 @@
 | 7 | Re-auditar y re-ejecutar suite | HECHO | `CerberusAI_COMPILER_AUDIT.md` re-auditado; `TestSuite` 99/99, `CompilerProbe` 48/48; fix UI semántico |
 | 8 | Actualizar `language_spec.md` con lo implementado | HECHO | spec consolidada y re-auditada (`CerberusAI/knowledge/language_spec.md`) |
 | 9 | Construir `cerberus_dataset_v2.jsonl` | HECHO | `CerberusAI/dataset/cerberus_dataset_v2.jsonl` (93 entradas; 45 programas `generation` validados contra el compilador) |
-| 10 | Evaluación automática + elección de modelo base local | PENDIENTE | — |
+| 10 | Evaluación automática + elección de modelo base local | EN CURSO | Fases 1–2: oráculo `audit/CompiladorCLI.java` + `audit/Evaluador.java`; datos `CerberusAI/finetune/` (`to_chat.py`, `split.py` → `train.jsonl` 74 / `eval.jsonl` 19) |
 | 11 | Servicio Python/FastAPI | PENDIENTE | — |
 | 12 | Integración con el IDE JavaFX | PENDIENTE | — |
 
@@ -92,4 +92,5 @@ Verificado por inválidos `15`, `43`, `44` y la sonda (`99/99` suite, `48/48` so
 mvnw.cmd compile
 java -cp target\classes audit.TestSuite
 java -cp target\classes audit.CompilerProbe
+java -cp target\classes audit.CompiladorCLI tests\valid\01_hola_mundo.txt
 ```

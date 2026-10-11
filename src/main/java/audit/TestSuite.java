@@ -1,9 +1,5 @@
 package audit;
 
-import AnalizadorLexico.AnalizadorLexico;
-import AnalizadorSintactico.AnalizadorSintactico;
-import Util.Reporter;
-
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -23,6 +19,8 @@ import java.util.stream.Stream;
  *   tests/expected/invalid/ -> fragmento del mensaje de error esperado (opcional,
  *                              mismo nombre de archivo que el caso invalid).
  *
+ * Usa el evaluador compartido {@link Evaluador}.
+ *
  * Ejecucion (desde la raiz del proyecto, tras `mvnw.cmd compile`):
  *   java -cp target\classes audit.TestSuite
  *
@@ -34,42 +32,18 @@ public class TestSuite {
     private static final Path INVALID = Paths.get("tests", "invalid");
     private static final Path EXPECTED = Paths.get("tests", "expected", "invalid");
 
-    private static final class ReporterAcumulador implements Reporter {
-        final List<String> mensajes = new ArrayList<>();
-
-        @Override
-        public void reportar(String mensaje) {
-            mensajes.add(mensaje);
-        }
-    }
-
     /**
-     * Evalua el codigo contra el compilador (sin JavaFX).
+     * Evalua el codigo con el evaluador compartido.
      *
      * @return null si el compilador acepta el codigo; en caso contrario, el
-     *         mensaje de error capturado (concatenacion de los reportes y/o
-     *         de la excepcion no capturada).
+     *         mensaje de error capturado.
      */
     private static String evaluar(String codigo) {
-        try {
-            AnalizadorLexico lex = new AnalizadorLexico();
-            ReporterAcumulador rep = new ReporterAcumulador();
-            lex.setReporter(rep::reportar);
-
-            lex.seccionarCadena(codigo);
-            AnalizadorSintactico sin = new AnalizadorSintactico(lex.getTokensDetectados(), rep::reportar);
-
-            boolean balanceado = sin.comprobarParentesis();
-            boolean analizo = sin.analizar();
-            boolean resultado = sin.getResultado();
-
-            if (balanceado && analizo && resultado) {
-                return null;
-            }
-            return String.join(" | ", rep.mensajes);
-        } catch (Throwable t) {
-            return t.getClass().getSimpleName() + ": " + t.getMessage();
+        Evaluador.Resultado r = Evaluador.evaluar(codigo);
+        if (r.aceptado) {
+            return null;
         }
+        return r.error == null ? "" : r.error;
     }
 
     private static List<Path> listar(Path dir) throws IOException {

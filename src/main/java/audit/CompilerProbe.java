@@ -1,21 +1,17 @@
 package audit;
 
-import AnalizadorLexico.AnalizadorLexico;
-import AnalizadorSintactico.AnalizadorSintactico;
-import Util.Reporter;
-
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Sonda headless del compilador Cerberus.
  *
- * Ejecuta cada snippet a traves del analizador lexico y sintactico (sin JavaFX)
- * y registra si el compilador lo acepta o lo rechaza, junto con el error
+ * Ejecuta cada snippet a traves del evaluador compartido ({@link Evaluador}, sin
+ * JavaFX) y registra si el compilador lo acepta o lo rechaza, junto con el error
  * producido. Sirve como evidencia dinamica para la auditoria del compilador.
  *
  * Ejecucion (desde la raiz del proyecto, tras `mvnw.cmd compile`):
- *   java --module-path "%PATH_TO_FX%" --add-modules javafx.controls,javafx.fxml -cp target\classes audit.CompilerProbe
+ *   java -cp target\classes audit.CompilerProbe
  */
 public class CompilerProbe {
 
@@ -31,27 +27,6 @@ public class CompilerProbe {
         }
     }
 
-    private static final class Resultado {
-        boolean balanceado;
-        boolean analizo;
-        boolean resultado;
-        boolean excepcion;
-        String error;
-
-        boolean aceptado() {
-            return balanceado && analizo && resultado && !excepcion;
-        }
-    }
-
-    private static final class ReporterAcumulador implements Reporter {
-        final List<String> mensajes = new ArrayList<>();
-
-        @Override
-        public void reportar(String mensaje) {
-            mensajes.add(mensaje);
-        }
-    }
-
     private static String prog(String cuerpo) {
         return "clase Test(){\nfuncion principal(){\n" + cuerpo + "\n}\n}";
     }
@@ -62,27 +37,6 @@ public class CompilerProbe {
 
     private static String progConFunciones(String cuerpoPrincipal, String funciones) {
         return "clase Test(){\nfuncion principal(){\n" + cuerpoPrincipal + "\n}\n" + funciones + "\n}";
-    }
-
-    private static Resultado evaluar(String codigo) {
-        Resultado res = new Resultado();
-        try {
-            AnalizadorLexico lex = new AnalizadorLexico();
-            ReporterAcumulador rep = new ReporterAcumulador();
-            lex.setReporter(rep::reportar);
-
-            lex.seccionarCadena(codigo);
-            AnalizadorSintactico sin = new AnalizadorSintactico(lex.getTokensDetectados(), rep::reportar);
-
-            res.balanceado = sin.comprobarParentesis();
-            res.analizo = sin.analizar();
-            res.resultado = sin.getResultado();
-            res.error = String.join(" | ", rep.mensajes);
-        } catch (Throwable t) {
-            res.excepcion = true;
-            res.error = t.getClass().getSimpleName() + ": " + t.getMessage();
-        }
-        return res;
     }
 
     public static void main(String[] args) {
@@ -238,8 +192,8 @@ public class CompilerProbe {
         System.out.println("NOMBRE | ESPERADO | ACEPTA | VEREDICTO | ERROR");
         System.out.println("-------|----------|--------|-----------|------");
         for (Caso c : casos) {
-            Resultado r = evaluar(c.codigo);
-            boolean acepta = r.aceptado();
+            Evaluador.Resultado r = Evaluador.evaluar(c.codigo);
+            boolean acepta = r.aceptado;
             boolean veredicto = (acepta == c.seEsperaAceptar);
             if (veredicto) {
                 aciertos++;

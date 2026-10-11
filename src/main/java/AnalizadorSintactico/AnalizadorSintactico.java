@@ -27,6 +27,7 @@ public class AnalizadorSintactico {
     private Documentador documentador;
     private Reporter reporter;
     private final Map<String, Firma> firmas = new HashMap<>();
+    private ErrorSintactico ultimoError;
 
     public AnalizadorSintactico(List<Token> tokensDetectados) {
         this(tokensDetectados, null);
@@ -313,11 +314,13 @@ public class AnalizadorSintactico {
     }
     
     public boolean analizar(){
+        ultimoError = null;
         try{
             recolectarFirmas();
             programa();
             return true;
         }catch(ErrorSintactico e){
+            ultimoError = e;
             reportar("OCURRIO UN ERROR: "+e.getMessage()
                 +"\nEn la linea: "+e.getFila()
                 +"\nColumna: "+e.getColumna()
@@ -327,6 +330,11 @@ public class AnalizadorSintactico {
         }
         falso();
         return false;
+    }
+
+    /** Ultimo ErrorSintactico producido por analizar() (null si no hubo). */
+    public ErrorSintactico getUltimoError(){
+        return ultimoError;
     }
     
     public boolean match(Tokens esperado){
