@@ -7,3 +7,9 @@ AGENTS.md
 .venv/
 __pycache__/
 *.pyc
+
+# Artefactos de fine-tuning (Fase 3; se generan en CerberusAI/finetune)
+CerberusAI/finetune/lora-adapter/
+CerberusAI/finetune/merged-model/
+CerberusAI/finetune/*.log
+*.gguf

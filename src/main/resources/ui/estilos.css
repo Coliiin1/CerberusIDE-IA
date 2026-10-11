@@ -139,3 +139,43 @@
     -fx-background-color: -linea;
     -fx-padding: 0 1 0 1;
 }
+
+/* Chat CerberusAI (componente modular ui/chat_cerberus.fxml) */
+.panel-chat {
+    -fx-background-color: -panel;
+}
+
+.panel-chat .etiqueta {
+    -fx-text-fill: -texto;
+    -fx-font-weight: bold;
+}
+
+.panel-chat .estado-chat {
+    -fx-text-fill: -texto;
+}
+
+.panel-chat .estado-chat.ok {
+    -fx-text-fill: #35c26a;
+}
+
+.panel-chat .estado-chat.error {
+    -fx-text-fill: #ff6b6b;
+}
+
+.btn-insertar {
+    -fx-background-color: -panel-sec;
+    -fx-text-fill: -texto;
+    -fx-font-weight: bold;
+    -fx-font-size: 13px;
+    -fx-pref-height: 40px;
+    -fx-cursor: hand;
+    -fx-background-radius: 4px;
+}
+
+.btn-insertar:hover {
+    -fx-background-color: derive(-panel-sec, 15%);
+}
+
+.btn-insertar:disabled {
+    -fx-opacity: 0.5;
+}

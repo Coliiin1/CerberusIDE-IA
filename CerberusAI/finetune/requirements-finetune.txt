@@ -2,12 +2,16 @@
 # Se instala DENTRO de WSL2 (Linux + CUDA), no en Windows.
 #   python -m venv .venv && source .venv/bin/activate
 #   pip install -r requirements-finetune.txt
+#
+# Versiones minimas alineadas con la API usada en train_qlora.py / export_gguf.py.
+# Probado con transformers 5.19 + trl 1.15 (SFTConfig.max_length, warmup_steps,
+# processing_class; transformers 5 ya no acepta warmup_ratio).
 
-torch>=2.2
-transformers>=4.44
-datasets>=2.20
-accelerate>=0.33
-peft>=0.12
-trl>=0.11
-bitsandbytes>=0.43
+torch>=2.14
+transformers>=5.19
+datasets>=5.1
+accelerate>=1.15
+peft>=0.21
+trl>=1.15
+bitsandbytes>=0.50
 sentencepiece

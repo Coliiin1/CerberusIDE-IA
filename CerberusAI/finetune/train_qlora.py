@@ -7,19 +7,15 @@ Se ejecuta DENTRO de WSL2 (Linux + CUDA). Requiere haber corrido antes la Fase 2
 para tener train.jsonl / eval.jsonl en formato de chat (campo "text").
 
 Uso:
-    python train_qlora.py                 # usa los valores por defecto
-    python train_qlora.py --epochs 5      # (por defecto 5)
+    python train_qlora.py --check          # valida los datos (no necesita GPU)
+    python train_qlora.py                  # entrena (usa los valores por defecto)
+    python train_qlora.py --epochs 5
 
 Salida: un adapter LoRA en ./lora-adapter (ligero).
 """
 import argparse
+import json
 import os
-
-import torch
-from datasets import load_dataset
-from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
-from peft import LoraConfig
-from trl import SFTTrainer, SFTConfig
 
 
 def ruta_local(base, valor):
@@ -43,6 +39,8 @@ def parse_args():
     ap.add_argument("--lora-alpha", type=int, default=32)
     ap.add_argument("--lora-dropout", type=float, default=0.05)
     ap.add_argument("--seed", type=int, default=42)
+    ap.add_argument("--check", action="store_true",
+                    help="valida train.jsonl/eval.jsonl y sale (sin GPU, solo stdlib).")
     args = ap.parse_args()
     args.train = ruta_local(aquidir, args.train)
     args.eval = ruta_local(aquidir, args.eval)
@@ -50,8 +48,64 @@ def parse_args():
     return args
 
 
+def check_datos(rutas):
+    """Valida (solo stdlib) que los .jsonl tengan el formato de chat esperado."""
+    total_ok = 0
+    problemas = []
+    for ruta in rutas:
+        if not os.path.exists(ruta):
+            problemas.append("no existe: {}".format(ruta))
+            continue
+        with open(ruta, encoding="utf-8") as f:
+            for n, linea in enumerate(f, 1):
+                linea = linea.strip()
+                if not linea:
+                    continue
+                try:
+                    obj = json.loads(linea)
+                except json.JSONDecodeError as e:
+                    problemas.append("{}:{} JSON invalido ({})".format(ruta, n, e))
+                    continue
+                faltan = [k for k in ("text", "messages", "category") if k not in obj]
+                if faltan:
+                    problemas.append("{}:{} faltan claves {}".format(ruta, n, faltan))
+                    continue
+                texto = str(obj.get("text", "")).strip()
+                if not texto.startswith("<|im_start|>system"):
+                    problemas.append("{}:{} 'text' no empieza en <|im_start|>system".format(ruta, n))
+                    continue
+                if not texto.endswith("<|im_end|>"):
+                    problemas.append("{}:{} 'text' no termina en <|im_end|>".format(ruta, n))
+                    continue
+                total_ok += 1
+    return total_ok, problemas
+
+
 def main():
     args = parse_args()
+
+    if args.check:
+        total, problemas = check_datos([args.train, args.eval])
+        print("== Check de datos ==")
+        for r in (args.train, args.eval):
+            print("  {}".format(r))
+        print("Ejemplos validos: {}".format(total))
+        if problemas:
+            print("Problemas:")
+            for p in problemas[:20]:
+                print("  - {}".format(p))
+            return 1
+        print("Check OK.")
+        return 0
+
+    print("Salida:", args.output)
+
+    # Imports pesados solo cuando se va a entrenar (asi --help/--check no requieren GPU).
+    import torch
+    from datasets import load_dataset
+    from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
+    from peft import LoraConfig
+    from trl import SFTTrainer, SFTConfig
 
     print("== Cargando tokenizer ==")
     tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=True)
@@ -92,7 +146,7 @@ def main():
         gradient_accumulation_steps=args.grad_accum,
         learning_rate=args.lr,
         lr_scheduler_type="cosine",
-        warmup_ratio=0.05,
+        warmup_steps=3,
         optim="paged_adamw_8bit",
         bf16=True,
         gradient_checkpointing=True,
@@ -103,7 +157,7 @@ def main():
         report_to="none",
         seed=args.seed,
         dataset_text_field="text",
-        max_seq_length=args.max_seq_length,
+        max_length=args.max_seq_length,
         packing=False,
     )
 
@@ -125,4 +179,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

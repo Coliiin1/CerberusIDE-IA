@@ -2,6 +2,8 @@
 # Uso:
 #   1) Genera el GGUF con export_gguf.py (cerberusai-q8_0.gguf).
 #   2) ollama create cerberusai -f Modelfile
+#
+# Si omites la cuantizacion y usas cerberusai-f16.gguf, cambia el FROM para que coincida.
 
 FROM ./cerberusai-q8_0.gguf
 

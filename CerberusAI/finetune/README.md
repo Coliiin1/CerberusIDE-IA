@@ -46,6 +46,8 @@ Luego, siguiendo las instrucciones que imprime el script:
 ```bash
 git clone https://github.com/ggerganov/llama.cpp
 pip install -r llama.cpp/requirements.txt
+cmake -B llama.cpp/build -S llama.cpp
+cmake --build llama.cpp/build --config Release -j
 python llama.cpp/convert_hf_to_gguf.py merged-model --outfile cerberusai-f16.gguf --outtype f16
 llama.cpp/build/bin/llama-quantize cerberusai-f16.gguf cerberusai-q8_0.gguf Q8_0
 ```
@@ -65,13 +67,34 @@ Genera un programa Cerberus que imprima los numeros del 1 al 5 con un ciclo para
 
 ## 6. Evaluación (Fase 4)
 
-El harness (`CerberusAI/eval/`, pendiente) usará el oráculo `audit.CompiladorCLI` para medir
-cuántos programas generados compilan, comparando el modelo base con el fine-tuned.
+El harness está implementado en `CerberusAI/eval/` (`eval_harness.py` y `run_eval.py`): usa el
+oráculo `audit.CompiladorCLI` para medir cuántos programas generados compilan, comparando el
+modelo base con el fine-tuned.
+
+```bash
+py ../eval/run_eval.py
+```
+
+Resultado obtenido (9 tareas `generation` del split, semilla 42): base `qwen2.5-coder:7b`
+**4/9 (44%)** de compilación; `cerberusai` **8/9 (89%)** y exact-match 3/9 (33%). Detalle en
+`../eval/resultados_base_vs_ft.txt`.
 
 ## Notas
 
+- Antes de entrenar puedes validar los datos con `python train_qlora.py --check` (no necesita GPU).
+- **Troubleshooting (Python 3.14 sin `python3.14-dev`):** TRL 1.x usa un kernel Triton y gcc falla
+  con `fatal error: Python.h: No such file or directory`. Workaround sin sudo:
+  `apt-get download python3.14-dev libpython3.14-dev`, `dpkg -x` los `.deb` en `~/pyheaders` y
+  exportar
+  `CPATH=~/pyheaders/extracted/usr/include/python3.14:~/pyheaders/extracted/usr/include`
+  antes de entrenar.
 - Si el entrenamiento no cabe en VRAM: baja `--batch` a 1 y sube `--grad-accum` a 8.
-- Si el API de TRL/Transformers cambia, ajusta `train_qlora.py` (se usó la API reciente:
-  `SFTConfig` + `processing_class`).
+- El merge de `export_gguf.py` se hace en CPU con el modelo en fp16: el pico de RAM ronda los
+  **28 GB**, así que conviene cerrar otras aplicaciones durante ese paso.
+- El `Modelfile` apunta a `cerberusai-q8_0.gguf`. Si omites la cuantización y usas
+  `cerberusai-f16.gguf`, cambia el `FROM` para que coincida.
+- Si el API de TRL/Transformers cambia, ajusta `train_qlora.py` / `export_gguf.py` (probado con
+  `transformers>=5.19` y `trl>=1.15`: en transformers 5 ya no existe `warmup_ratio` (usar
+  `warmup_steps`) y en TRL 1.x `max_seq_length` se llama `max_length`).
 - El dataset es pequeño (prueba de concepto); ampliarlo en la Fase 7 (más generación y
   ejemplos de corrección).

@@ -35,9 +35,12 @@ def main():
     adapter = ruta_local(aquidir, args.adapter)
     merged = ruta_local(aquidir, args.merged_dir)
 
+    print("Adapter:", adapter)
+    print("Merge:", merged)
+
     print("== Cargando modelo base en fp16 sobre CPU ==")
     base = AutoModelForCausalLM.from_pretrained(
-        args.model, torch_dtype=torch.float16, device_map="cpu", trust_remote_code=True
+        args.model, dtype=torch.float16, device_map="cpu", trust_remote_code=True
     )
     tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=True)
 
@@ -50,14 +53,17 @@ def main():
     tokenizer.save_pretrained(merged)
 
     print("\nMerge completado. Para obtener el GGUF (requiere llama.cpp):\n")
-    print("  # 1) clonar e instalar llama.cpp (una sola vez)")
+    print("  # 0) (nota) el merge en fp16/CPU usa ~28 GB de RAM: cierra otras apps.")
+    print("  # 1) clonar, instalar requisitos y COMPILAR llama.cpp (una sola vez)")
     print("  git clone https://github.com/ggerganov/llama.cpp")
-    print("  pip install -r llama.cpp/requirements.txt\n")
+    print("  pip install -r llama.cpp/requirements.txt")
+    print("  cmake -B llama.cpp/build -S llama.cpp")
+    print("  cmake --build llama.cpp/build --config Release -j\n")
     print("  # 2) convertir a GGUF fp16")
     print(f'  python llama.cpp/convert_hf_to_gguf.py "{merged}" --outfile cerberusai-f16.gguf --outtype f16\n')
     print("  # 3) (recomendado para 12 GB) cuantizar a Q8_0")
     print("  llama.cpp/build/bin/llama-quantize cerberusai-f16.gguf cerberusai-q8_0.gguf Q8_0\n")
-    print("  # 4) registrar en Ollama")
+    print("  # 4) registrar en Ollama (Modelfile apunta a cerberusai-q8_0.gguf)")
     print("  ollama create cerberusai -f Modelfile")
 
 

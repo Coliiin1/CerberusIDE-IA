@@ -21,9 +21,9 @@
 | 7 | Re-auditar y re-ejecutar suite | HECHO | `CerberusAI_COMPILER_AUDIT.md` re-auditado; `TestSuite` 99/99, `CompilerProbe` 48/48; fix UI semántico |
 | 8 | Actualizar `language_spec.md` con lo implementado | HECHO | spec consolidada y re-auditada (`CerberusAI/knowledge/language_spec.md`) |
 | 9 | Construir `cerberus_dataset_v2.jsonl` | HECHO | `CerberusAI/dataset/cerberus_dataset_v2.jsonl` (93 entradas; 45 programas `generation` validados contra el compilador) |
-| 10 | Evaluación automática + elección de modelo base local | EN CURSO | Fases 1–5: oráculo `audit/CompiladorCLI.java`+`audit/Evaluador.java`; datos `CerberusAI/finetune/` (74/19); fine-tuning (`train_qlora.py`, `export_gguf.py`, `Modelfile`); evaluación `CerberusAI/eval/`; API FastAPI `CerberusAI/api/main.py` + quick tunnel |
-| 11 | Servicio Python/FastAPI | PENDIENTE | — |
-| 12 | Integración con el IDE JavaFX | PENDIENTE | — |
+| 10 | Evaluación automática + elección de modelo base local | HECHO | QLoRA entrenado (5 epochs, loss 0.404, ~12 min) → `CerberusAI/finetune/lora-adapter`; GGUF `cerberusai-q8_0.gguf` (7.5 GB) + `ollama create cerberusai`; eval base vs FT: **44% → 89%** de compilación (+44 pts), exact-match 33% (`CerberusAI/eval/resultados_base_vs_ft.txt`) |
+| 11 | Servicio Python/FastAPI | HECHO | `CerberusAI/api/main.py` verificado en vivo: `/health` OK y `POST /chat` (`generar`) devolvió programa válido con `compila: true` (oráculo) |
+| 12 | Integración con el IDE JavaFX | EN CURSO | Componente modular listo y verificado: `cliente.ClienteCerberusAI` (HTTP+Jackson, URL configurable para el túnel), `ui/chat_cerberus.fxml` + `ui.ChatCerberusController` (autocontenido) y `main.PreviewChat` (smoke E2E: FXML carga + `chat` real → `compila: true`). Pendiente: cableado `<fx:include>` + `setInsertarHandler` dentro de `principal.fxml` (rediseño de UI en curso, a cargo del usuario) |
 
 ---
 
@@ -70,6 +70,19 @@ Verificado por inválidos `15`, `43`, `44` y la sonda (`99/99` suite, `48/48` so
 
 ---
 
+## Detalle del paso 10 — fine-tuning y evaluación (Fases 3–4) — HECHO
+
+| Etapa | Resultado |
+|---|---|
+| Entrenamiento QLoRA (WSL2, RTX 3060, 5 epochs, transformers 5.19 / trl 1.15) | loss 0.404, ~12 min → `CerberusAI/finetune/lora-adapter/` |
+| Merge + GGUF | `merged-model` (fp16) → `cerberusai-f16.gguf` → `cerberusai-q8_0.gguf` (Q8_0, 7.5 GB) |
+| Registro en Ollama | `ollama create cerberusai -f Modelfile` |
+| Evaluación (`eval/run_eval.py`, 9 tareas `generation`) | base `qwen2.5-coder:7b`: 4/9 (44%); `cerberusai`: 8/9 (89%), exact-match 3/9 (33%) |
+
+Artefactos pesados (lora-adapter, merged-model, *.gguf, *.log) están en `.gitignore`.
+
+---
+
 ## Artefactos del proyecto
 
 - Compilador: `src/main/java/AnalizadorLexico`, `AnalizadorSintactico`, `AnalizadorSemantico`.
@@ -78,7 +91,11 @@ Verificado por inválidos `15`, `43`, `44` y la sonda (`99/99` suite, `48/48` so
 - Auditoría: `CerberusAI_COMPILER_AUDIT.md`.
 - Guía de gramáticas: `GramaticasAttendance.md`.
 - Especificación: `CerberusAI/knowledge/language_spec.md`.
-- Dataset: `CerberusAI/dataset/cerberus_dataset_v1.jsonl`.
+- Dataset: `CerberusAI/dataset/cerberus_dataset_v1.jsonl` y `cerberus_dataset_v2.jsonl`.
+- Fine-tuning: `CerberusAI/finetune/` (`train_qlora.py`, `export_gguf.py`, `Modelfile`, `lora-adapter/`, `cerberusai-q8_0.gguf`).
+- Evaluación: `CerberusAI/eval/` (`eval_harness.py`, `run_eval.py`, `resultados_base_vs_ft.txt`).
+- API: `CerberusAI/api/main.py` (FastAPI; modelo `cerberusai` en Ollama).
+- Chat IDE (Fase 6): `src/main/java/cliente/ClienteCerberusAI.java`, `ui/chat_cerberus.fxml`, `ui/ChatCerberusController.java`, `main/PreviewChat.java`.
 
 ## Decisiones tomadas
 
