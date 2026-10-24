@@ -13,6 +13,7 @@
 <?import javafx.scene.control.Tab?>
 <?import javafx.scene.control.TabPane?>
 <?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TreeView?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
@@ -29,8 +30,10 @@
         <VBox spacing="0">
             <MenuBar styleClass="ide-menu-bar">
                 <Menu text="Archivo">
-                    <MenuItem text="Nuevo" fx:id="itemArchivoNuevo"/>
-                    <MenuItem text="Abrir" fx:id="itemArchivoAbrir"/>
+                    <MenuItem text="Nuevo" fx:id="itemArchivoNuevo" accelerator="Shortcut+N"/>
+                    <MenuItem text="Abrir" fx:id="itemArchivoAbrir" accelerator="Shortcut+O"/>
+                    <MenuItem text="Abrir proyecto..." fx:id="itemArchivoAbrirProyecto" accelerator="Shortcut+Shift+O"/>
+                    <MenuItem text="Guardar" fx:id="itemArchivoGuardar" accelerator="Shortcut+S"/>
                     <SeparatorMenuItem/>
                     <MenuItem text="Salir" fx:id="itemOpcionesSalir"/>
                 </Menu>
@@ -67,7 +70,10 @@
                 <Separator orientation="VERTICAL"
                            styleClass="toolbar-separator"/>
 
-                <Label text="Proyecto actual"
+                <Label text="Proyecto:"
+                       styleClass="toolbar-project"/>
+                <Label fx:id="lblProyecto"
+                       text="Sin proyecto"
                        styleClass="toolbar-project"/>
 
                 <Region HBox.hgrow="ALWAYS"/>
@@ -91,7 +97,7 @@
             <items>
 
                 <!-- EXPLORADOR IZQUIERDO -->
-                <VBox spacing="10" styleClass="explorer-panel">
+                <VBox spacing="8" styleClass="explorer-panel">
                     <padding>
                         <Insets top="12" right="10"
                                 bottom="10" left="10"/>
@@ -101,34 +107,25 @@
                            styleClass="panel-heading"/>
 
                     <HBox alignment="CENTER_LEFT" spacing="6">
-                        <Label text="▾" styleClass="tree-icon"/>
-                        <Label text="CERBERUS-PROJECT"
-                               styleClass="tree-root"/>
+                        <Button text="Abrir carpeta"
+                                fx:id="btnAbrirProyecto"
+                                styleClass="explorer-action"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <Button text="↻"
+                                fx:id="btnRefrescarProyecto"
+                                styleClass="icon-button"/>
                     </HBox>
 
-                    <VBox spacing="8" styleClass="file-tree">
-                        <Label text="▸  src"
-                               styleClass="tree-item"/>
-                        <Label text="▸  CERBERUSai"
-                               styleClass="tree-item"/>
-                        <Label text="▸  grammars"
-                               styleClass="tree-item"/>
-                        <Label text="▸  resources"
-                               styleClass="tree-item"/>
-                        <Separator/>
-                        <Label text="◇  README.md"
-                               styleClass="tree-item"/>
-                        <Label text="⚙  pom.xml"
-                               styleClass="tree-item"/>
-                    </VBox>
-
-                    <Region VBox.vgrow="ALWAYS"/>
-
-                    <Separator/>
-                    <Label text="ESTRUCTURA"
-                           styleClass="panel-heading"/>
-                    <Label text="Esquema del archivo"
+                    <Label fx:id="lblProyectoVacio"
+                           text="No hay ningún proyecto abierto. Usa «Abrir carpeta» para empezar."
+                           wrapText="true"
                            styleClass="tree-item-muted"/>
+
+                    <TreeView fx:id="treeProyecto"
+                              visible="false"
+                              managed="false"
+                              VBox.vgrow="ALWAYS"
+                              styleClass="project-tree"/>
                 </VBox>
 
                 <!-- EDITOR Y RESULTADOS -->
@@ -141,45 +138,10 @@
                         <!-- EDITOR -->
                         <VBox spacing="0" styleClass="editor-panel">
 
-                            <HBox alignment="CENTER_LEFT"
-                                  spacing="10"
-                                  styleClass="editor-tabs">
-                                <padding>
-                                    <Insets top="8" right="12"
-                                            bottom="8" left="12"/>
-                                </padding>
-
-                                <Label text="●"
-                                       styleClass="file-indicator"/>
-                                <Label text="Sin título"
-                                       fx:id="txtArchivo"
-                                       styleClass="active-file"/>
-                                <Region HBox.hgrow="ALWAYS"/>
-                                <Button text="＋"
-                                        styleClass="icon-button"/>
-                                <Button text="⋯"
-                                        styleClass="icon-button"/>
-                            </HBox>
-
-                            <HBox spacing="0"
-                                  VBox.vgrow="ALWAYS"
-                                  styleClass="code-workspace">
-
-                                <TextArea fx:id="txtLineas"
-                                          editable="false"
-                                          focusTraversable="false"
-                                          wrapText="false"
-                                          prefWidth="44"
-                                          minWidth="44"
-                                          maxWidth="55"
-                                          styleClass="lineas"/>
-
-                                <TextArea fx:id="txtCodigo"
-                                          HBox.hgrow="ALWAYS"
-                                          wrapText="false"
-                                          promptText="// Escribe tu código aquí..."
-                                          styleClass="editor"/>
-                            </HBox>
+                            <TabPane fx:id="tabsEditor"
+                                     VBox.vgrow="ALWAYS"
+                                     tabClosingPolicy="ALL_TABS"
+                                     styleClass="editor-tabs-pane"/>
 
                             <HBox alignment="CENTER_LEFT"
                                   spacing="14"
@@ -191,7 +153,8 @@
                                 <Label text="CERBERUS"
                                        styleClass="status-item"/>
                                 <Region HBox.hgrow="ALWAYS"/>
-                                <Label text="Línea 1, columna 1"
+                                <Label fx:id="lblPosicion"
+                                       text="Línea 1, columna 1"
                                        styleClass="status-item"/>
                                 <Label text="UTF-8"
                                        styleClass="status-item"/>

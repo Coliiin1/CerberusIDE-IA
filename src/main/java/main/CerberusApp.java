@@ -12,6 +12,7 @@ public class CerberusApp extends Application {
     @Override
     public void start(Stage stage) throws Exception {
         Parent root = FXMLLoader.load(getClass().getResource("/ui/principal.fxml"));
+        root.getStyleClass().add("modo-oscuro");
         Scene scene = new Scene(root, 1750, 950);
         scene.getStylesheets().add(getClass().getResource("/ui/estilos.css").toExternalForm());
         stage.setTitle("CERBERUS IDE");

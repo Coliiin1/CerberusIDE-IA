@@ -1,6 +1,14 @@
 .root {
     -fx-font-family: "Segoe UI";
     -fx-font-size: 13px;
+    /* Valores por defecto (tema oscuro) para que las variables nunca queden sin resolver */
+    -fondo: #121214;
+    -panel: #1e1e22;
+    -panel-sec: #2d2d32;
+    -texto: #ebebeb;
+    -editor: #161618;
+    -linea: #414146;
+    -acento: #0036a6;
     -fx-background-color: -fondo;
 }
 
@@ -239,17 +247,20 @@
     -fx-font-weight: bold;
 }
 
-.tree-root, .tree-item {
-    -fx-text-fill: #D8D0E2;
-    -fx-padding: 5 3 5 3;
-}
-
 .tree-item-muted, .ai-subtitle {
     -fx-text-fill: #95899F;
 }
 
-.tree-icon, .file-indicator {
-    -fx-text-fill: #A783E2;
+.explorer-action {
+    -fx-background-color: #30283F;
+    -fx-text-fill: #D8D0E2;
+    -fx-background-radius: 4px;
+    -fx-padding: 5 8 5 8;
+    -fx-cursor: hand;
+}
+
+.explorer-action:hover {
+    -fx-background-color: #3D3350;
 }
 
 .editor-tabs, .output-header {
@@ -395,4 +406,82 @@
 
 .separator .line {
     -fx-border-color: #383043;
+}
+
+/* Explorador de proyectos */
+.project-tree {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-padding: 0;
+}
+
+.project-tree .virtual-flow,
+.project-tree .viewport,
+.project-tree .clipped-container,
+.project-tree .sheet {
+    -fx-background-color: transparent;
+}
+
+.project-tree .tree-cell {
+    -fx-background-color: transparent;
+    -fx-text-fill: #D8D0E2;
+    -fx-padding: 5 4 5 4;
+    -fx-background-radius: 4px;
+}
+
+.project-tree .tree-cell:hover {
+    -fx-background-color: #2A2436;
+}
+
+.project-tree .tree-cell:selected {
+    -fx-background-color: #49356A;
+    -fx-text-fill: #FFFFFF;
+}
+
+.project-tree .tree-cell-folder {
+    -fx-text-fill: #CBB4F0;
+}
+
+.project-tree .tree-cell-file {
+    -fx-text-fill: #D8D0E2;
+}
+
+.project-tree .arrow {
+    -fx-background-color: #A99CB9;
+}
+
+/* Pestañas del editor */
+.editor-tabs-pane {
+    -fx-background-color: #17141F;
+    -fx-tab-min-height: 30px;
+}
+
+.editor-tabs-pane > .tab-header-area {
+    -fx-padding: 0;
+}
+
+.editor-tabs-pane > .tab-header-area > .tab-header-background {
+    -fx-background-color: #292333;
+}
+
+.editor-tabs-pane > .tab-header-area > .headers-region > .tab {
+    -fx-background-color: #211C2D;
+    -fx-background-radius: 0;
+    -fx-padding: 4 10 4 10;
+}
+
+.editor-tabs-pane > .tab-header-area > .headers-region > .tab:selected {
+    -fx-background-color: #49356A;
+}
+
+.editor-tabs-pane .tab-label {
+    -fx-text-fill: #D8D0E2;
+}
+
+.editor-tabs-pane .tab:selected .tab-label {
+    -fx-text-fill: #FFFFFF;
+}
+
+.editor-tabs-pane > .tab-content-area {
+    -fx-background-color: #17141F;
 }
