@@ -1,0 +1,16 @@
+clase Programa(){
+    funcion principal(){
+        entero n = 123;
+        imprimir(n);
+        n = invertir(n);
+        imprimir(n);
+    }
+    funcion entero invertir(entero x){
+        entero res = 0;
+        mientras (x != 0) {
+            res = res * 10 + x % 10;
+            x = x / 10;
+        }
+        retornar res;
+    }
+}

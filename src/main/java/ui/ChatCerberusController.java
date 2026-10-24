@@ -9,7 +9,6 @@ import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
-import javafx.scene.control.TextField;
 
 import java.net.URL;
 import java.util.ResourceBundle;
@@ -21,17 +20,15 @@ import java.util.function.Consumer;
  * Es un componente autonomo: no conoce el editor del IDE. El contenedor decide
  * que hacer con el codigo generado conectando un handler:
  *
- *     chatCerberus.setInsertarHandler(codigo -> txtCodigo.setText(codigo));
+ *     chatCerberusController.setInsertarHandler(codigo -> txtCodigo.setText(codigo));
  *
- * Sin handler, el boton "Insertar en editor" permanece deshabilitado.
+ * Sin handler, el boton "Insertar en editor" permanece deshabilitado. La URL de
+ * la API se configura desde el contenedor con {@link #setApiUrl(String)}.
  */
 public class ChatCerberusController implements Initializable {
 
     @FXML
     private ComboBox<String> cmbRol;
-
-    @FXML
-    private TextField txtApiUrl;
 
     @FXML
     private TextArea txtChatPrompt;
@@ -50,12 +47,12 @@ public class ChatCerberusController implements Initializable {
 
     private Consumer<String> insertarHandler;
     private String ultimoCodigo;
+    private String apiUrl = ClienteCerberusAI.urlPorDefecto();
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         cmbRol.setItems(FXCollections.observableArrayList("Generar", "Explicar", "Corregir"));
         cmbRol.getSelectionModel().selectFirst();
-        txtApiUrl.setText(ClienteCerberusAI.urlPorDefecto());
 
         btnEnviarChat.setOnAction(e -> enviar());
         btnInsertarEditor.setOnAction(e -> insertar());
@@ -68,13 +65,22 @@ public class ChatCerberusController implements Initializable {
         actualizarBotonInsertar();
     }
 
+    /** Configura la URL de la API (por ejemplo, la URL del tunel de Cloudflare). */
+    public void setApiUrl(String url) {
+        String limpia = url == null ? "" : url.trim();
+        this.apiUrl = limpia.isEmpty() ? ClienteCerberusAI.urlPorDefecto() : limpia;
+    }
+
+    public String getApiUrl() {
+        return apiUrl;
+    }
+
     private void enviar() {
         String prompt = txtChatPrompt.getText() == null ? "" : txtChatPrompt.getText().trim();
         if (prompt.isEmpty()) {
             actualizarEstado("Escribe una peticion antes de enviar.", "error");
             return;
         }
-        String url = txtApiUrl.getText() == null ? "" : txtApiUrl.getText().trim();
         String rol = rolApi();
 
         btnEnviarChat.setDisable(true);
@@ -83,7 +89,7 @@ public class ChatCerberusController implements Initializable {
         txtChatRespuesta.setText("Consultando a CerberusAI...");
         actualizarEstado("Consultando (" + rol + ")...", null);
 
-        ClienteCerberusAI cliente = new ClienteCerberusAI(url);
+        ClienteCerberusAI cliente = new ClienteCerberusAI(apiUrl);
         Task<ClienteCerberusAI.Respuesta> tarea = new Task<>() {
             @Override
             protected ClienteCerberusAI.Respuesta call() throws Exception {

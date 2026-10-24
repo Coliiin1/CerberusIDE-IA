@@ -18,6 +18,8 @@ import java.time.Duration;
  * Por defecto apunta a la API local (http://localhost:8000). Para usar la API
  * remota (quick tunnel de Cloudflare, URL https://...trycloudflare.com) se pasa
  * la URL al constructor o se define la variable de entorno CERBERUSAI_API_URL.
+ * Si la API exige autenticacion, la clave se toma de CERBERUSAI_API_KEY o del
+ * constructor y se envia en la cabecera X-API-Key.
  */
 public class ClienteCerberusAI {
 
@@ -45,18 +47,24 @@ public class ClienteCerberusAI {
 
     private final String baseUrl;
     private final Duration tiempoLimite;
+    private final String apiKey;
 
     public ClienteCerberusAI() {
-        this(urlPorDefecto());
+        this(urlPorDefecto(), TIEMPO_LIMITE_POR_DEFECTO, apiKeyPorDefecto());
     }
 
     public ClienteCerberusAI(String baseUrl) {
-        this(baseUrl, TIEMPO_LIMITE_POR_DEFECTO);
+        this(baseUrl, TIEMPO_LIMITE_POR_DEFECTO, apiKeyPorDefecto());
     }
 
     public ClienteCerberusAI(String baseUrl, Duration tiempoLimite) {
+        this(baseUrl, tiempoLimite, apiKeyPorDefecto());
+    }
+
+    public ClienteCerberusAI(String baseUrl, Duration tiempoLimite, String apiKey) {
         this.baseUrl = normalizar(baseUrl);
         this.tiempoLimite = tiempoLimite;
+        this.apiKey = apiKey == null ? "" : apiKey.trim();
     }
 
     /** URL de la API: variable de entorno CERBERUSAI_API_URL o el default local. */
@@ -65,11 +73,16 @@ public class ClienteCerberusAI {
         return (env == null || env.isBlank()) ? URL_POR_DEFECTO : env.trim();
     }
 
+    /** API Key: variable de entorno CERBERUSAI_API_KEY o cadena vacia. */
+    public static String apiKeyPorDefecto() {
+        String env = System.getenv("CERBERUSAI_API_KEY");
+        return env == null ? "" : env.trim();
+    }
+
     /** Envia una peticion POST /chat y devuelve la respuesta de la API. */
     public Respuesta chat(String rol, String prompt) throws IOException, InterruptedException {
         String cuerpo = mapper.writeValueAsString(new Solicitud(rol, prompt));
-        HttpRequest peticion = HttpRequest.newBuilder()
-                .uri(URI.create(baseUrl + "/chat"))
+        HttpRequest peticion = nuevaPeticion(URI.create(baseUrl + "/chat"))
                 .timeout(tiempoLimite)
                 .header("Content-Type", "application/json; charset=utf-8")
                 .POST(HttpRequest.BodyPublishers.ofString(cuerpo, StandardCharsets.UTF_8))
@@ -85,8 +98,7 @@ public class ClienteCerberusAI {
     /** GET /health: true si la API responde 2xx. No lanza excepciones. */
     public boolean ping() {
         try {
-            HttpRequest peticion = HttpRequest.newBuilder()
-                    .uri(URI.create(baseUrl + "/health"))
+            HttpRequest peticion = nuevaPeticion(URI.create(baseUrl + "/health"))
                     .timeout(TIEMPO_LIMITE_CONEXION)
                     .GET()
                     .build();
@@ -102,6 +114,14 @@ public class ClienteCerberusAI {
 
     public String getBaseUrl() {
         return baseUrl;
+    }
+
+    private HttpRequest.Builder nuevaPeticion(URI uri) {
+        HttpRequest.Builder builder = HttpRequest.newBuilder().uri(uri);
+        if (!apiKey.isBlank()) {
+            builder.header("X-API-Key", apiKey);
+        }
+        return builder;
     }
 
     private static String normalizar(String url) {
@@ -121,7 +141,10 @@ public class ClienteCerberusAI {
             // Cuerpo no JSON: se usa el resumen HTTP.
         }
         if (detalle != null && !detalle.isBlank()) {
-            return detalle;
+            String espera = respuesta.statusCode() == 429
+                    ? respuesta.headers().firstValue("Retry-After").orElse(null)
+                    : null;
+            return espera == null ? detalle : detalle + " Reintenta en " + espera + " s.";
         }
         String cuerpo = respuesta.body() == null ? "" : respuesta.body().strip();
         if (!cuerpo.isEmpty()) {

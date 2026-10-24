@@ -10,8 +10,9 @@ integrado en el IDE (JavaFX), con acceso remoto vía túnel.
 - Fine-tuning: **QLoRA 4-bit**, en **WSL2** (Linux + CUDA) sobre RTX 3060 12 GB.
 - Inferencia/servicio: **Ollama** (HTTP), modelo exportado a **GGUF**.
 - API: **FastAPI** (Python), corre local en la máquina GPU.
-- Acceso remoto: **Cloudflare quick tunnel** (URL temporal `trycloudflare.com`, sin dominio).
-  El dominio/URL estable se aborda en la Fase 7.
+- Acceso remoto: **Cloudflare quick tunnel** (URL temporal `trycloudflare.com`, sin dominio),
+  con **API Key obligatoria** (`X-API-Key`) y **rate limit por IP**. El dominio/URL estable se
+  aborda en la Fase 7.
 - Chat: 3 roles (**generar / explicar / corregir**) + **pegar código al editor** desde v1.
 - Dataset: `cerberus_dataset_v2.jsonl` (93 entradas) como base; ampliable en la Fase 7.
 
@@ -65,13 +66,20 @@ integrado en el IDE (JavaFX), con acceso remoto vía túnel.
 ### Fase 5 — API (FastAPI, local)
 - `CerberusAI/api/main.py`: `POST /chat` con `{role: generar|explicar|corregir, prompt}` →
   llama a Ollama → devuelve `{texto}` (y marca si contiene código insertable).
-- Exponer con **Cloudflare quick tunnel**:
-  `cloudflared tunnel --url http://localhost:8000` (la URL cambia en cada arranque).
+- Autenticación por `X-API-Key` (`CERBERUSAI_API_KEY`) y rate limit por IP
+  (`CERBERUSAI_RATE_LIMIT` / `CERBERUSAI_RATE_WINDOW`, con `CF-Connecting-IP` detrás del túnel).
+- Exponer con **Cloudflare quick tunnel** mediante `CerberusAI/api/tunel_rapido.cmd`:
+  arranca la API local, lanza `cloudflared tunnel --url http://localhost:8000` y publica la URL
+  temporal (cambia en cada arranque). `tunel_rapido.ps1` guarda la clave en `api_key.txt` y la URL
+  en `url_tunel.txt` (ambos gitignored).
 
-### Fase 6 — Chat en el IDE (JavaFX)
-- Panel de chat en `ui/principal.fxml` + su controlador.
+### Fase 6 — Chat en el IDE (JavaFX) — HECHO
+- Panel de chat integrado en `ui/principal.fxml` mediante `<fx:include>` y controlado por
+  `InterfazPrincipalController` (campo `chatCerberusController`).
 - Envía `POST /chat` a la API y muestra la respuesta.
 - Botón **"Insertar en editor"** que pega el código generado en `txtCodigo`.
+- La URL de la API no se edita en el chat: se configura en
+  **Opciones → Configurar API de CerberusAI...** y se persiste con `java.util.prefs.Preferences`.
 
 ### Fase 7 — Expansión (futuro)
 - Ampliar el dataset (más generación + ejemplos de **corrección** de código roto).

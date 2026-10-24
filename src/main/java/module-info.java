@@ -2,6 +2,7 @@ module CerberusIDE {
     requires javafx.controls;
     requires javafx.fxml;
     requires java.net.http;
+    requires java.prefs;
     requires com.fasterxml.jackson.databind;
 
     opens main to javafx.fxml;

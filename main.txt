@@ -1,0 +1,10 @@
+clase Programa(){
+    funcion principal(){
+        entero n = 12;
+        entero resultado = 1;
+        para (entero i = 1; i <= n; i++) {
+            resultado *= i;
+        }
+        imprimir(resultado);
+    }
+}

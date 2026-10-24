@@ -179,3 +179,193 @@
 .btn-insertar:disabled {
     -fx-opacity: 0.5;
 }
+
+
+/* Base del IDE */
+.ide-root {
+    -fx-background-color: #17141F;
+    -fx-font-family: "Segoe UI";
+    -fx-font-size: 12px;
+}
+
+.ide-menu-bar {
+    -fx-background-color: #211C2D;
+}
+
+.ide-toolbar {
+    -fx-background-color: #211C2D;
+    -fx-border-color: transparent transparent #383043 transparent;
+}
+
+.ide-brand {
+    -fx-text-fill: #F5F1FA;
+    -fx-font-size: 19px;
+    -fx-font-weight: bold;
+}
+
+.ide-brand-secondary {
+    -fx-text-fill: #A783E2;
+    -fx-font-size: 19px;
+    -fx-font-weight: bold;
+}
+
+.ide-logo, .ai-logo {
+    -fx-text-fill: #914DFF;
+    -fx-font-size: 23px;
+}
+
+.toolbar-project, .status-item {
+    -fx-text-fill: #B9B1C7;
+}
+
+.ide-status {
+    -fx-text-fill: #A9D8B1;
+    -fx-padding: 0 10 0 0;
+}
+
+.btn-compilar, .btn-ai-send {
+    -fx-background-color: #7546B8;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-background-radius: 5px;
+    -fx-padding: 8 14 8 14;
+    -fx-cursor: hand;
+}
+
+.btn-compilar:hover, .btn-ai-send:hover {
+    -fx-background-color: #895ACB;
+}
+
+.explorer-panel, .editor-panel,
+.output-panel, .ai-panel {
+    -fx-background-color: #211C2D;
+}
+
+.panel-heading {
+    -fx-text-fill: #A99CB9;
+    -fx-font-size: 10px;
+    -fx-font-weight: bold;
+}
+
+.tree-root, .tree-item {
+    -fx-text-fill: #D8D0E2;
+    -fx-padding: 5 3 5 3;
+}
+
+.tree-item-muted, .ai-subtitle {
+    -fx-text-fill: #95899F;
+}
+
+.tree-icon, .file-indicator {
+    -fx-text-fill: #A783E2;
+}
+
+.editor-tabs, .output-header {
+    -fx-background-color: #292333;
+    -fx-border-color: transparent transparent #383043 transparent;
+}
+
+.active-file {
+    -fx-text-fill: #F5F1FA;
+}
+
+.code-workspace {
+    -fx-background-color: #17141F;
+}
+
+.editor, .lineas, .resultado,
+.ai-chat-history, .ai-input {
+    -fx-control-inner-background: #17141F;
+    -fx-background-color: #17141F;
+    -fx-text-fill: #E6E0ED;
+    -fx-highlight-fill: #49356A;
+    -fx-highlight-text-fill: white;
+    -fx-border-color: transparent;
+    -fx-background-radius: 0;
+    -fx-font-family: "Consolas";
+    -fx-font-size: 13px;
+}
+
+.lineas {
+    -fx-control-inner-background: #211C2D;
+    -fx-text-fill: #82758F;
+    -fx-font-size: 11px;
+}
+
+.editor-status, .ide-bottom-bar {
+    -fx-background-color: #30283F;
+}
+
+.ai-header {
+    -fx-background-color: #211C2D;
+}
+
+.ai-title {
+    -fx-text-fill: #F5F1FA;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+}
+
+.ai-conversation, .ai-input-area {
+    -fx-background-color: #211C2D;
+}
+
+.ai-welcome {
+    -fx-background-color: #30283F;
+    -fx-background-radius: 7px;
+    -fx-padding: 12px;
+}
+
+.ai-welcome-title {
+    -fx-text-fill: #D6B9FF;
+    -fx-font-weight: bold;
+}
+
+.ai-message-text {
+    -fx-text-fill: #D8D0E2;
+}
+
+.ai-model-label {
+    -fx-text-fill: #A99CB9;
+    -fx-font-size: 10px;
+}
+
+.icon-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: #B9A9CC;
+    -fx-cursor: hand;
+}
+
+.pestanas, .tab-pane {
+    -fx-background-color: #211C2D;
+}
+
+.tab-pane .tab-header-area .tab-header-background {
+    -fx-background-color: #211C2D;
+}
+
+.tab-pane .tab {
+    -fx-background-color: #292333;
+}
+
+.tab-pane .tab:selected {
+    -fx-background-color: #49356A;
+}
+
+.tab-pane .tab .tab-label {
+    -fx-text-fill: #D8D0E2;
+}
+
+.ide-split, .editor-split {
+    -fx-background-color: #17141F;
+    -fx-padding: 0;
+}
+
+.split-pane-divider {
+    -fx-background-color: #383043;
+    -fx-padding: 0 2px 0 2px;
+}
+
+.separator .line {
+    -fx-border-color: #383043;
+}

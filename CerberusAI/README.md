@@ -36,8 +36,8 @@ de chat para el IDE.
 | 2. Datos | `train.jsonl` (74) / `eval.jsonl` (19), seed 42 | HECHO |
 | 3. Fine-tuning | Adapter LoRA (loss 0.404, 5 epochs) → GGUF Q8_0 → Ollama `cerberusai` | HECHO |
 | 4. Evaluación | `qwen2.5-coder:7b` 44% → `cerberusai` **89%** compilación (exact-match 33%) | HECHO |
-| 5. API | FastAPI verificada en vivo (`/health` y `/chat` con `compila: true`) | HECHO |
-| 6. Chat IDE | Componente `ui/chat_cerberus.fxml` + `ui.ChatCerberusController` + `cliente.ClienteCerberusAI` (integración al IDE pendiente por el rediseño de UI) | EN CURSO |
+| 5. API | FastAPI verificada en vivo (`/health` y `/chat` con `compila: true`) + acceso remoto con `X-API-Key` y rate limit por IP | HECHO |
+| 6. Chat IDE | Chat integrado en `ui/principal.fxml` con `ui/ChatCerberusController`; URL de la API en `Opciones → Configurar API de CerberusAI...`; `main.PreviewChat` como lanzador dev | HECHO |
 | 7. Expansión | Más generación y corrección, re-entrenar, dominio estable | FUTURO |
 
 Artefactos pesados (`lora-adapter/`, `merged-model/`, `*.gguf`, `*.log`) están en `.gitignore`;
@@ -53,15 +53,20 @@ py finetune\split.py --input finetune\chat_all.jsonl --out-dir finetune --eval-r
 REM Fase 4 — evaluar base vs fine-tuned (requiere Ollama con ambos modelos)
 py eval\run_eval.py --base-model qwen2.5-coder:7b
 
-REM Fase 5 — API
+REM Fase 5 — API local (la clave es opcional en local; obligatoria para el túnel)
 cd api
 ..\.venv\Scripts\python.exe -m uvicorn main:app --host 127.0.0.1 --port 8000
 ```
 
-```bash
-# Exposición remota (quick tunnel; la URL cambia en cada arranque)
-cloudflared tunnel --url http://localhost:8000
+```cmd
+REM Exposición remota: arranca la API, genera/reutiliza api_key.txt y abre el túnel
+cd CerberusAI\api
+tunel_rapido.cmd
 ```
 
-El chat del IDE apunta a `http://localhost:8000` por defecto y acepta la URL del túnel desde su
-campo de URL o la variable de entorno `CERBERUSAI_API_URL`.
+El script imprime la URL temporal `https://...trycloudflare.com` y la clave. El chat del IDE
+apunta a `http://localhost:8000` por defecto y la URL del túnel se configura en
+**Opciones → Configurar API de CerberusAI...** (se guarda en `Preferences`, sin campo visible en
+el chat); `CERBERUSAI_API_URL` queda como fallback y la clave se toma de `CERBERUSAI_API_KEY`.
+La API exige `X-API-Key`, limita las peticiones por IP y usa `CF-Connecting-IP` detrás del túnel.
+`api_key.txt`, `url_tunel.txt` y los logs están en `.gitignore`.
