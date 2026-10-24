@@ -34,7 +34,11 @@
                     <SeparatorMenuItem/>
                     <MenuItem text="Salir" fx:id="itemOpcionesSalir"/>
                 </Menu>
-                <Menu text="Editar"/>
+                <Menu text="Editar">
+                    <MenuItem text="Cortar" fx:id="itemEditarCortar"/>
+                    <MenuItem text="Copiar" fx:id="itemEditarCopiar"/>
+                    <MenuItem text="Pegar" fx:id="itemEditarPegar"/>
+                </Menu>
                 <Menu text="Ver"/>
                 <Menu text="Ejecutar"/>
                 <Menu text="Herramientas"/>

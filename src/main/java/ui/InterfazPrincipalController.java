@@ -74,6 +74,15 @@ public class InterfazPrincipalController implements Initializable {
     private MenuItem itemOpcionesSalir;
 
     @FXML
+    private MenuItem itemEditarCortar;
+
+    @FXML
+    private MenuItem itemEditarCopiar;
+
+    @FXML
+    private MenuItem itemEditarPegar;
+
+    @FXML
     private MenuItem itemConfigurarApiIA;
 
     @FXML
@@ -87,6 +96,9 @@ public class InterfazPrincipalController implements Initializable {
         itemArchivoAbrir.setOnAction(e -> abrirArchivo());
         itemArchivoNuevo.setOnAction(e -> nuevoArchivo());
         itemOpcionesSalir.setOnAction(e -> System.exit(0));
+        itemEditarCortar.setOnAction(e -> txtCodigo.cut());
+        itemEditarCopiar.setOnAction(e -> txtCodigo.copy());
+        itemEditarPegar.setOnAction(e -> txtCodigo.paste());
         itemConfigurarApiIA.setOnAction(e -> configurarApi());
         radioModoClaro.setOnAction(e -> actualizarTema());
 
@@ -258,11 +270,20 @@ public class InterfazPrincipalController implements Initializable {
 
     private void actualizarLineas() {
         String texto = txtCodigo.getText();
-        int lineas = texto.isEmpty() ? 1 : texto.split("\n", -1).length;
+        if (texto.isEmpty()) {
+            txtLineas.setText("1");
+            return;
+        }
+        String[] lineasArr = texto.split("\n", -1);
+        int lineas = lineasArr.length;
+        if (lineasArr.length > 0 && lineasArr[lineasArr.length - 1].isEmpty() && texto.endsWith("\n")) {
+            lineas = lineasArr.length;
+        }
         StringBuilder numeros = new StringBuilder();
-        for (int i = 1; i <= lineas; i++) {
+        for (int i = 1; i < lineas; i++) {
             numeros.append(i).append("\n");
         }
+        numeros.append(lineas);
         txtLineas.setText(numeros.toString());
     }
 

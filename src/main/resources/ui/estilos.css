@@ -89,23 +89,15 @@
     -fx-font-family: "Consolas";
 }
 
-.editor {
-    -fx-font-size: 18px;
-}
-
-.resultado {
-    -fx-font-size: 16px;
-}
-
 .lineas {
     -fx-control-inner-background: -panel-sec;
     -fx-text-fill: -texto;
     -fx-font-family: "Consolas";
-    -fx-font-size: 18px;
     -fx-pref-width: 46px;
 }
 
-.lineas .scroll-bar {
+.lineas .scroll-bar,
+.lineas .corner {
     -fx-opacity: 0;
 }
 
@@ -289,7 +281,42 @@
 .lineas {
     -fx-control-inner-background: #211C2D;
     -fx-text-fill: #82758F;
-    -fx-font-size: 11px;
+}
+
+.lineas .scroll-pane {
+    -fx-hbar-policy: never;
+    -fx-vbar-policy: never;
+}
+
+.lineas .scroll-pane > .viewport {
+    -fx-background-color: #211C2D;
+}
+
+.lineas .scroll-bar,
+.lineas .scroll-bar:vertical,
+.lineas .scroll-bar:horizontal {
+    -fx-pref-width: 0;
+    -fx-pref-height: 0;
+    -fx-max-width: 0;
+    -fx-max-height: 0;
+    -fx-opacity: 0;
+    -fx-padding: 0;
+}
+
+.lineas .scroll-bar .increment-button,
+.lineas .scroll-bar .decrement-button,
+.lineas .scroll-bar .increment-arrow,
+.lineas .scroll-bar .decrement-arrow {
+    -fx-padding: 0;
+    -fx-shape: null;
+}
+
+.lineas .corner {
+    -fx-pref-width: 0;
+    -fx-pref-height: 0;
+    -fx-max-width: 0;
+    -fx-max-height: 0;
+    -fx-background-color: #211C2D;
 }
 
 .editor-status, .ide-bottom-bar {
