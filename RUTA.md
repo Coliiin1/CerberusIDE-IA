@@ -23,7 +23,8 @@
 | 9 | Construir `cerberus_dataset_v2.jsonl` | HECHO | `CerberusAI/dataset/cerberus_dataset_v2.jsonl` (93 entradas; 45 programas `generation` validados contra el compilador) |
 | 10 | Evaluación automática + elección de modelo base local | HECHO | QLoRA entrenado (5 epochs, loss 0.404, ~12 min) → `CerberusAI/finetune/lora-adapter`; GGUF `cerberusai-q8_0.gguf` (7.5 GB) + `ollama create cerberusai`; eval base vs FT: **44% → 89%** de compilación (+44 pts), exact-match 33% (`CerberusAI/eval/resultados_base_vs_ft.txt`) |
 | 11 | Servicio Python/FastAPI | HECHO | `CerberusAI/api/main.py` verificado en vivo: `/health` OK y `POST /chat` (`generar`) devolvió programa válido con `compila: true` (oráculo) |
-| 12 | Integración con el IDE JavaFX | EN CURSO | Componente modular listo y verificado: `cliente.ClienteCerberusAI` (HTTP+Jackson, URL configurable para el túnel), `ui/chat_cerberus.fxml` + `ui.ChatCerberusController` (autocontenido) y `main.PreviewChat` (smoke E2E: FXML carga + `chat` real → `compila: true`). Pendiente: cableado `<fx:include>` + `setInsertarHandler` dentro de `principal.fxml` (rediseño de UI en curso, a cargo del usuario) |
+| 12 | Integración con el IDE JavaFX | HECHO | Chat integrado en `principal.fxml` con cabecera CERBERUSai (`<fx:include>` + `chatCerberusController`) y `setInsertarHandler` hacia `txtCodigo`; la URL de la API se configura en `Opciones → Configurar API de CerberusAI...` (Preferences, sin campo visible en el chat); `PreviewChat` se mantiene como lanzador dev |
+| 13 | Acceso remoto seguro de la API | HECHO | `CerberusAI/api/main.py` con `X-API-Key` y rate limit por IP; `tunel_rapido.cmd`/`.ps1` arrancan uvicorn y Cloudflare quick tunnel, generan `api_key.txt` y `url_tunel.txt` (gitignored); `ClienteCerberusAI` envía la clave desde `CERBERUSAI_API_KEY` |
 
 ---
 
@@ -94,14 +95,16 @@ Artefactos pesados (lora-adapter, merged-model, *.gguf, *.log) están en `.gitig
 - Dataset: `CerberusAI/dataset/cerberus_dataset_v1.jsonl` y `cerberus_dataset_v2.jsonl`.
 - Fine-tuning: `CerberusAI/finetune/` (`train_qlora.py`, `export_gguf.py`, `Modelfile`, `lora-adapter/`, `cerberusai-q8_0.gguf`).
 - Evaluación: `CerberusAI/eval/` (`eval_harness.py`, `run_eval.py`, `resultados_base_vs_ft.txt`).
-- API: `CerberusAI/api/main.py` (FastAPI; modelo `cerberusai` en Ollama).
-- Chat IDE (Fase 6): `src/main/java/cliente/ClienteCerberusAI.java`, `ui/chat_cerberus.fxml`, `ui/ChatCerberusController.java`, `main/PreviewChat.java`.
+- API: `CerberusAI/api/main.py` (FastAPI; modelo `cerberusai` en Ollama; `X-API-Key` + rate limit) y `tunel_rapido.cmd`/`.ps1` (Cloudflare quick tunnel).
+- Chat IDE (Fase 6): `src/main/java/cliente/ClienteCerberusAI.java`, `ui/chat_cerberus.fxml`, `ui/ChatCerberusController.java`, `main/PreviewChat.java`; integrado en `ui/principal.fxml` (`chatCerberusController`) y URL configurable desde `Opciones`.
+- Documentación técnica: `CerberusAI/docs/CERBERUSAI_MEMORIA.md` (fuente Markdown) y `CERBERUSAI_MEMORIA.docx` (generado con `CerberusAI/docs/make_docx.py`, Pandoc 3.9).
 
 ## Decisiones tomadas
 
 - **POO avanzada fuera de v1**: herencia, constructores, arreglos completos y `publico`/`privado` reales se posponen; se documentan como futuras (`PENDIENTE`) y no generan ejemplos en el dataset v2.
 - **`nulo` reservado (fuera de v1)**: sin tipos por referencia, `nulo` se documenta como `DOCUMENTED/PENDING`; `vacio` sí se usa como tipo de retorno (2.2). No genera ejemplos en el dataset v2.
 - El compilador real es la fuente de verdad; los conflictos con el PDF se registran en `CerberusAI_COMPILER_AUDIT.md` (sección de conflictos) y en `language_spec.md` (26.5).
+- **Acceso remoto con clave**: el quick tunnel publica la API, por lo que `CERBERUSAI_API_KEY` es obligatoria en uso remoto; el script la genera/reutiliza y el rate limit por IP frena abuso de GPU.
 
 ## Comandos de verificación
 
@@ -110,4 +113,12 @@ mvnw.cmd compile
 java -cp target\classes audit.TestSuite
 java -cp target\classes audit.CompilerProbe
 java -cp target\classes audit.CompiladorCLI tests\valid\01_hola_mundo.txt
+```
+
+Verificación del acceso remoto:
+
+```cmd
+cd CerberusAI\api
+tunel_rapido.cmd
+curl.exe -H "X-API-Key: <clave>" https://<url>.trycloudflare.com/health
 ```

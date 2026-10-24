@@ -6,12 +6,11 @@
   Integracion en 2 pasos (sin acoplar el resto de la UI):
     1) En tu FXML:      <fx:include source="chat_cerberus.fxml" fx:id="chatCerberus"/>
     2) En el controlador padre:
-         @FXML private ChatCerberusController chatCerberus;
-         chatCerberus.setInsertarHandler(codigo -> txtCodigo.setText(codigo));
+         @FXML private ChatCerberusController chatCerberusController;
+         chatCerberusController.setInsertarHandler(codigo -> txtCodigo.setText(codigo));
 
-  URL de la API: campo editable (default http://localhost:8000); tambien se puede
-  fijar con la variable de entorno CERBERUSAI_API_URL (p. ej. la URL del quick
-  tunnel de Cloudflare: https://algo.trycloudflare.com).
+  URL de la API: se configura fuera del chat (menu Opciones del IDE o variable de
+  entorno CERBERUSAI_API_URL); no se muestra como campo editable en el panel.
 -->
 
 <?import javafx.geometry.Insets?>
@@ -19,7 +18,6 @@
 <?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.TextArea?>
-<?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
@@ -34,10 +32,6 @@
         <ComboBox fx:id="cmbRol"/>
         <Region HBox.hgrow="ALWAYS"/>
         <Label fx:id="lblChatEstado" text="" styleClass="estado-chat"/>
-    </HBox>
-    <HBox spacing="8" alignment="CENTER_LEFT">
-        <Label text="API:" styleClass="etiqueta"/>
-        <TextField fx:id="txtApiUrl" HBox.hgrow="ALWAYS"/>
     </HBox>
     <TextArea fx:id="txtChatPrompt" promptText="Describe el programa, el codigo a explicar o a corregir..."
               prefRowCount="4" wrapText="true" styleClass="resultado"/>

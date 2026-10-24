@@ -13,3 +13,7 @@ CerberusAI/finetune/lora-adapter/
 CerberusAI/finetune/merged-model/
 CerberusAI/finetune/*.log
 *.gguf
+
+# Secretos y estado del túnel rápido
+CerberusAI/api/api_key.txt
+CerberusAI/api/url_tunel.txt

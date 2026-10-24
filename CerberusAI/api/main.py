@@ -11,23 +11,30 @@ Arranque:
     uvicorn main:app --host 127.0.0.1 --port 8000
 
 Configuracion por variables de entorno:
-    OLLAMA_BASE_URL  (default http://localhost:11434)
-    MODEL            (default cerberusai)
+    OLLAMA_BASE_URL      (default http://localhost:11434)
+    MODEL                (default cerberusai)
     SYSTEM_PROMPT_PATH
-    CLASSPATH        (default ../../target/classes)
-    JAVA             (default java)
-    COMPILER         (default audit.CompiladorCLI)
-    TIMEOUT          (segundos, default 120)
+    CLASSPATH            (default ../../target/classes)
+    JAVA                 (default java)
+    COMPILER             (default audit.CompiladorCLI)
+    TIMEOUT              (segundos, default 120)
+    CERBERUSAI_API_KEY   (si se define, exige la cabecera X-API-Key)
+    CERBERUSAI_RATE_LIMIT  (peticiones por IP y ventana; 0 desactiva, default 20)
+    CERBERUSAI_RATE_WINDOW (ventana en segundos, default 60)
 """
+import hmac
 import json
 import os
 import re
 import subprocess
 import tempfile
+import threading
+import time
+from collections import deque
 from typing import Optional
 
 import requests
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, Request
 from pydantic import BaseModel
 
 AQUI = os.path.dirname(os.path.abspath(__file__))
@@ -41,6 +48,23 @@ JAVA = os.environ.get("JAVA", "java")
 COMPILER = os.environ.get("COMPILER", "audit.CompiladorCLI")
 TIMEOUT = float(os.environ.get("TIMEOUT", "120"))
 
+API_KEY = os.environ.get("CERBERUSAI_API_KEY", "").strip()
+
+
+def _entero_env(nombre, por_defecto):
+    try:
+        return int(os.environ.get(nombre, por_defecto))
+    except ValueError:
+        return int(por_defecto)
+
+
+RATE_LIMIT = _entero_env("CERBERUSAI_RATE_LIMIT", "20")
+RATE_WINDOW = max(1, _entero_env("CERBERUSAI_RATE_WINDOW", "60"))
+MAX_IPS_RASTREADAS = 4096
+
+_intentos_por_ip = {}
+_lock_intentos = threading.Lock()
+
 ROLES = {
     "generar": "Genera el codigo Cerberus para: {prompt}",
     "explicar": "Explica el siguiente codigo o concepto de Cerberus: {prompt}",
@@ -51,6 +75,52 @@ FENCE = re.compile(r"```[a-zA-Z0-9_+-]*\s*\n(.*?)```", re.DOTALL)
 CLASE = re.compile(r"\bclase\s+\w+\s*\(\)")
 
 app = FastAPI(title="CerberusAI API", version="0.1.0")
+
+
+def _ip_cliente(request):
+    cf = request.headers.get("cf-connecting-ip")
+    if cf:
+        return cf.strip()
+    reenviada = request.headers.get("x-forwarded-for")
+    if reenviada:
+        return reenviada.split(",")[0].strip()
+    return request.client.host if request.client else "desconocido"
+
+
+def _limpiar_intentos(ahora):
+    if len(_intentos_por_ip) <= MAX_IPS_RASTREADAS:
+        return
+    for ip, marcas in list(_intentos_por_ip.items()):
+        if not marcas or ahora - marcas[-1] >= RATE_WINDOW:
+            del _intentos_por_ip[ip]
+
+
+def _verificar_rate_limit(request):
+    if RATE_LIMIT <= 0:
+        return
+    ip = _ip_cliente(request)
+    ahora = time.monotonic()
+    with _lock_intentos:
+        _limpiar_intentos(ahora)
+        marcas = _intentos_por_ip.setdefault(ip, deque())
+        while marcas and ahora - marcas[0] >= RATE_WINDOW:
+            marcas.popleft()
+        if len(marcas) >= RATE_LIMIT:
+            espera = max(1, int(RATE_WINDOW - (ahora - marcas[0]) + 0.999))
+            raise HTTPException(
+                status_code=429,
+                detail="Demasiadas peticiones. Intenta de nuevo mas tarde.",
+                headers={"Retry-After": str(espera)},
+            )
+        marcas.append(ahora)
+
+
+def verificar_acceso(request: Request):
+    if API_KEY:
+        recibida = request.headers.get("x-api-key", "")
+        if not hmac.compare_digest(recibida.encode("utf-8"), API_KEY.encode("utf-8")):
+            raise HTTPException(status_code=401, detail="API Key ausente o invalida.")
+    _verificar_rate_limit(request)
 
 
 class ChatRequest(BaseModel):
@@ -111,12 +181,12 @@ def validar_con_oraculo(codigo):
             pass
 
 
-@app.get("/health")
+@app.get("/health", dependencies=[Depends(verificar_acceso)])
 def health():
     return {"status": "ok", "modelo": MODEL, "ollama": OLLAMA_BASE_URL}
 
 
-@app.post("/chat", response_model=ChatResponse)
+@app.post("/chat", response_model=ChatResponse, dependencies=[Depends(verificar_acceso)])
 def chat(req: ChatRequest):
     plantilla = ROLES.get(req.role, ROLES["generar"])
     user = plantilla.format(prompt=req.prompt)

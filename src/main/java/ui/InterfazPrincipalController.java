@@ -3,12 +3,15 @@ package ui;
 import Archivos.Archivo;
 import AnalizadorLexico.AnalizadorLexico;
 import AnalizadorSintactico.AnalizadorSintactico;
+import cliente.ClienteCerberusAI;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
 import java.net.URL;
 import java.util.Optional;
 import java.util.ResourceBundle;
+import java.util.prefs.Preferences;
 
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -24,7 +27,10 @@ import javafx.stage.FileChooser;
 
 public class InterfazPrincipalController implements Initializable {
 
+    private static final String PREF_API_URL = "cerberusai.api.url";
+
     private final AnalizadorLexico lex = new AnalizadorLexico();
+    private final Preferences preferencias = Preferences.userNodeForPackage(InterfazPrincipalController.class);
     private AnalizadorSintactico sin;
     private File archivo;
 
@@ -33,6 +39,9 @@ public class InterfazPrincipalController implements Initializable {
 
     @FXML
     private Button btnCompilar;
+
+    @FXML
+    private ChatCerberusController chatCerberusController;
 
     @FXML
     private Label txtArchivo;
@@ -65,6 +74,9 @@ public class InterfazPrincipalController implements Initializable {
     private MenuItem itemOpcionesSalir;
 
     @FXML
+    private MenuItem itemConfigurarApiIA;
+
+    @FXML
     private RadioMenuItem radioModoClaro;
 
     @Override
@@ -75,7 +87,11 @@ public class InterfazPrincipalController implements Initializable {
         itemArchivoAbrir.setOnAction(e -> abrirArchivo());
         itemArchivoNuevo.setOnAction(e -> nuevoArchivo());
         itemOpcionesSalir.setOnAction(e -> System.exit(0));
+        itemConfigurarApiIA.setOnAction(e -> configurarApi());
         radioModoClaro.setOnAction(e -> actualizarTema());
+
+        chatCerberusController.setInsertarHandler(codigo -> txtCodigo.setText(codigo));
+        chatCerberusController.setApiUrl(urlApiGuardada());
 
         txtCodigo.textProperty().addListener((obs, o, n) -> actualizarLineas());
         txtCodigo.scrollTopProperty().addListener((obs, o, n) -> txtLineas.setScrollTop(n.doubleValue()));
@@ -105,6 +121,64 @@ public class InterfazPrincipalController implements Initializable {
         txtCodigo.setText("");
         archivo = null;
         txtArchivo.setText("ARCHIVO: ");
+    }
+
+    private void configurarApi() {
+        TextInputDialog dialog = new TextInputDialog(chatCerberusController.getApiUrl());
+        dialog.setTitle("Configuracion de CerberusAI");
+        dialog.setHeaderText("URL de la API de CerberusAI");
+        dialog.setContentText("URL (vacio = localhost):");
+        Optional<String> resultado = dialog.showAndWait();
+        if (resultado.isEmpty()) {
+            return;
+        }
+        String entrada = resultado.get().trim();
+        if (entrada.isEmpty()) {
+            preferencias.remove(PREF_API_URL);
+            chatCerberusController.setApiUrl(ClienteCerberusAI.urlPorDefecto());
+            mostrarInfo("API restablecida a " + ClienteCerberusAI.urlPorDefecto());
+            return;
+        }
+        String url = normalizarUrlApi(entrada);
+        if (url == null) {
+            mostrarError("URL invalida. Usa http://... o https://...");
+            return;
+        }
+        preferencias.put(PREF_API_URL, url);
+        chatCerberusController.setApiUrl(url);
+        mostrarInfo("URL de la API actualizada.");
+    }
+
+    private String urlApiGuardada() {
+        String guardada = preferencias.get(PREF_API_URL, "").trim();
+        if (guardada.isEmpty()) {
+            return ClienteCerberusAI.urlPorDefecto();
+        }
+        String normalizada = normalizarUrlApi(guardada);
+        return normalizada == null ? ClienteCerberusAI.urlPorDefecto() : normalizada;
+    }
+
+    private static String normalizarUrlApi(String texto) {
+        String limpia = texto == null ? "" : texto.trim();
+        while (limpia.endsWith("/")) {
+            limpia = limpia.substring(0, limpia.length() - 1);
+        }
+        if (limpia.isEmpty()) {
+            return null;
+        }
+        try {
+            URI uri = URI.create(limpia);
+            String esquema = uri.getScheme();
+            if (esquema == null || uri.getHost() == null) {
+                return null;
+            }
+            if (!esquema.equalsIgnoreCase("http") && !esquema.equalsIgnoreCase("https")) {
+                return null;
+            }
+            return limpia;
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
     }
 
     private void compilar() {

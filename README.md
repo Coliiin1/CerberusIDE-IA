@@ -17,7 +17,7 @@ El repositorio incluye además el módulo **CerberusAI**: el pipeline completo d
   - **Analizador semántico**: `AnalizadorSemantico` + `Tipo` resuelven identificadores en el scope visible y validan compatibilidad de tipos; la UI muestra el resultado real del análisis.
   - **Documentador automático**: bitácora en lenguaje natural de clases, funciones y estructuras creadas.
 - **Gestión de archivos**: creación, apertura y persistencia directa en formato `.txt`.
-- **Chat CerberusAI (componente modular)**: panel de chat con roles **generar / explicar / corregir** que consume la API, con botón "Insertar en editor" mediante callback. Componente listo (`ui/chat_cerberus.fxml`, `ui.ChatCerberusController`, `cliente.ClienteCerberusAI` y `main.PreviewChat`); **integración pendiente por el rediseño de UI**.
+- **Chat CerberusAI integrado**: panel de chat con roles **generar / explicar / corregir** que consume la API, con botón "Insertar en editor" mediante callback. Está integrado en la ventana principal (`ui/principal.fxml` + `ui.ChatCerberusController`), con la URL de la API configurable desde **Opciones → Configurar API de CerberusAI...** (no se muestra en el chat); `main.PreviewChat` sigue como lanzador de desarrollo.
 
 ---
 
@@ -192,6 +192,12 @@ cd CerberusAI\api
 ```
 
 ```cmd
+REM Acceso remoto: arranca la API y el quick tunnel, con API Key y rate limit
+cd CerberusAI\api
+tunel_rapido.cmd
+```
+
+```cmd
 py CerberusAI\eval\run_eval.py --base-model qwen2.5-coder:7b
 ```
 
@@ -207,12 +213,12 @@ Detalle en [`CerberusAI/api/README.md`](CerberusAI/api/README.md) y [`CerberusAI
 | 2. Datos | `to_chat.py` / `split.py` → `train.jsonl` (74) y `eval.jsonl` (19) | HECHO |
 | 3. Fine-tuning | QLoRA 4-bit de Qwen2.5-Coder-7B (loss 0.404) → GGUF Q8_0 → Ollama `cerberusai` | HECHO |
 | 4. Evaluación | 44% → **89%** de compilación (exact-match 33%) — `eval/resultados_base_vs_ft.txt` | HECHO |
-| 5. API | FastAPI `GET /health` y `POST /chat` (roles + validación con el oráculo) | HECHO |
-| 6. Chat IDE | Componente modular `chat_cerberus` + `PreviewChat`; integración pendiente | EN CURSO |
+| 5. API | FastAPI `GET /health` y `POST /chat` (roles + validación con el oráculo) + acceso remoto con `X-API-Key` y rate limit por IP | HECHO |
+| 6. Chat IDE | Chat integrado en `principal.fxml` + `PreviewChat` dev; URL de API desde Opciones | HECHO |
 | 7. Expansión | Ampliar dataset (generación + corrección), re-entrenar, dominio estable | FUTURO |
 
 - **Dataset v2**: 93 entradas; los 45 programas de categoría `generation` compilan contra el compilador.
-- **Exposición remota**: quick tunnel de Cloudflare (`cloudflared tunnel --url http://localhost:8000`); la URL cambia en cada arranque y el chat la acepta desde su campo de URL o la variable `CERBERUSAI_API_URL`.
+- **Exposición remota**: `CerberusAI/api/tunel_rapido.cmd` arranca la API local y un quick tunnel de Cloudflare; exige `X-API-Key` (`CERBERUSAI_API_KEY`) y limita peticiones por IP. La URL cambia en cada arranque; se configura en **Opciones → Configurar API de CerberusAI...** (Preferences) o con `CERBERUSAI_API_URL`, y la clave se toma de `CERBERUSAI_API_KEY`.
 - Detalles completos en [`CerberusAI/README.md`](CerberusAI/README.md).
 
 ---
