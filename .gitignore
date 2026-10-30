@@ -14,6 +14,10 @@ CerberusAI/finetune/merged-model/
 CerberusAI/finetune/*.log
 *.gguf
 
+# Notebooks (checkpoints de Jupyter)
+.ipynb_checkpoints/
+CerberusAI/colab/.ipynb_checkpoints/
+
 # Secretos y estado del túnel rápido
 CerberusAI/api/api_key.txt
 CerberusAI/api/url_tunel.txt

@@ -25,6 +25,9 @@
 | 11 | Servicio Python/FastAPI | HECHO | `CerberusAI/api/main.py` verificado en vivo: `/health` OK y `POST /chat` (`generar`) devolvió programa válido con `compila: true` (oráculo) |
 | 12 | Integración con el IDE JavaFX | HECHO | Chat integrado en `principal.fxml` con cabecera CERBERUSai (`<fx:include>` + `chatCerberusController`) y `setInsertarHandler` hacia `txtCodigo`; la URL de la API se configura en `Opciones → Configurar API de CerberusAI...` (Preferences, sin campo visible en el chat); `PreviewChat` se mantiene como lanzador dev |
 | 13 | Acceso remoto seguro de la API | HECHO | `CerberusAI/api/main.py` con `X-API-Key` y rate limit por IP; `tunel_rapido.cmd`/`.ps1` arrancan uvicorn y Cloudflare quick tunnel, generan `api_key.txt` y `url_tunel.txt` (gitignored); `ClienteCerberusAI` envía la clave desde `CERBERUSAI_API_KEY` |
+| 14 | Expansión de datasets v3 (Fase 7) | HECHO | `CerberusAI/dataset/generar_datasets.py` (generador + validador con oráculo); 4 datasets v3 (1001 entradas): `cerberus_dataset_v3_valido.jsonl` (474 `generation`), `cerberus_dataset_v3_errores_semanticos.jsonl` (333 `correction_semantics`), `cerberus_dataset_v3_errores_sintacticos.jsonl` (194 `correction_syntax`), `cerberus_dataset_v3_errores_validacion.jsonl` (0, vacío: todo lo válido compiló) |
+| 15 | Balanceo de datos v4 (Fase 7) | HECHO | `--only balance` en `generar_datasets.py` → `cerberus_dataset_v4_balance.jsonl` (500: 125 `explanation`, 125 `syntax`, 125 `errors_semantics`, 125 `compiler_concepts`, `source = v4_balance_v1`); mensajes de error tomados del oráculo |
+| 16 | Entrenamiento en Google Colab (Fase 7) | EN CURSO | `CerberusAI/colab/train_cerberus_colab.ipynb` + `requirements-colab.txt`; `train_qlora.py --dtype auto` y `to_chat.py` multi-input (v2+v3+v4 = 1594 → train 1274 / eval 320); merge/GGUF en local pendiente |
 
 ---
 
@@ -84,6 +87,27 @@ Artefactos pesados (lora-adapter, merged-model, *.gguf, *.log) están en `.gitig
 
 ---
 
+## Detalle del paso 14 — expansión de datasets v3 (Fase 7) — HECHO
+
+| Dataset | Categoría | Entradas | Validación |
+|---|---|---|---|
+| `cerberus_dataset_v3_valido.jsonl` | `generation` | 474 | cada `response` compila (oráculo) |
+| `cerberus_dataset_v3_errores_semanticos.jsonl` | `correction_semantics` | 333 | roto rechazado + corregido aceptado |
+| `cerberus_dataset_v3_errores_sintacticos.jsonl` | `correction_syntax` | 194 | roto rechazado + corregido aceptado |
+| `cerberus_dataset_v3_errores_validacion.jsonl` | `errors_validacion` | 0 | bucket de "válidos" que no pasaron (vacío) |
+
+- Generador/validador reproducible: `CerberusAI/dataset/generar_datasets.py` (stdlib, semilla fija de
+  plantillas; invoca `java -cp target/classes audit.CompiladorCLI` por `subprocess`).
+- Regla del flujo: todo programa pensado como válido se compila; si no pasa los analizadores, se
+  enruta a `_errores_validacion.jsonl` (esta vez quedó vacío). Cada par de corrección exige
+  "roto rechazado" **y** "corregido aceptado"; los pares inválidos se descartan y se reportan.
+- Formato de error: `instruction` = "Corrige el siguiente codigo Cerberus..." + código roto,
+  `response` = código corregido (sin explicación).
+- Downstream (fuera de esta tarea): `to_chat.py` + `split.py` para regenerar `train/eval.jsonl`
+  y re-entrenar en WSL2/GPU.
+
+---
+
 ## Artefactos del proyecto
 
 - Compilador: `src/main/java/AnalizadorLexico`, `AnalizadorSintactico`, `AnalizadorSemantico`.
@@ -93,6 +117,9 @@ Artefactos pesados (lora-adapter, merged-model, *.gguf, *.log) están en `.gitig
 - Guía de gramáticas: `GramaticasAttendance.md`.
 - Especificación: `CerberusAI/knowledge/language_spec.md`.
 - Dataset: `CerberusAI/dataset/cerberus_dataset_v1.jsonl` y `cerberus_dataset_v2.jsonl`.
+- Datasets v3: `CerberusAI/dataset/cerberus_dataset_v3_{valido,errores_semanticos,errores_sintacticos,errores_validacion}.jsonl` + generador `CerberusAI/dataset/generar_datasets.py`.
+- Balance v4: `CerberusAI/dataset/cerberus_dataset_v4_balance.jsonl` (`--only balance`).
+- Colab: `CerberusAI/colab/train_cerberus_colab.ipynb` + `requirements-colab.txt`.
 - Fine-tuning: `CerberusAI/finetune/` (`train_qlora.py`, `export_gguf.py`, `Modelfile`, `lora-adapter/`, `cerberusai-q8_0.gguf`).
 - Evaluación: `CerberusAI/eval/` (`eval_harness.py`, `run_eval.py`, `resultados_base_vs_ft.txt`).
 - API: `CerberusAI/api/main.py` (FastAPI; modelo `cerberusai` en Ollama; `X-API-Key` + rate limit) y `tunel_rapido.cmd`/`.ps1` (Cloudflare quick tunnel).

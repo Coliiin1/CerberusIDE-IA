@@ -16,8 +16,17 @@ NO pasaron los analizadores -> se agregan al dataset de errores, como pide el fl
 Todo se valida contra el oraculo real del compilador (audit.CompiladorCLI), que ejecuta
 lexer + parser + analisis semantico. Solo se publican ejemplos comprobados.
 
+Ademas genera un dataset de balance (v4) para las categorias minoritarias de v2
+(explanation / syntax / errors_semantics / compiler_concepts, 125 por categoria):
+
+  5. cerberus_dataset_v4_balance.jsonl
+
+Los mensajes de error de `errors_semantics` se toman del oraculo real.
+
 Uso (desde la raiz del proyecto, tras `mvnw.cmd compile`):
-    py CerberusAI\\dataset\\generar_datasets.py
+    py CerberusAI\\dataset\\generar_datasets.py                  # v3 + balance v4
+    py CerberusAI\\dataset\\generar_datasets.py --only balance   # solo v4
+    py CerberusAI\\dataset\\generar_datasets.py --only v3        # solo v3
     py CerberusAI\\dataset\\generar_datasets.py --out-dir CerberusAI\\dataset
 
 Solo usa la biblioteca estandar de Python.
@@ -987,12 +996,227 @@ def _dedup(filas, key="instruction"):
     return out
 
 
+# ---------------------------------------------------------------------------
+# Dataset de BALANCE (v4): categorias minoritarias de v2, 125 por categoria
+#   explanation / syntax / errors_semantics / compiler_concepts  = 500
+# Los mensajes de error se toman del oraculo real para que sean fieles.
+# ---------------------------------------------------------------------------
+V4_SOURCE = "v4_balance_v1"
+
+_EXPLICACION = [
+    ("la clase", "Es la unidad que agrupa el programa. Se declara con clase Nombre(){ ... } y los parentesis del nombre son obligatorios; dentro va la funcion principal y las demas funciones."),
+    ("la funcion principal", "Es el punto de entrada del programa. El compilador exige una funcion principal dentro de la clase y es la primera que se ejecuta."),
+    ("la definicion de funciones", "Declara una funcion con funcion [tipo] nombre(parametros){ ... }. El tipo de retorno es opcional; si se omite, la funcion no devuelve valor."),
+    ("los parametros de una funcion", "Son variables declaradas entre parentesis en la firma de la funcion. Reciben los valores de la llamada y se usan como variables locales."),
+    ("la instruccion retornar", "Termina la ejecucion de una funcion y devuelve un valor al llamador. En una funcion vacia puede usarse retornar; sin valor."),
+    ("el tipo de retorno vacio", "Se declara una funcion sin tipo (o con vacio) cuando no devuelve valor. En ese caso no se puede usar su resultado en una expresion."),
+    ("la declaracion de variables", "Se escribe TIPO id = valor; o TIPO id;. El tipo debe ser entero, real, cadena, caracter o booleano."),
+    ("la asignacion simple", "Cambia el valor de una variable ya declarada con id = expresion;. El tipo de la expresion debe ser compatible con el de la variable."),
+    ("la asignacion compuesta", "Combina una operacion y una asignacion: +=, -=, *= y /=. Solo se permite sobre variables de tipo entero o real."),
+    ("los operadores aritmeticos", "Son +, -, *, / y %. Se aplican a enteros y reales; el resultado depende de los tipos de los operandos."),
+    ("los operadores relacionales", "Son ==, !=, <, >, <= y >=. Comparan dos valores y producen un resultado booleano."),
+    ("los operadores logicos", "Son & (y), | (o) y ! (no). Combinan o niegan condiciones booleanas."),
+    ("el condicional si", "Ejecuta un bloque solo cuando la condicion es verdadera: si (condicion){ ... }."),
+    ("el bloque sino", "Ejecuta un bloque alternativo cuando la condicion del si es falsa."),
+    ("la cadena sino si", "Permite evaluar varias condiciones en orden con sino si (condicion){ ... } antes del sino final."),
+    ("el ciclo mientras", "Repite un bloque mientras la condicion sea verdadera. La condicion se evalua antes de cada vuelta."),
+    ("el ciclo hacer-mientras", "Ejecuta el bloque al menos una vez y luego repite mientras la condicion sea verdadera; termina con mientras (condicion);."),
+    ("el ciclo para", "Repite un bloque con un contador: para (entero i = 0; condicion; i++){ ... }. El contador necesita tipo entero o real."),
+    ("la seleccion segun", "Elige un bloque entre varios segun el valor de una variable: segun (variable){ caso valor: ... }."),
+    ("caso y predeterminado", "caso define una opcion concreta y predeterminado la opcion por defecto. El predeterminado debe ir al final."),
+    ("la instruccion salir", "Termina el caso actual dentro de un segun. Debe escribirse con punto y coma: salir;."),
+    ("la instruccion imprimir", "Muestra valores en la salida. Acepta varios argumentos separados por coma o concatenados con +."),
+    ("los tipos basicos", "Cerberus tiene cinco tipos: entero, real, cadena, caracter y booleano."),
+    ("el ensanche de entero a real", "Un valor entero puede asignarse a una variable real sin error, porque el tipo real admite enteros."),
+    ("el ambito de las variables", "Cada bloque define un ambito. Una variable local puede ocultar (shadowing) otra del mismo nombre en un ambito externo."),
+]
+
+_VAR_EXPLICACION = [
+    "Explica para que sirve %s.",
+    "Explica que hace %s en un programa Cerberus.",
+    "Describe la funcion de %s en el lenguaje Cerberus.",
+    "¿Para que se usa %s en Cerberus? Explica brevemente.",
+    "Explica con tus palabras el papel de %s dentro de un programa Cerberus.",
+]
+
+_SINTAXIS = [
+    ("una variable entera", "Se declara con el tipo primero: entero nombre = valor; o entero nombre;. Ejemplo:\nentero edad = 20;", prog("entero edad = 20;\nimprimir(edad);")),
+    ("una variable real", "Se declara con el tipo real y un valor decimal: real nombre = valor;. Ejemplo:\nreal precio = 9.5;", prog("real precio = 9.5;\nimprimir(precio);")),
+    ("una variable cadena", "Se declara con el tipo cadena y el texto entre comillas dobles. Ejemplo:\ncadena saludo = \"hola\";", prog('cadena saludo = "hola";\nimprimir(saludo);')),
+    ("una variable caracter", "Se declara con el tipo caracter y el valor entre comillas simples. Ejemplo:\ncaracter letra = 'a';", prog("caracter letra = 'a';\nimprimir(letra);")),
+    ("una variable booleana", "Se declara con el tipo booleano y los literales verdadero o falso. Ejemplo:\nbooleano activo = verdadero;", prog("booleano activo = verdadero;\nimprimir(activo);")),
+    ("una variable sin valor inicial", "Se declara solo con el tipo y se asigna despues. Ejemplo:\nentero x;\nx = 5;", prog("entero x;\nx = 5;\nimprimir(x);")),
+    ("una asignacion simple", "Se escribe variable = expresion;. Ejemplo:\nentero x = 1;\nx = x + 2;", prog("entero x = 1;\nx = x + 2;\nimprimir(x);")),
+    ("una asignacion compuesta", "Se usan +=, -=, *= o /= solo sobre entero o real. Ejemplo:\nentero x = 4;\nx += 2;", prog("entero x = 4;\nx += 2;\nimprimir(x);")),
+    ("un condicional si", "Se escribe si (condicion){ ... }. Ejemplo:\nsi (x > 0) {\n    imprimir(x);\n}", prog("entero x = 1;\nsi (x > 0) {\n    imprimir(x);\n}")),
+    ("un bloque sino", "Se agrega sino despues del bloque si. Ejemplo:\nsi (x > 0) {\n    imprimir(1);\n} sino {\n    imprimir(0);\n}", prog("entero x = 1;\nsi (x > 0) {\n    imprimir(1);\n} sino {\n    imprimir(0);\n}")),
+    ("una cadena sino si", "Se encadena con sino si (condicion){ ... } antes del sino final. Ejemplo:\nsi (x > 0) {\n    imprimir(1);\n} sino si (x == 0) {\n    imprimir(0);\n} sino {\n    imprimir(2);\n}", prog("entero x = 0;\nsi (x > 0) {\n    imprimir(1);\n} sino si (x == 0) {\n    imprimir(0);\n} sino {\n    imprimir(2);\n}")),
+    ("un ciclo mientras", "Se escribe mientras (condicion){ ... }. Ejemplo:\nentero i = 0;\nmientras (i < 3) {\n    i = i + 1;\n}", prog("entero i = 0;\nmientras (i < 3) {\n    i = i + 1;\n}\nimprimir(i);")),
+    ("un ciclo hacer-mientras", "Se escribe hacer { ... } mientras (condicion);. Ejemplo:\nentero i = 0;\nhacer {\n    i = i + 1;\n} mientras (i < 3);", prog("entero i = 0;\nhacer {\n    i = i + 1;\n} mientras (i < 3);\nimprimir(i);")),
+    ("un ciclo para ascendente", "Se escribe para (entero i = 0; condicion; i++){ ... }. Ejemplo:\npara (entero i = 0; i < 3; i++) {\n    imprimir(i);\n}", prog("para (entero i = 0; i < 3; i++) {\n    imprimir(i);\n}")),
+    ("un ciclo para descendente", "Se usa el decremento -- en el contador. Ejemplo:\npara (entero i = 3; i > 0; i--) {\n    imprimir(i);\n}", prog("para (entero i = 3; i > 0; i--) {\n    imprimir(i);\n}")),
+    ("una seleccion segun", "Se escribe segun (variable){ caso valor: ... salir; }. Ejemplo:\nsegun (x) {\n    caso 1:\n        imprimir(1);\n        salir;\n}", prog('entero x = 1;\nsegun (x) {\n    caso 1:\n        imprimir(1);\n        salir;\n}')),
+    ("un caso con predeterminado", "El predeterminado va al final y cada caso termina con salir;. Ejemplo:\nsegun (x) {\n    caso 1:\n        imprimir(1);\n        salir;\n    predeterminado:\n        imprimir(0);\n        salir;\n}", prog('entero x = 2;\nsegun (x) {\n    caso 1:\n        imprimir(1);\n        salir;\n    predeterminado:\n        imprimir(0);\n        salir;\n}')),
+    ("una instruccion salir", "Cada caso de un segun termina con salir; (con punto y coma). Ejemplo:\nsegun (x) {\n    caso 1:\n        imprimir(1);\n        salir;\n}", prog('entero x = 1;\nsegun (x) {\n    caso 1:\n        imprimir(1);\n        salir;\n}')),
+    ("una funcion con tipo de retorno", "Se escribe funcion TIPO nombre(parametros){ ... retornar valor; }. Ejemplo:\nfuncion entero doble(entero a){\n    retornar a * 2;\n}", prog("imprimir(doble(2));", funciones=fn("doble", "entero", "retornar a * 2;", "entero a"))),
+    ("una funcion sin retorno", "Se omite el tipo de retorno. Ejemplo:\nfuncion saludar(){\n    imprimir(\"hola\");\n}", prog("saludar();", funciones=fn("saludar", "", 'imprimir("hola");'))),
+    ("una funcion con parametros", "Los parametros van con su tipo entre parentesis. Ejemplo:\nfuncion entero suma(entero a, entero b){\n    retornar a + b;\n}", prog("imprimir(suma(1, 2));", funciones=fn("suma", "entero", "retornar a + b;", "entero a, entero b"))),
+    ("una llamada a funcion", "Se escribe nombre(argumentos); como sentencia o dentro de una expresion. Ejemplo:\nentero r = suma(1, 2);", prog("entero r = suma(1, 2);\nimprimir(r);", funciones=fn("suma", "entero", "retornar a + b;", "entero a, entero b"))),
+    ("una impresion con varios argumentos", "Se separan por coma dentro de imprimir. Ejemplo:\nimprimir(\"hola\", 3);", prog('imprimir("hola", 3);')),
+    ("una concatenacion de texto con +", "Dentro de imprimir se concatena con +. Ejemplo:\nimprimir(\"Total: \" + x);", prog('entero x = 3;\nimprimir("Total: " + x);')),
+    ("la declaracion de la clase principal", "Se escribe clase Nombre(){ ... } y los parentesis son obligatorios. Ejemplo:\nclase Programa(){\n    funcion principal(){\n    }\n}", "clase Programa(){\n    funcion principal(){\n    }\n}"),
+]
+
+_VAR_SINTAXIS = [
+    "¿Como se escribe %s en Cerberus?",
+    "¿Cual es la sintaxis de %s en Cerberus?",
+    "Muestra un ejemplo correcto de %s en Cerberus.",
+    "¿Que reglas sintacticas debo seguir para escribir %s en Cerberus?",
+    "Explica la sintaxis de %s en Cerberus.",
+]
+
+_SEMANTICOS = [
+    ("asignar un valor real a una variable entera", prog("entero x = 9.5;")),
+    ("sumar un caracter en una operacion aritmetica", prog("caracter c = 'a';\nentero y = c + 1;")),
+    ("sumar un booleano en una operacion aritmetica", prog("booleano b = verdadero;\nentero y = b + 1;")),
+    ("usar el retorno de una funcion cadena como valor numerico", prog("entero x = f();", funciones=fn("f", "cadena", 'retornar "a";'))),
+    ("asignar un entero a una variable cadena", prog("cadena s = 5;")),
+    ("asignar un entero a una variable caracter", prog("caracter c = 5;")),
+    ("asignar un entero a una variable booleana", prog("booleano b = 1;")),
+    ("usar una variable no declarada en una expresion", prog("entero y = z + 1;")),
+    ("redeclarar una variable en el mismo bloque", prog("entero x = 1;\nentero x = 2;")),
+    ("sumar una cadena con un entero", prog('cadena s = "a";\nentero y = s + 1;')),
+    ("multiplicar una cadena por un entero", prog('cadena s = "a";\nentero y = s * 2;')),
+    ("aplicar += sobre una variable booleana", prog("booleano b = verdadero;\nb += falso;")),
+    ("aplicar *= sobre una variable cadena", prog('cadena s = "a";\ns *= 2;')),
+    ("aplicar += a un entero con un valor real", prog("entero x = 1;\nx += 2.5;")),
+    ("negar con ! una variable entera", prog("entero x = 1;\nbooleano b = !x;")),
+    ("llamar a una funcion que no existe", prog("noexiste();")),
+    ("llamar a una funcion con menos argumentos de los declarados", prog("f(1);", funciones=fn("f", "entero", "retornar a + b;", "entero a, entero b"))),
+    ("llamar a una funcion con mas argumentos de los declarados", prog("f(1, 2);", funciones=fn("f", "entero", "retornar a;", "entero a"))),
+    ("pasar un argumento real a una funcion que espera entero", prog("f(1.5);", funciones=fn("f", "entero", "retornar a;", "entero a"))),
+    ("redeclarar un parametro dentro de la funcion", prog("imprimir(f(1));", funciones=fn("f", "entero", "entero a = 1;\nretornar a;", "entero a"))),
+    ("retornar un real desde una funcion entera", prog("imprimir(f());", funciones=fn("f", "entero", "retornar 1.5;"))),
+    ("retornar un valor desde una funcion vacia", prog("f();", funciones=fn("f", "", "retornar 5;"))),
+    ("usar el retorno de una funcion vacia como valor", prog("entero x = f();", funciones=fn("f", "", "imprimir(1);"))),
+    ("declarar dos parametros con el mismo nombre", prog("imprimir(f(1, 2));", funciones=fn("f", "entero", "retornar a;", "entero a, entero a"))),
+    ("usar una variable no declarada como condicion de un si", prog('si (activo) {\n    imprimir("x");\n}')),
+    ("asignar un real a una variable entera ya declarada", prog("entero x = 1;\nx = 2.5;")),
+    ("usar una cadena en una resta aritmetica", prog('cadena s = "a";\nentero y = s - 1;')),
+    ("comparar una cadena con un entero usando <", prog('cadena s = "a";\nsi (s < 1) {\n    imprimir("x");\n}')),
+]
+
+_VAR_ERRORES = [
+    "¿Que error produce %s en Cerberus?",
+    "¿Que mensaje del analizador semantico aparece al %s?",
+    "Explica el error que ocurre al %s en Cerberus.",
+    "¿Que reporta el compilador Cerberus cuando intentas %s?",
+    "¿Cual es el error semantico de %s en Cerberus?",
+]
+
+_CONCEPTOS = [
+    ("el analisis lexico", "Es la primera fase del compilador: recorre el texto y lo divide en tokens (palabras reservadas, identificadores, literales, operadores y delimitadores)."),
+    ("un token", "Es la unidad minima que reconoce el analizador lexico; cada token tiene un tipo y un lexema."),
+    ("el analisis sintactico", "Es la fase que verifica que la secuencia de tokens cumpla la gramatica del lenguaje y construye la estructura del programa."),
+    ("la gramatica", "Es el conjunto de producciones que define que secuencias de tokens son validas; en Cerberus la implementa un parser recursivo descendente."),
+    ("el analisis semantico", "Es la fase que comprueba tipos, declaraciones y llamadas; por ejemplo, que no se asigne un real a un entero."),
+    ("la tabla de simbolos", "Es la estructura que guarda los identificadores declarados y su tipo para resolverlos y detectar redeclaraciones."),
+    ("el ambito de una variable", "Es el rango donde una variable es visible: global, de funcion o de bloque."),
+    ("el shadowing", "Ocurre cuando una variable de un ambito interno oculta otra del mismo nombre en un ambito externo."),
+    ("el chequeo de tipos", "Verifica que los operandos y las asignaciones tengan tipos compatibles antes de aceptar el programa."),
+    ("la compatibilidad de tipos", "Dos tipos son compatibles si son iguales o si hay un ensanche permitido, como entero a real."),
+    ("el ensanche", "Es la conversion implicita de un tipo menor a uno mayor, por ejemplo de entero a real."),
+    ("un error lexico", "Es el fallo al reconocer un token, como un caracter que no forma parte del lenguaje."),
+    ("un error sintactico", "Es el fallo al no respetar la gramatica, como omitir un punto y coma o un parentesis."),
+    ("un error semantico", "Es el fallo en las reglas de significado, como usar una variable no declarada o tipos incompatibles."),
+    ("un compilador", "Es el programa que traduce codigo fuente siguiendo fases de analisis y validacion."),
+    ("un interprete", "Es un programa que ejecuta el codigo en lugar de traducirlo por completo antes de ejecutarlo."),
+    ("las fases del compilador", "En este proyecto son tres: lexico, sintactico y semantico; cada fase valida una parte del programa."),
+    ("una palabra reservada", "Es un identificador con significado fijo en el lenguaje, como si, sino, mientras o para; no puede usarse como nombre."),
+    ("un identificador", "Es el nombre que el programador da a variables y funciones; distingue mayusculas y minusculas."),
+    ("un literal", "Es un valor escrito directamente en el codigo, como 20, 9.5, \"hola\", 'a', verdadero o falso."),
+    ("un operador", "Es un simbolo que combina valores, como +, -, *, /, %, ==, !=, &, | o !."),
+    ("un delimitador", "Es un simbolo que separa o agrupa elementos, como parentesis, llaves, punto y coma y dos puntos."),
+    ("un parser recursivo descendente", "Es una tecnica de analisis sintactico que implementa la gramatica con funciones que se llaman entre si."),
+    ("un oraculo de validacion", "Es el componente que decide si un programa compila; aqui es audit.CompiladorCLI y se usa para verificar datasets y modelos."),
+    ("un valor de retorno", "Es el valor que una funcion devuelve al llamador mediante retornar; si la funcion es vacia no hay valor de retorno."),
+]
+
+_VAR_CONCEPTOS = [
+    "¿Que es %s?",
+    "Explica que es %s en Cerberus.",
+    "Define que es %s en el compilador de Cerberus.",
+    "¿Que papel cumple %s en el proceso de compilacion?",
+    "Describe brevemente %s.",
+]
+
+BALANCE_POR_CATEGORIA = 125
+
+
+def gen_balance():
+    """Construye las filas del dataset de balance (500 en total, 125 por categoria)."""
+    filas = []
+
+    for tema, explic in _EXPLICACION[:BALANCE_POR_CATEGORIA]:
+        for tpl in _VAR_EXPLICACION:
+            filas.append((tpl % tema, explic, "explanation"))
+
+    n = 0
+    for aspecto, resp, codigo in _SINTAXIS:
+        if n >= BALANCE_POR_CATEGORIA // len(_VAR_SINTAXIS):
+            break
+        if codigo is not None and not acepta(codigo):
+            continue
+        for tpl in _VAR_SINTAXIS:
+            filas.append((tpl % aspecto, resp, "syntax"))
+        n += 1
+
+    n = 0
+    for desc, codigo in _SEMANTICOS:
+        if n >= BALANCE_POR_CATEGORIA // len(_VAR_ERRORES):
+            break
+        res = compilar(codigo)
+        if res.get("aceptado"):
+            continue
+        msg = (res.get("error") or "").split("\n")[0].strip()
+        if not msg:
+            continue
+        resp = "Se reporta: %s.\nEjemplo:\n%s" % (msg, codigo)
+        for tpl in _VAR_ERRORES:
+            filas.append((tpl % desc, resp, "errors_semantics"))
+        n += 1
+
+    for concepto, explic in _CONCEPTOS[:BALANCE_POR_CATEGORIA]:
+        for tpl in _VAR_CONCEPTOS:
+            filas.append((tpl % concepto, explic, "compiler_concepts"))
+
+    return [{"instruction": i, "response": r, "category": c, "source": V4_SOURCE}
+            for (i, r, c) in filas]
+
+
+def generar_balance(out_dir):
+    filas = _dedup(gen_balance(), key="instruction")
+    ruta = os.path.join(out_dir, "cerberus_dataset_v4_balance.jsonl")
+    escribir_jsonl(ruta, filas)
+    conteo = {}
+    for f in filas:
+        conteo[f["category"]] = conteo.get(f["category"], 0) + 1
+    print("\n== Dataset de balance v4 generado ==")
+    for cat in ("explanation", "syntax", "errors_semantics", "compiler_concepts"):
+        print("%-20s %5d" % (cat, conteo.get(cat, 0)))
+    print("%-20s %5d" % ("TOTAL", len(filas)))
+    print("Escrito: %s" % ruta)
+    return 0
+
+
 def main():
     ap = argparse.ArgumentParser(description="Genera y valida los datasets v3 de CerberusAI.")
     ap.add_argument("--out-dir", default=AQUI, help="carpeta donde escribir los .jsonl.")
     ap.add_argument("--classpath", default=os.path.join(RAIZ, "target", "classes"))
     ap.add_argument("--java", default=os.environ.get("JAVA", "java"))
     ap.add_argument("--prefix", default="cerberus_dataset_v3", help="prefijo de los archivos de salida.")
+    ap.add_argument("--only", choices=["all", "v3", "balance"], default="all",
+                    help="genera solo v3, solo el dataset de balance (v4) o ambos (por defecto).")
     args = ap.parse_args()
 
     global JAVA, CLASSPATH
@@ -1002,6 +1226,9 @@ def main():
     if not os.path.isdir(CLASSPATH):
         print("No se encontro el classpath '%s'. Ejecuta antes `mvnw.cmd compile`." % CLASSPATH)
         return 1
+
+    if args.only == "balance":
+        return generar_balance(args.out_dir)
 
     valido_raw = gen_validos()
     sem_raw = gen_semanticos()
@@ -1062,6 +1289,9 @@ def main():
         print("Fallos de validacion (programas 'validos' que NO compilan):")
         for f in fallos_val:
             print("  - %s" % (f["error"] or "(sin error)"))
+
+    if args.only == "all":
+        generar_balance(args.out_dir)
     return 0
 
 
