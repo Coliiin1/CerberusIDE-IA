@@ -15,6 +15,7 @@ plantilla). El campo "text" ya viene renderizado en formato ChatML por comodidad
 
 Uso:
     python to_chat.py --input ../dataset/cerberus_dataset_v2.jsonl --output chat_all.jsonl
+    python to_chat.py --input ../dataset/cerberus_dataset_v2.jsonl ../dataset/cerberus_dataset_v3_valido.jsonl --output chat_all.jsonl
 """
 import argparse
 import json
@@ -37,7 +38,8 @@ def cargar_system(path):
 def main():
     aqui = os.path.dirname(os.path.abspath(__file__))
     ap = argparse.ArgumentParser(description="Convierte un dataset .jsonl a formato de chat (Qwen2.5).")
-    ap.add_argument("--input", required=True, help="dataset .jsonl de entrada (instruction/response).")
+    ap.add_argument("--input", required=True, nargs="+",
+                    help="uno o mas .jsonl de entrada (instruction/response); se concatenan en --output.")
     ap.add_argument("--output", required=True, help="archivo .jsonl de salida en formato chat.")
     ap.add_argument("--system", default=os.path.join(aqui, "system_prompt.txt"),
                     help="archivo con el mensaje 'system' (por defecto system_prompt.txt).")
@@ -46,24 +48,26 @@ def main():
     system = cargar_system(args.system)
 
     total = 0
-    with open(args.input, encoding="utf-8") as fin, open(args.output, "w", encoding="utf-8") as fout:
-        for linea in fin:
-            linea = linea.strip()
-            if not linea:
-                continue
-            obj = json.loads(linea)
-            messages = [
-                {"role": "system", "content": system},
-                {"role": "user", "content": obj["instruction"]},
-                {"role": "assistant", "content": obj["response"]},
-            ]
-            salida = {
-                "messages": messages,
-                "text": render_qwen(messages),
-                "category": obj.get("category", ""),
-            }
-            fout.write(json.dumps(salida, ensure_ascii=False) + "\n")
-            total += 1
+    with open(args.output, "w", encoding="utf-8") as fout:
+        for ruta in args.input:
+            with open(ruta, encoding="utf-8") as fin:
+                for linea in fin:
+                    linea = linea.strip()
+                    if not linea:
+                        continue
+                    obj = json.loads(linea)
+                    messages = [
+                        {"role": "system", "content": system},
+                        {"role": "user", "content": obj["instruction"]},
+                        {"role": "assistant", "content": obj["response"]},
+                    ]
+                    salida = {
+                        "messages": messages,
+                        "text": render_qwen(messages),
+                        "category": obj.get("category", ""),
+                    }
+                    fout.write(json.dumps(salida, ensure_ascii=False) + "\n")
+                    total += 1
 
     print("to_chat: {} ejemplos escritos en {}".format(total, args.output))
 

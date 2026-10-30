@@ -8,13 +8,21 @@ RTX 3060 12 GB; el merge a GGUF se hace en CPU (32 GB de RAM).
 
 ## 1. Datos (Fase 2)
 
-Si `train.jsonl` / `eval.jsonl` no existen todavía, genéralos desde el dataset v2:
+`to_chat.py` acepta **varios** `--input` y los concatena. Para entrenar con v2 + v3 + v4
+(1594 ejemplos) desde `CerberusAI/`:
 
 ```bash
-python to_chat.py --input ../dataset/cerberus_dataset_v2.jsonl --output chat_all.jsonl
+python to_chat.py --input dataset/cerberus_dataset_v2.jsonl \
+    dataset/cerberus_dataset_v3_valido.jsonl \
+    dataset/cerberus_dataset_v3_errores_semanticos.jsonl \
+    dataset/cerberus_dataset_v3_errores_sintacticos.jsonl \
+    dataset/cerberus_dataset_v4_balance.jsonl \
+    --output chat_all.jsonl
 python split.py --input chat_all.jsonl --out-dir . --eval-ratio 0.2 --seed 42
-# -> train.jsonl (74) y eval.jsonl (19), estratificados y reproducibles (seed 42)
+# -> train.jsonl (1274) y eval.jsonl (320), estratificados y reproducibles (seed 42)
 ```
+
+Si solo usas `--input ../dataset/cerberus_dataset_v2.jsonl`, el split da 74/19 (corrida original).
 
 ## 2. Entorno
 
@@ -32,6 +40,7 @@ python train_qlora.py --epochs 5
 ```
 
 Parámetros útiles: `--epochs`, `--lr`, `--batch`, `--grad-accum`, `--lora-r`, `--max-seq-length`.
+`--dtype auto` (por defecto) usa `bf16` si la GPU lo soporta y `fp16` si no (p. ej. T4).
 Con 74 ejemplos, 5 epochs es un buen punto de partida.
 
 ## 4. Exportar a GGUF
@@ -79,6 +88,21 @@ Resultado obtenido (9 tareas `generation` del split, semilla 42): base `qwen2.5-
 **4/9 (44%)** de compilación; `cerberusai` **8/9 (89%)** y exact-match 3/9 (33%). Detalle en
 `../eval/resultados_base_vs_ft.txt`.
 
+## Entrenar en Google Colab (alternativa a WSL2)
+
+Recomendado si no quieres ocupar la GPU local. Pensado para **Colab Pro** (L4 24 GB / A100 40 GB).
+
+1. Abre `CerberusAI/colab/train_cerberus_colab.ipynb` en Colab.
+2. Activa GPU (`Entorno de ejecución → Cambiar tipo de entorno → GPU`).
+3. Ejecuta las celdas en orden: verifica GPU, monta Drive, clona el repo público,
+   instala `colab/requirements-colab.txt`, construye los datos (v2+v3+v4), entrena con
+   `--dtype auto` y descarga `lora-adapter.zip` desde Drive.
+4. El **merge a GGUF sigue siendo local** (sección 4): descomprime el adapter en
+   `CerberusAI/finetune/lora-adapter/` y ejecuta `export_gguf.py`.
+
+Hiperparámetros: los mismos que en local (`--epochs 5`, `--batch 2`, `--grad-accum 4`, seed 42).
+Si hay OOM en L4: `--batch 1 --grad-accum 8`.
+
 ## Notas
 
 - Antes de entrenar puedes validar los datos con `python train_qlora.py --check` (no necesita GPU).
@@ -96,5 +120,5 @@ Resultado obtenido (9 tareas `generation` del split, semilla 42): base `qwen2.5-
 - Si el API de TRL/Transformers cambia, ajusta `train_qlora.py` / `export_gguf.py` (probado con
   `transformers>=5.19` y `trl>=1.15`: en transformers 5 ya no existe `warmup_ratio` (usar
   `warmup_steps`) y en TRL 1.x `max_seq_length` se llama `max_length`).
-- El dataset es pequeño (prueba de concepto); ampliarlo en la Fase 7 (más generación y
-  ejemplos de corrección).
+- El dataset de entrenamiento ya incluye v2 + v3 + v4 (1594 ejemplos: generación, corrección
+  semántica/sintáctica y categorías de Q&A balanceadas); ver `../dataset/`.

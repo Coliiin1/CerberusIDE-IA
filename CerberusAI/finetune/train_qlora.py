@@ -10,6 +10,7 @@ Uso:
     python train_qlora.py --check          # valida los datos (no necesita GPU)
     python train_qlora.py                  # entrena (usa los valores por defecto)
     python train_qlora.py --epochs 5
+    python train_qlora.py --dtype auto     # bf16 si la GPU lo soporta, si no fp16
 
 Salida: un adapter LoRA en ./lora-adapter (ligero).
 """
@@ -41,6 +42,8 @@ def parse_args():
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--check", action="store_true",
                     help="valida train.jsonl/eval.jsonl y sale (sin GPU, solo stdlib).")
+    ap.add_argument("--dtype", choices=["auto", "bf16", "fp16"], default="auto",
+                    help="precision: auto usa bf16 si la GPU lo soporta, si no fp16.")
     args = ap.parse_args()
     args.train = ruta_local(aquidir, args.train)
     args.eval = ruta_local(aquidir, args.eval)
@@ -107,6 +110,15 @@ def main():
     from peft import LoraConfig
     from trl import SFTTrainer, SFTConfig
 
+    if args.dtype == "auto":
+        use_bf16 = torch.cuda.is_bf16_supported()
+    elif args.dtype == "bf16":
+        use_bf16 = True
+    else:
+        use_bf16 = False
+    compute_dtype = torch.bfloat16 if use_bf16 else torch.float16
+    print("== Precision: {} ==".format("bf16" if use_bf16 else "fp16"))
+
     print("== Cargando tokenizer ==")
     tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=True)
     if tokenizer.pad_token is None:
@@ -117,7 +129,7 @@ def main():
     bnb = BitsAndBytesConfig(
         load_in_4bit=True,
         bnb_4bit_quant_type="nf4",
-        bnb_4bit_compute_dtype=torch.bfloat16,
+        bnb_4bit_compute_dtype=compute_dtype,
         bnb_4bit_use_double_quant=True,
     )
     model = AutoModelForCausalLM.from_pretrained(
@@ -148,7 +160,8 @@ def main():
         lr_scheduler_type="cosine",
         warmup_steps=3,
         optim="paged_adamw_8bit",
-        bf16=True,
+        bf16=use_bf16,
+        fp16=not use_bf16,
         gradient_checkpointing=True,
         logging_steps=5,
         save_strategy="epoch",

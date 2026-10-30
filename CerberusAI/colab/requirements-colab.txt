@@ -1,0 +1,14 @@
+# Entorno de fine-tuning para Google Colab (Pro: L4 24 GB / A100 40 GB).
+# Usa el torch CUDA que ya trae Colab (no se instala aqui para evitar conflictos).
+#   pip install -r requirements-colab.txt
+#
+# Mismas versiones minimas que requirements-finetune.txt:
+# transformers 5.19 + trl 1.15 (SFTConfig.max_length, warmup_steps, processing_class).
+# Si `pip` intenta sustituir el torch de Colab, instala solo estos paquetes.
+datasets>=5.1
+transformers>=5.19
+accelerate>=1.15
+peft>=0.21
+trl>=1.15
+bitsandbytes>=0.50
+sentencepiece

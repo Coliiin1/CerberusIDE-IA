@@ -22,7 +22,7 @@ de chat para el IDE.
 
 | Carpeta | Contenido |
 | :--- | :--- |
-| `dataset/` | `cerberus_dataset_v1.jsonl` (original, con entradas inválidas), `cerberus_dataset_v2.jsonl` (validado; 93 entradas) y los **v3** generados por `generar_datasets.py` (1001 entradas): `cerberus_dataset_v3_valido.jsonl` (474 `generation`), `cerberus_dataset_v3_errores_semanticos.jsonl` (333 `correction_semantics`), `cerberus_dataset_v3_errores_sintacticos.jsonl` (194 `correction_syntax`) y `cerberus_dataset_v3_errores_validacion.jsonl` (bucket de fallos) |
+| `dataset/` | `cerberus_dataset_v1.jsonl` (original, con entradas inválidas), `cerberus_dataset_v2.jsonl` (validado; 93 entradas) y los **v3** generados por `generar_datasets.py` (1001 entradas): `cerberus_dataset_v3_valido.jsonl` (474 `generation`), `cerberus_dataset_v3_errores_semanticos.jsonl` (333 `correction_semantics`), `cerberus_dataset_v3_errores_sintacticos.jsonl` (194 `correction_syntax`) y `cerberus_dataset_v3_errores_validacion.jsonl` (bucket de fallos). Además **v4** `cerberus_dataset_v4_balance.jsonl` (500: 125 por categoría `explanation`/`syntax`/`errors_semantics`/`compiler_concepts`, `--only balance`) |
 | `knowledge/` | `language_spec.md` — especificación del lenguaje reconciliada con el compilador real |
 | `finetune/` | Fases 2–3: `to_chat.py`, `split.py`, `train_qlora.py` (QLoRA 4-bit), `export_gguf.py`, `Modelfile`, `system_prompt.txt` (ver su [README](finetune/README.md)) |
 | `eval/` | Fase 4: `eval_harness.py` (genera vía Ollama, extrae código y valida con el oráculo) y `run_eval.py` (base vs fine-tuned); resultados en `resultados_base_vs_ft.txt` |
@@ -38,7 +38,7 @@ de chat para el IDE.
 | 4. Evaluación | `qwen2.5-coder:7b` 44% → `cerberusai` **89%** compilación (exact-match 33%) | HECHO |
 | 5. API | FastAPI verificada en vivo (`/health` y `/chat` con `compila: true`) + acceso remoto con `X-API-Key` y rate limit por IP | HECHO |
 | 6. Chat IDE | Chat integrado en `ui/principal.fxml` con `ui/ChatCerberusController`; URL de la API en `Opciones → Configurar API de CerberusAI...`; `main.PreviewChat` como lanzador dev | HECHO |
-| 7. Expansión | Datasets v3 generados y validados (1001 entradas, ver `dataset/`); queda re-entrenar y re-evaluar | EN CURSO |
+| 7. Expansión | Datasets v3 (1001) + v4_balance (500) generados y validados; entrenamiento preparado para Google Colab (`colab/train_cerberus_colab.ipynb`); queda re-entrenar y re-evaluar | EN CURSO |
 
 Artefactos pesados (`lora-adapter/`, `merged-model/`, `*.gguf`, `*.log`) están en `.gitignore`;
 el modelo queda registrado en Ollama como `cerberusai`.
@@ -46,12 +46,15 @@ el modelo queda registrado en Ollama como `cerberusai`.
 ## Comandos rápidos (Windows)
 
 ```cmd
-REM Fase 2 — datos
-py finetune\to_chat.py --input dataset\cerberus_dataset_v2.jsonl --output finetune\chat_all.jsonl
+REM Fase 2 — datos (to_chat acepta varios --input y los concatena)
+py finetune\to_chat.py --input dataset\cerberus_dataset_v2.jsonl dataset\cerberus_dataset_v3_valido.jsonl dataset\cerberus_dataset_v3_errores_semanticos.jsonl dataset\cerberus_dataset_v3_errores_sintacticos.jsonl dataset\cerberus_dataset_v4_balance.jsonl --output finetune\chat_all.jsonl
 py finetune\split.py --input finetune\chat_all.jsonl --out-dir finetune --eval-ratio 0.2 --seed 42
 
-REM Fase 7 — generar y validar los datasets v3 (requiere mvnw.cmd compile previo)
+REM Fase 7 — generar y validar los datasets (requiere mvnw.cmd compile previo)
+REM v3 + balance v4 (por defecto)
 py dataset\generar_datasets.py
+REM solo el dataset de balance v4 (500)
+py dataset\generar_datasets.py --only balance
 
 REM Fase 4 — evaluar base vs fine-tuned (requiere Ollama con ambos modelos)
 py eval\run_eval.py --base-model qwen2.5-coder:7b

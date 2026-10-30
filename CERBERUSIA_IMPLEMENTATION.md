@@ -56,6 +56,9 @@ integrado en el IDE (JavaFX), con acceso remoto vía túnel.
 - `export_gguf.py`: **merge_and_unload** del adapter LoRA → `convert_hf_to_gguf.py` → GGUF.
 - `Modelfile` para `ollama create`, más `requirements-finetune.txt` y `README.md` con los
   comandos para la RTX 3060.
+- Alternativa en **Google Colab Pro** (L4/A100): `CerberusAI/colab/train_cerberus_colab.ipynb`
+  + `requirements-colab.txt`; `train_qlora.py --dtype auto` elige bf16/fp16. El merge/GGUF
+  se mantiene **en local** (reusa `export_gguf.py`).
 
 ### Fase 4 — Harness de evaluación (Python, `CerberusAI/eval/`)
 - `eval_harness.py`: genera código vía Ollama HTTP (`OLLAMA_BASE_URL` configurable), extrae
@@ -81,9 +84,10 @@ integrado en el IDE (JavaFX), con acceso remoto vía túnel.
 - La URL de la API no se edita en el chat: se configura en
   **Opciones → Configurar API de CerberusAI...** y se persiste con `java.util.prefs.Preferences`.
 
-### Fase 7 — Expansión (futuro)
-- Ampliar el dataset (más generación + ejemplos de **corrección** de código roto).
-- Re-entrenar y re-evaluar.
+### Fase 7 — Expansión
+- Dataset ampliado (**HECHO**): v3 (1001: generación + corrección semántica/sintáctica) y
+  v4_balance (500: 125 por categoría `explanation`/`syntax`/`errors_semantics`/`compiler_concepts`).
+- Re-entrenamiento en **Google Colab Pro** y re-evaluación (`run_eval.py`).
 - Migrar del quick tunnel a un túnel con **dominio estable** en Cloudflare.
 
 ## Secuencia y dependencias
