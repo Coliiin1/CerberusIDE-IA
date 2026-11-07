@@ -88,6 +88,11 @@ Notebook `CerberusAI/colab/exportar_evaluar_colab.ipynb` (A100, ≥ 40 GB RAM), 
 
 Nota: v1 pudo ver algunas de esas tareas en su entrenamiento (sesgo leve a favor de v1).
 
+> **Resultado corrida 1:** base 65/104 compila (62%), 0% exact-match → `cerberusai-v2` 103/104 (99%),
+> 83/104 exact-match (80%). GGUF sha256 `c46fec451f6da113eaf3ad6bebe229de717f1ded8808508652fea776f211b477`.
+> En Colab hubo que desinstalar `torchao` 0.10 (peft 0.21 aborta el merge) y bajar el JDK con `curl`
+> (Adoptium da 403 a `urllib`); ambos arreglos ya están en el notebook.
+
 **Único paso en el PC, si v2 gana:** descargar el GGUF desde la web de Drive a `CerberusAI\finetune\`,
 verificar el sha256, `ollama cp cerberusai cerberusai-v1` y `ollama create cerberusai -f Modelfile`
 (API/IDE sin cambios).
