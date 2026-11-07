@@ -2,6 +2,7 @@ package ui;
 
 import AnalizadorLexico.AnalizadorLexico;
 import AnalizadorSintactico.AnalizadorSintactico;
+import Interprete.Interprete;
 import cliente.ClienteCerberusAI;
 
 import java.io.File;
@@ -68,6 +69,15 @@ public class InterfazPrincipalController implements Initializable {
 
     @FXML
     private Button btnCompilar;
+
+    @FXML
+    private Button btnEjecutar;
+
+    @FXML
+    private Tab tabConsola;
+
+    @FXML
+    private TextArea txtConsola;
 
     @FXML
     private Button btnAbrirProyecto;
@@ -143,6 +153,7 @@ public class InterfazPrincipalController implements Initializable {
         lex.setReporter(this::mostrarError);
 
         btnCompilar.setOnAction(e -> compilar());
+        btnEjecutar.setOnAction(e -> ejecutar());
         btnAbrirProyecto.setOnAction(e -> abrirProyecto());
         btnRefrescarProyecto.setOnAction(e -> refrescarProyecto());
         itemArchivoAbrir.setOnAction(e -> abrirArchivoDialogo());
@@ -600,19 +611,20 @@ public class InterfazPrincipalController implements Initializable {
         lblPosicion.setText("Línea " + linea + ", columna " + columna);
     }
 
-    private void compilar() {
+    /** Compila el editor activo; devuelve true si el programa fue aceptado. */
+    private boolean compilar() {
         EditorTab editor = editorActivo();
         if (editor == null) {
             mostrarInfo("Abre o crea un archivo antes de compilar.");
-            return;
+            return false;
         }
         // Se valida antes de guardar para no escribir sobre archivos que no son del lenguaje.
         if (editor.getArchivo() != null && rechazarSiNoEsTxt(editor)) {
-            return;
+            return false;
         }
         if (editor.isDirty() || editor.getArchivo() == null) {
             if (!guardarEditor(editor) || rechazarSiNoEsTxt(editor)) {
-                return;
+                return false;
             }
         }
 
@@ -626,7 +638,7 @@ public class InterfazPrincipalController implements Initializable {
         } else {
             txtLexico.setText("ANALIZADOR LÉXICO NO PASADO\n\n" + lex.mostrarTokens());
             actualizarEstado("✕ Error léxico — " + editor.getNombre(), false);
-            return;
+            return false;
         }
 
         if (sin.comprobarParentesis()) {
@@ -656,6 +668,51 @@ public class InterfazPrincipalController implements Initializable {
         actualizarEstado(sin.getResultado()
                 ? "✓ Compilación exitosa — " + editor.getNombre()
                 : "✕ Error sintáctico/semántico — " + editor.getNombre(), sin.getResultado());
+        return sin.getResultado();
+    }
+
+    /** Compila y, si se acepta, ejecuta el programa en segundo plano mostrando la salida en Consola. */
+    private void ejecutar() {
+        if (!compilar()) {
+            return;
+        }
+        String nombre = editorActivo().getNombre();
+        Interprete interprete = new Interprete(lex.getTokensDetectados(), this::agregarConsola);
+        txtConsola.clear();
+        tabConsola.getTabPane().getSelectionModel().select(tabConsola);
+        btnEjecutar.setDisable(true);
+        actualizarEstado("⏵ Ejecutando — " + nombre, true);
+        // Pila grande: la recursion del lenguaje se traduce en recursion del interprete.
+        Thread hilo = new Thread(null, () -> {
+            String fin;
+            boolean ok;
+            try {
+                interprete.ejecutar();
+                fin = "✓ Ejecución terminada — " + nombre;
+                ok = true;
+            } catch (Interprete.ErrorEjecucion e) {
+                agregarConsola("ERROR DE EJECUCION: " + e.getMessage()
+                        + (e.getLinea() > 0 ? " (linea " + e.getLinea() + ")" : ""));
+                fin = "✕ Error de ejecución — " + nombre;
+                ok = false;
+            } catch (RuntimeException | StackOverflowError e) {
+                agregarConsola("ERROR INTERNO DEL INTERPRETE: " + e);
+                fin = "✕ Error de ejecución — " + nombre;
+                ok = false;
+            }
+            String estado = fin;
+            boolean exito = ok;
+            Platform.runLater(() -> {
+                actualizarEstado(estado, exito);
+                btnEjecutar.setDisable(false);
+            });
+        }, "cerberus-ejecucion", 256L * 1024 * 1024);
+        hilo.setDaemon(true);
+        hilo.start();
+    }
+
+    private void agregarConsola(String linea) {
+        Platform.runLater(() -> txtConsola.appendText(linea + "\n"));
     }
 
     private boolean rechazarSiNoEsTxt(EditorTab editor) {

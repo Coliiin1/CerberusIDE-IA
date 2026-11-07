@@ -3,6 +3,7 @@ package audit;
 import AnalizadorLexico.AnalizadorLexico;
 import AnalizadorSintactico.AnalizadorSintactico;
 import AnalizadorSintactico.ErrorSintactico;
+import Interprete.Interprete;
 import Util.Reporter;
 
 import java.util.ArrayList;
@@ -72,6 +73,29 @@ public final class Evaluador {
         } catch (Throwable t) {
             return new Resultado(false, t.getClass().getSimpleName() + ": " + t.getMessage(), -1, -1, null);
         }
+    }
+
+    /**
+     * Compila y ejecuta el codigo; devuelve la salida (una linea por imprimir).
+     * Si no compila devuelve "NO COMPILA: ..."; un error de ejecucion se agrega
+     * como ultima linea "ERROR DE EJECUCION: ...".
+     */
+    public static String ejecutar(String codigo) {
+        AnalizadorLexico lex = new AnalizadorLexico();
+        ReporterAcumulador rep = new ReporterAcumulador();
+        lex.setReporter(rep::reportar);
+        lex.seccionarCadena(codigo);
+        AnalizadorSintactico sin = new AnalizadorSintactico(lex.getTokensDetectados(), rep::reportar);
+        if (!(sin.comprobarParentesis() && sin.analizar() && sin.getResultado())) {
+            return "NO COMPILA: " + String.join(" | ", rep.mensajes);
+        }
+        List<String> salida = new ArrayList<>();
+        try {
+            new Interprete(lex.getTokensDetectados(), salida::add).ejecutar();
+        } catch (Interprete.ErrorEjecucion e) {
+            salida.add("ERROR DE EJECUCION: " + e.getMessage());
+        }
+        return String.join("\n", salida);
     }
 
     /** Atajo: true si el codigo compila. */

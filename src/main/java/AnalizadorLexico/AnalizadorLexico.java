@@ -42,6 +42,20 @@ public class AnalizadorLexico {
     
     
     public boolean seccionarCadena(String cadena){
+        // Los literales de cadena se copian intactos: separar simbolos dentro de ellos altera su texto.
+        Matcher literal = Pattern.compile("\"[^\"\\r\\n]*\"").matcher(cadena);
+        StringBuilder separado = new StringBuilder();
+        int ultimo = 0;
+        while (literal.find()) {
+            separado.append(espaciar(cadena.substring(ultimo, literal.start()))).append(literal.group());
+            ultimo = literal.end();
+        }
+        cadena = separado.append(espaciar(cadena.substring(ultimo))).toString();
+        return tokenizar(cadena);
+    }
+
+    /** Rodea de espacios los simbolos para que la tokenizacion por espacios los separe. */
+    private static String espaciar(String cadena){
         cadena=cadena.replace(";", " ; ");
         cadena=cadena.replace(",", " , ");
         cadena=cadena.replace(":", " : ");
@@ -72,7 +86,10 @@ public class AnalizadorLexico {
         cadena=cadena.replace(">  =", " >= ");
         cadena=cadena.replace("&", " & ");
         cadena=cadena.replace("|", " | ");
-        
+        return cadena;
+    }
+
+    private boolean tokenizar(String cadena){
 
 
 

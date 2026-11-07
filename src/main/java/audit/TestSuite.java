@@ -18,6 +18,8 @@ import java.util.stream.Stream;
  *   tests/invalid/          -> cada archivo debe ser RECHAZADO.
  *   tests/expected/invalid/ -> fragmento del mensaje de error esperado (opcional,
  *                              mismo nombre de archivo que el caso invalid).
+ *   tests/run/              -> se compila y EJECUTA; la salida debe ser igual a
+ *                              tests/expected/run/<mismo nombre>.
  *
  * Usa el evaluador compartido {@link Evaluador}.
  *
@@ -31,6 +33,8 @@ public class TestSuite {
     private static final Path VALID = Paths.get("tests", "valid");
     private static final Path INVALID = Paths.get("tests", "invalid");
     private static final Path EXPECTED = Paths.get("tests", "expected", "invalid");
+    private static final Path RUN = Paths.get("tests", "run");
+    private static final Path EXPECTED_RUN = Paths.get("tests", "expected", "run");
 
     /**
      * Evalua el codigo con el evaluador compartido.
@@ -100,6 +104,21 @@ public class TestSuite {
             } else {
                 pass++;
                 System.out.println("PASS [invalid] " + f.getFileName());
+            }
+        }
+
+        for (Path f : listar(RUN)) {
+            String salida = Evaluador.ejecutar(Files.readString(f, StandardCharsets.UTF_8)).strip();
+            salida = String.join(System.lineSeparator(), salida.lines().toList());
+            String esperado = String.join(System.lineSeparator(), Files.readString(EXPECTED_RUN.resolve(f.getFileName().toString()), StandardCharsets.UTF_8).strip().lines().toList());
+            if (salida.equals(esperado)) {
+                pass++;
+                System.out.println("PASS [run]     " + f.getFileName());
+            } else {
+                fail++;
+                fallos.add("FAIL [run] " + f.getFileName() + "\n--- esperado ---\n" + esperado
+                        + "\n--- obtenido ---\n" + salida);
+                System.out.println("FAIL [run]     " + f.getFileName());
             }
         }
 

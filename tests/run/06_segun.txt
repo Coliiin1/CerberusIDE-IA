@@ -1,0 +1,25 @@
+clase Test(){
+    funcion principal(){
+        entero x = 2;
+        segun(x){
+            caso 1:
+                imprimir("uno");
+            salir;
+            caso 2:
+                imprimir("dos");
+            salir;
+            predeterminado:
+                imprimir("otro");
+            salir;
+        }
+        cadena s = "z";
+        segun(s){
+            caso "a":
+                imprimir("a");
+            salir;
+            predeterminado:
+                imprimir("otro");
+            salir;
+        }
+    }
+}

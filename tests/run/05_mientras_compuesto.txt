@@ -1,0 +1,17 @@
+clase Test(){
+    funcion principal(){
+        entero x = 1;
+        mientras(x < 100){
+            x *= 3;
+        }
+        imprimir(x);
+        x -= 1;
+        x /= 2;
+        imprimir(x);
+        entero k = 0;
+        hacer{
+            k += 1;
+        } mientras(k < 0);
+        imprimir(k);
+    }
+}

@@ -1,0 +1,13 @@
+clase Test(){
+    funcion principal(){
+        entero r = fact(5);
+        imprimir("5! = ", r);
+        imprimir(fact(0));
+    }
+    funcion entero fact(entero n){
+        si(n <= 1){
+            retornar 1;
+        }
+        retornar n * fact(n - 1);
+    }
+}
