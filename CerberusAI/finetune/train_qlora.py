@@ -44,6 +44,8 @@ def parse_args():
                     help="valida train.jsonl/eval.jsonl y sale (sin GPU, solo stdlib).")
     ap.add_argument("--dtype", choices=["auto", "bf16", "fp16"], default="auto",
                     help="precision: auto usa bf16 si la GPU lo soporta, si no fp16.")
+    ap.add_argument("--resume", action="store_true",
+                    help="reanuda desde el ultimo checkpoint-* de --output (si existe).")
     args = ap.parse_args()
     args.train = ruta_local(aquidir, args.train)
     args.eval = ruta_local(aquidir, args.eval)
@@ -167,6 +169,10 @@ def main():
         save_strategy="epoch",
         eval_strategy="epoch",
         save_total_limit=2,
+        # Conserva el checkpoint con menor eval_loss (si hay sobreajuste no se pierde).
+        load_best_model_at_end=True,
+        metric_for_best_model="eval_loss",
+        greater_is_better=False,
         report_to="none",
         seed=args.seed,
         dataset_text_field="text",
@@ -184,9 +190,17 @@ def main():
     )
 
     print("== Entrenando ==")
-    trainer.train()
+    hay_ckpt = os.path.isdir(args.output) and any(
+        d.startswith("checkpoint-") for d in os.listdir(args.output))
+    if args.resume and not hay_ckpt:
+        print("--resume: no hay checkpoint-* en {}, se entrena desde cero.".format(args.output))
+    trainer.train(resume_from_checkpoint=True if (args.resume and hay_ckpt) else None)
     trainer.save_model(args.output)
     tokenizer.save_pretrained(args.output)
+    with open(os.path.join(args.output, "log_history.json"), "w", encoding="utf-8") as f:
+        json.dump({"best_model_checkpoint": trainer.state.best_model_checkpoint,
+                   "best_metric": trainer.state.best_metric,
+                   "log_history": trainer.state.log_history}, f, indent=2)
     print("Adapter LoRA guardado en:", args.output)
     print("Siguiente paso: python export_gguf.py")
 

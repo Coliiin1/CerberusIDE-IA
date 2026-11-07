@@ -51,30 +51,39 @@ python finetune/train_qlora.py --check
 ```
 Esperado: ~1594 ejemplos (v2 93 + v3 1001 + v4 500) → train ~1275 / eval ~319.
 
-## Fase C — Entrenamiento en Colab Pro
-> **Estado: preparado.** Notebook `CerberusAI/colab/train_cerberus_colab.ipynb` +
-> `requirements-colab.txt`; `train_qlora.py --dtype auto` y `to_chat.py` multi-input ya
-> implementados. Falta ejecutarlo en Colab y descargar el adapter.
+## Fase C — Entrenamiento en Colab Pro (corrida controlada, desde cero)
+> **Estado: preparado.** Notebook reescrito; falta ejecutarlo celda por celda en Colab.
 
-Notebook `CerberusAI/colab/train_cerberus_colab.ipynb`:
-1. Verificar GPU (`nvidia-smi`, `torch.cuda.get_device_name`, `is_bf16_supported()`).
-2. Montar Drive (`/content/drive/MyDrive/CerberusAI`).
-3. `git clone -b 01-apiexpuesta https://github.com/Coliiin1/CerberusIDE-IA.git`.
-4. `pip install -r CerberusAI/finetune/requirements-finetune.txt` (sin tocar `torch` de Colab).
-5. Fase B (datos) + `--check`.
-6. Entrenar (salida a Drive):
-   `python finetune/train_qlora.py --output <Drive>/lora-adapter --epochs 5 --dtype auto`
-   (si OOM: `--batch 1 --grad-accum 8`).
-7. Zip + descarga de `lora-adapter.zip`.
+Cada corrida se identifica con un `RUN_ID` y vive en `MyDrive/CerberusAI/runs/<RUN_ID>/`:
+`run_info.json` (commit, GPU, versiones, hiperparámetros, conteos, sha256 de los 5 datasets y de
+train/eval), copia de `train.jsonl`/`eval.jsonl`, `train.log`, y `lora-adapter/` (adapter final =
+mejor `eval_loss`, checkpoints por época, `log_history.json`).
+
+Notebook `CerberusAI/colab/train_cerberus_colab.ipynb` (cada celda verifica con `assert`):
+0. Parámetros: `RUN_ID`, `RESUME`, `BRANCH = "main"`, HP de la corrida 1.
+1. GPU: `nvidia-smi`; se detiene si no hay GPU o si es T4.
+2. Drive: corrida nueva → la carpeta no debe existir; `RESUME` → debe existir y no estar terminada.
+3. `git clone -b main` e imprime el commit.
+4. `pip install -r CerberusAI/colab/requirements-colab.txt` + versiones; verifica que no cambió torch y que hay bf16.
+5. Fase B (datos) + `--check`; `assert` total = 1594; escribe `run_info.json` (al reanudar exige sha256 idénticos).
+6. Entrenar: `train_qlora.py --output <run>/lora-adapter --dtype auto` + HP (+ `--resume`), salida con `tee` a `train.log`.
+7. Tabla train/eval loss por época + mejor checkpoint.
+8. Zip (adapter final sin `checkpoint-*` + `run_info.json` + `train.log`) y descarga.
+
+Si la sesión se cae: mismo `RUN_ID`, `RESUME = True`, ejecutar todo de nuevo en orden.
 
 ## Fase D — Merge / GGUF / Ollama (local)
-- Descomprimir en `CerberusAI/finetune/lora-adapter/`.
+- Backup de v1: `finetune/lora-adapter` → `lora-adapter-v1`, `cerberusai-q8_0.gguf` → `cerberusai-v1-q8_0.gguf`.
+- Descomprimir el zip en `CerberusAI/finetune/`.
 - `py CerberusAI\finetune\export_gguf.py` → `merged-model`.
-- `convert_hf_to_gguf.py` → `llama-quantize Q8_0` → `ollama create cerberusai -f Modelfile`.
+- `convert_hf_to_gguf.py` → `llama-quantize Q8_0` → `ollama create cerberusai-v2 -f Modelfile`.
+- Regenerar `chat_all/train/eval.jsonl` (Fase B) y comparar sha256 con `run_info.json`.
 
 ## Fase E — Evaluación
-- `py CerberusAI\eval\run_eval.py` (base vs fine-tuned) y `eval_harness.py`.
-- Comparar tasa de compilación y exact-match con `resultados_base_vs_ft.txt`.
+- `py CerberusAI\eval\run_eval.py --base-model cerberusai --ft-model cerberusai-v2` (v1 vs v2) y
+  `py CerberusAI\eval\run_eval.py --ft-model cerberusai-v2` (base vs v2).
+- El eval `generation` pasa de 9 a 104 tareas; v1 pudo ver algunas en su train (sesgo leve a favor de v1).
+- Si v2 gana: `ollama cp cerberusai-v2 cerberusai` (API/IDE sin cambios).
 
 ## Cambios de código
 - `train_qlora.py`: `--dtype auto|bf16|fp16` (auto = bf16 si soportado, si no fp16).
