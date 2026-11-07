@@ -67,6 +67,7 @@
                 <Region HBox.hgrow="ALWAYS"/>
 
                 <Button text="▶  Compilar" fx:id="btnCompilar" styleClass="btn-compilar"/>
+                <Button text="⏵  Ejecutar" fx:id="btnEjecutar" styleClass="btn-ghost"/>
             </HBox>
         </VBox>
     </top>
@@ -141,6 +142,11 @@
                                     <Tab text="Documentador">
                                         <content>
                                             <TextArea fx:id="txtDocumentador" editable="false" styleClass="resultado"/>
+                                        </content>
+                                    </Tab>
+                                    <Tab text="Consola" fx:id="tabConsola">
+                                        <content>
+                                            <TextArea fx:id="txtConsola" editable="false" styleClass="resultado"/>
                                         </content>
                                     </Tab>
                                 </tabs>

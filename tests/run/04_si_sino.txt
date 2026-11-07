@@ -1,0 +1,16 @@
+clase Test(){
+    funcion principal(){
+        entero x = 5;
+        si(x > 10){
+            imprimir("grande");
+        }sino si(x > 3){
+            imprimir("mediano");
+        }sino{
+            imprimir("chico");
+        }
+        booleano b = falso;
+        si(!b & x == 5){
+            imprimir("ok");
+        }
+    }
+}

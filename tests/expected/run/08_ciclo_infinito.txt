@@ -1,0 +1,1 @@
+ERROR DE EJECUCION: Se supero el limite de 1000000 pasos (posible ciclo infinito)

@@ -1,0 +1,17 @@
+entero g = 10;
+clase Test(){
+    funcion principal(){
+        entero d = 7 / 2;
+        real r = 7.0 / 2;
+        real e = 3;
+        imprimir(d, " ", r, " ", e);
+        entero g = 1;
+        imprimir(g);
+        mostrar();
+        caracter c = 'q';
+        imprimir(c, verdadero);
+    }
+    funcion mostrar(){
+        imprimir(g);
+    }
+}
