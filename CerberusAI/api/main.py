@@ -21,8 +21,13 @@ Configuracion por variables de entorno:
     CERBERUSAI_API_KEY   (si se define, exige la cabecera X-API-Key)
     CERBERUSAI_RATE_LIMIT  (peticiones por IP y ventana; 0 desactiva, default 20)
     CERBERUSAI_RATE_WINDOW (ventana en segundos, default 60)
+    WHISPER_MODEL        (dictado por voz; default small)
+    WHISPER_DEVICE       (cpu | cuda, default cpu)
+    WHISPER_COMPUTE      (default int8)
+    MAX_AUDIO_BYTES      (tamano maximo del WAV de /transcribir, default 4 MB)
 """
 import hmac
+import io
 import json
 import os
 import re
@@ -30,12 +35,14 @@ import subprocess
 import tempfile
 import threading
 import time
+import wave
 from collections import deque
 from typing import Optional
 
 import requests
 from fastapi import Depends, FastAPI, HTTPException, Request
 from pydantic import BaseModel
+from starlette.concurrency import run_in_threadpool
 
 AQUI = os.path.dirname(os.path.abspath(__file__))
 
@@ -61,6 +68,14 @@ def _entero_env(nombre, por_defecto):
 RATE_LIMIT = _entero_env("CERBERUSAI_RATE_LIMIT", "20")
 RATE_WINDOW = max(1, _entero_env("CERBERUSAI_RATE_WINDOW", "60"))
 MAX_IPS_RASTREADAS = 4096
+
+WHISPER_MODEL = os.environ.get("WHISPER_MODEL", "small")
+WHISPER_DEVICE = os.environ.get("WHISPER_DEVICE", "cpu")
+WHISPER_COMPUTE = os.environ.get("WHISPER_COMPUTE", "int8")
+MAX_AUDIO_BYTES = _entero_env("MAX_AUDIO_BYTES", str(4 * 1024 * 1024))
+
+_whisper = None
+_lock_whisper = threading.Lock()
 
 _intentos_por_ip = {}
 _lock_intentos = threading.Lock()
@@ -222,6 +237,52 @@ def chat(req: ChatRequest):
         compila=compila,
         error_compilacion=error_compilacion,
     )
+
+
+def _modelo_whisper():
+    # Carga perezosa: si nunca se dicta, ni se importa ni se descarga el modelo.
+    global _whisper
+    with _lock_whisper:
+        if _whisper is None:
+            from faster_whisper import WhisperModel
+            _whisper = WhisperModel(WHISPER_MODEL, device=WHISPER_DEVICE, compute_type=WHISPER_COMPUTE)
+        return _whisper
+
+
+def _leer_wav(audio):
+    # Se decodifica con `wave` (stdlib) en vez de PyAV: el IDE siempre manda PCM 16 kHz mono 16 bit
+    # y asi se evita la incompatibilidad de PyAV >= 16 con faster-whisper 1.2.x.
+    import numpy as np
+    try:
+        with wave.open(io.BytesIO(audio)) as w:
+            formato = (w.getframerate(), w.getnchannels(), w.getsampwidth())
+            pcm = w.readframes(w.getnframes())
+    except (wave.Error, EOFError):
+        raise HTTPException(status_code=400, detail="El audio no es un WAV valido.")
+    if formato != (16000, 1, 2):
+        raise HTTPException(status_code=400, detail="Se espera WAV PCM 16 kHz mono 16 bit.")
+    return np.frombuffer(pcm, dtype=np.int16).astype(np.float32) / 32768.0
+
+
+def _transcribir(audio):
+    try:
+        modelo = _modelo_whisper()
+    except ImportError:
+        raise HTTPException(status_code=503, detail="Dictado no disponible: falta instalar faster-whisper.")
+    segmentos, _ = modelo.transcribe(_leer_wav(audio), language="es", vad_filter=True)
+    return " ".join(s.text.strip() for s in segmentos).strip()
+
+
+@app.post("/transcribir", dependencies=[Depends(verificar_acceso)])
+async def transcribir(request: Request):
+    """Cuerpo crudo audio/wav (sin multipart) -> {"texto": "..."} en espanol."""
+    audio = await request.body()
+    if not audio:
+        raise HTTPException(status_code=400, detail="No se recibio audio.")
+    if len(audio) > MAX_AUDIO_BYTES:
+        raise HTTPException(status_code=413, detail="Audio demasiado largo.")
+    texto = await run_in_threadpool(_transcribir, audio)
+    return {"texto": texto}
 
 
 if __name__ == "__main__":

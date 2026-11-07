@@ -1,311 +1,358 @@
-.root {
-    -fx-font-family: "Segoe UI";
-    -fx-font-size: 13px;
-    /* Valores por defecto (tema oscuro) para que las variables nunca queden sin resolver */
-    -fondo: #121214;
-    -panel: #1e1e22;
-    -panel-sec: #2d2d32;
-    -texto: #ebebeb;
-    -editor: #161618;
-    -linea: #414146;
-    -acento: #0036a6;
-    -fx-background-color: -fondo;
-}
+/*
+ * CerberusIDE — tema visual.
+ * Todos los colores viven en los bloques de tema (looked-up colors). No usar hex fuera de ellos.
+ */
 
-/* Paleta por tema */
+/* ===== Tokens ===== */
+.root,
 .modo-oscuro {
-    -fondo: #121214;
-    -panel: #1e1e22;
-    -panel-sec: #2d2d32;
-    -texto: #ebebeb;
-    -editor: #161618;
-    -linea: #414146;
-    -acento: #0036a6;
+    -c-bg: #0E0B14;
+    -c-surface: #16121F;
+    -c-surface-2: #1E1829;
+    -c-elevated: #241D31;
+    -c-border: #2E2640;
+    -c-text: #ECE6F5;
+    -c-text-muted: #8E84A0;
+    -c-accent: #7B2FF7;
+    -c-accent-2: #5700C1;
+    -c-accent-soft: #3A2366;
+    -c-accent-glow: rgba(123, 47, 247, 0.45);
+    -c-ok: #4ADE80;
+    -c-err: #FF5C7A;
+    -c-editor: #120F1A;
+    -c-gutter: #5E5470;
 }
 
 .modo-claro {
-    -fondo: #f5f5f5;
-    -panel: #ffffff;
-    -panel-sec: #ebebeb;
-    -texto: #191919;
-    -editor: #fcfcfc;
-    -linea: #d2d2d2;
-    -acento: #0036a6;
+    -c-bg: #E9E4F2;
+    -c-surface: #FFFFFF;
+    -c-surface-2: #F5F2FA;
+    -c-elevated: #FFFFFF;
+    -c-border: #DDD6EA;
+    -c-text: #1C1528;
+    -c-text-muted: #6F6680;
+    -c-accent: #5700C1;
+    -c-accent-2: #7B2FF7;
+    -c-accent-soft: #E3D4FF;
+    -c-accent-glow: rgba(87, 0, 193, 0.30);
+    -c-ok: #16A34A;
+    -c-err: #DC2650;
+    -c-editor: #FDFCFF;
+    -c-gutter: #A79FB8;
 }
 
-/* Barra superior */
-.barra-superior {
-    -fx-background-color: -panel;
-}
-
-.titulo {
-    -fx-font-size: 24px;
-    -fx-font-weight: bold;
-    -fx-text-fill: -texto;
-}
-
-.btn-compilar {
-    -fx-background-color: -acento;
-    -fx-text-fill: white;
-    -fx-font-weight: bold;
-    -fx-font-size: 14px;
-    -fx-pref-width: 160px;
-    -fx-pref-height: 40px;
-    -fx-cursor: hand;
-    -fx-background-radius: 4px;
-}
-
-.btn-compilar:hover {
-    -fx-background-color: derive(-acento, 25%);
-}
-
-/* Menubar */
-.menu-bar {
-    -fx-background-color: -panel;
-}
-
-.menu-bar .label,
-.menu-item .label {
-    -fx-text-fill: -texto;
-}
-
-.menu-item,
-.context-menu {
-    -fx-background-color: -panel;
-}
-
-.menu-item:focused {
-    -fx-background-color: -panel-sec;
-}
-
-/* Editor */
-.panel-editor {
-    -fx-background-color: -fondo;
-}
-
-.etiqueta-archivo {
-    -fx-text-fill: -texto;
-    -fx-font-weight: bold;
-    -fx-padding: 0 0 8 0;
-}
-
-.editor,
-.resultado {
-    -fx-control-inner-background: -editor;
-    -fx-text-fill: -texto;
-    -fx-highlight-fill: -acento;
-    -fx-font-family: "Consolas";
-}
-
-.lineas {
-    -fx-control-inner-background: -panel-sec;
-    -fx-text-fill: -texto;
-    -fx-font-family: "Consolas";
-    -fx-pref-width: 46px;
-}
-
-.lineas .scroll-bar,
-.lineas .corner {
-    -fx-opacity: 0;
-}
-
-/* Pestañas de resultados */
-.pestanas {
-    -fx-background-color: -panel;
-}
-
-.tab-pane .tab-header-area .tab-header-background {
-    -fx-background-color: -panel;
-}
-
-.tab-pane .tab {
-    -fx-background-color: -panel;
-}
-
-.tab-pane .tab:selected {
-    -fx-background-color: -panel-sec;
-}
-
-.tab .tab-label {
-    -fx-text-fill: -texto;
-}
-
-/* SplitPane */
-.split-pane {
-    -fx-background-color: -fondo;
-}
-
-.split-pane > .split-pane-divider {
-    -fx-background-color: -linea;
-    -fx-padding: 0 1 0 1;
-}
-
-/* Chat CerberusAI (componente modular ui/chat_cerberus.fxml) */
-.panel-chat {
-    -fx-background-color: -panel;
-}
-
-.panel-chat .etiqueta {
-    -fx-text-fill: -texto;
-    -fx-font-weight: bold;
-}
-
-.panel-chat .estado-chat {
-    -fx-text-fill: -texto;
-}
-
-.panel-chat .estado-chat.ok {
-    -fx-text-fill: #35c26a;
-}
-
-.panel-chat .estado-chat.error {
-    -fx-text-fill: #ff6b6b;
-}
-
-.btn-insertar {
-    -fx-background-color: -panel-sec;
-    -fx-text-fill: -texto;
-    -fx-font-weight: bold;
-    -fx-font-size: 13px;
-    -fx-pref-height: 40px;
-    -fx-cursor: hand;
-    -fx-background-radius: 4px;
-}
-
-.btn-insertar:hover {
-    -fx-background-color: derive(-panel-sec, 15%);
-}
-
-.btn-insertar:disabled {
-    -fx-opacity: 0.5;
-}
-
-
-/* Base del IDE */
-.ide-root {
-    -fx-background-color: #17141F;
+/* ===== Base ===== */
+.root {
     -fx-font-family: "Segoe UI";
     -fx-font-size: 12px;
 }
 
-.ide-menu-bar {
-    -fx-background-color: #211C2D;
+.ide-root {
+    -fx-background-color: -c-bg;
 }
 
-.ide-toolbar {
-    -fx-background-color: #211C2D;
-    -fx-border-color: transparent transparent #383043 transparent;
+.label {
+    -fx-text-fill: -c-text;
 }
 
-.ide-brand {
-    -fx-text-fill: #F5F1FA;
-    -fx-font-size: 19px;
-    -fx-font-weight: bold;
-}
-
-.ide-brand-secondary {
-    -fx-text-fill: #A783E2;
-    -fx-font-size: 19px;
-    -fx-font-weight: bold;
-}
-
-.ide-logo, .ai-logo {
-    -fx-text-fill: #914DFF;
-    -fx-font-size: 23px;
-}
-
-.toolbar-project, .status-item {
-    -fx-text-fill: #B9B1C7;
-}
-
-.ide-status {
-    -fx-text-fill: #A9D8B1;
-    -fx-padding: 0 10 0 0;
-}
-
-.btn-compilar, .btn-ai-send {
-    -fx-background-color: #7546B8;
-    -fx-text-fill: white;
-    -fx-font-weight: bold;
-    -fx-background-radius: 5px;
-    -fx-padding: 8 14 8 14;
-    -fx-cursor: hand;
-}
-
-.btn-compilar:hover, .btn-ai-send:hover {
-    -fx-background-color: #895ACB;
-}
-
-.explorer-panel, .editor-panel,
-.output-panel, .ai-panel {
-    -fx-background-color: #211C2D;
+.texto-tenue {
+    -fx-text-fill: -c-text-muted;
 }
 
 .panel-heading {
-    -fx-text-fill: #A99CB9;
+    -fx-text-fill: -c-text-muted;
     -fx-font-size: 10px;
     -fx-font-weight: bold;
 }
 
-.tree-item-muted, .ai-subtitle {
-    -fx-text-fill: #95899F;
+/* ===== Menú ===== */
+.ide-menu-bar {
+    -fx-background-color: -c-surface;
+    -fx-padding: 2 6 2 6;
 }
 
-.explorer-action {
-    -fx-background-color: #30283F;
-    -fx-text-fill: #D8D0E2;
-    -fx-background-radius: 4px;
-    -fx-padding: 5 8 5 8;
-    -fx-cursor: hand;
+.ide-menu-bar .menu {
+    -fx-background-color: transparent;
+    -fx-background-radius: 4;
 }
 
-.explorer-action:hover {
-    -fx-background-color: #3D3350;
+.ide-menu-bar .menu:hover,
+.ide-menu-bar .menu:showing {
+    -fx-background-color: -c-accent-soft;
 }
 
-.editor-tabs, .output-header {
-    -fx-background-color: #292333;
-    -fx-border-color: transparent transparent #383043 transparent;
+.ide-menu-bar .menu .label {
+    -fx-text-fill: -c-text;
 }
 
-.active-file {
-    -fx-text-fill: #F5F1FA;
+.context-menu {
+    -fx-background-color: -c-elevated;
+    -fx-border-color: -c-border;
+    -fx-background-radius: 6;
+    -fx-border-radius: 6;
+    -fx-padding: 4;
 }
 
-.code-workspace {
-    -fx-background-color: #17141F;
+.menu-item {
+    -fx-background-radius: 4;
+    -fx-padding: 6 14 6 10;
 }
 
-.editor, .lineas, .resultado,
-.ai-chat-history, .ai-input {
-    -fx-control-inner-background: #17141F;
-    -fx-background-color: #17141F;
-    -fx-text-fill: #E6E0ED;
-    -fx-highlight-fill: #49356A;
-    -fx-highlight-text-fill: white;
-    -fx-border-color: transparent;
-    -fx-background-radius: 0;
-    -fx-font-family: "Consolas";
+.menu-item .label {
+    -fx-text-fill: -c-text;
+}
+
+.menu-item:focused {
+    -fx-background-color: -c-accent-soft;
+}
+
+.menu-item .accelerator-text {
+    -fx-text-fill: -c-text-muted;
+}
+
+.radio-menu-item:checked .radio {
+    -fx-background-color: -c-accent;
+}
+
+.context-menu .separator .line {
+    -fx-border-color: -c-border;
+}
+
+.tooltip {
+    -fx-background-color: -c-elevated;
+    -fx-text-fill: -c-text;
+    -fx-border-color: -c-border;
+    -fx-background-radius: 4;
+    -fx-border-radius: 4;
+}
+
+/* ===== Toolbar ===== */
+.ide-toolbar {
+    -fx-background-color: -c-surface;
+    -fx-border-color: transparent transparent -c-accent transparent;
+    -fx-border-width: 0 0 2 0;
+}
+
+.ide-brand {
+    -fx-text-fill: -c-text;
+    -fx-font-size: 17px;
+    -fx-font-weight: 900;
+}
+
+.ide-brand-secondary {
+    -fx-text-fill: -c-accent;
+    -fx-font-size: 17px;
+    -fx-font-weight: 900;
+}
+
+.toolbar-slash {
+    -fx-text-fill: -c-border;
+    -fx-font-size: 17px;
+    -fx-padding: 0 0 0 6;
+}
+
+.toolbar-project {
+    -fx-text-fill: -c-text-muted;
     -fx-font-size: 13px;
 }
 
+/* ===== Botones ===== */
+/* Radio asimétrico: eco de los cortes angulares del logo */
+.btn-compilar {
+    -fx-background-color: linear-gradient(to right, -c-accent-2, -c-accent);
+    -fx-background-radius: 2 10 2 10;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-padding: 7 18 7 18;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, -c-accent-glow, 12, 0.2, 0, 2);
+}
+
+.btn-compilar:hover {
+    -fx-background-color: linear-gradient(to right, -c-accent, -c-accent);
+}
+
+.btn-compilar:pressed {
+    -fx-background-color: -c-accent-2;
+    -fx-effect: null;
+}
+
+.btn-compilar:disabled,
+.btn-ghost:disabled {
+    -fx-opacity: 0.45;
+}
+
+.btn-ghost {
+    -fx-background-color: transparent;
+    -fx-border-color: -c-border;
+    -fx-border-radius: 2 10 2 10;
+    -fx-background-radius: 2 10 2 10;
+    -fx-text-fill: -c-text;
+    -fx-padding: 6 14 6 14;
+    -fx-cursor: hand;
+}
+
+.btn-ghost:hover {
+    -fx-border-color: -c-accent;
+    -fx-background-color: -c-accent-soft;
+}
+
+.btn-ghost.grabando {
+    -fx-border-color: -c-err;
+    -fx-text-fill: -c-err;
+}
+
+.icon-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: -c-text-muted;
+    -fx-background-radius: 4;
+    -fx-padding: 2 6 2 6;
+    -fx-cursor: hand;
+}
+
+.icon-button:hover {
+    -fx-background-color: -c-accent-soft;
+    -fx-text-fill: -c-text;
+}
+
+/* ===== Layout: paneles como tarjetas ===== */
+.ide-split,
+.ide-split-interno {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+}
+
+.ide-split {
+    -fx-padding: 6;
+}
+
+.split-pane > .split-pane-divider {
+    -fx-background-color: transparent;
+    -fx-padding: 0 3 0 3;
+}
+
+.ide-split-interno > .split-pane-divider {
+    -fx-padding: 3 0 3 0;
+}
+
+.split-pane > .split-pane-divider:hover {
+    -fx-background-color: -c-accent-soft;
+}
+
+.card {
+    -fx-background-color: -c-surface;
+    -fx-background-radius: 8;
+    -fx-border-color: -c-border;
+    -fx-border-radius: 8;
+}
+
+/* ===== Pestañas (editor y resultados) ===== */
+.tab-pane {
+    -fx-background-color: transparent;
+    -fx-tab-min-height: 28px;
+}
+
+.tab-pane > .tab-header-area {
+    -fx-padding: 4 6 0 6;
+}
+
+.tab-pane > .tab-header-area > .tab-header-background {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent transparent -c-border transparent;
+}
+
+.tab-pane > .tab-header-area > .headers-region > .tab {
+    -fx-background-color: transparent;
+    -fx-background-radius: 0;
+    -fx-border-color: transparent;
+    -fx-border-width: 0 0 2 0;
+    -fx-padding: 4 12 4 12;
+}
+
+.tab-pane > .tab-header-area > .headers-region > .tab:hover {
+    -fx-background-color: -c-surface-2;
+}
+
+.tab-pane > .tab-header-area > .headers-region > .tab:selected {
+    -fx-border-color: transparent transparent -c-accent transparent;
+}
+
+.tab-pane .tab .tab-label {
+    -fx-text-fill: -c-text-muted;
+}
+
+.tab-pane .tab:selected .tab-label {
+    -fx-text-fill: -c-text;
+}
+
+.tab-pane .tab .tab-close-button {
+    -fx-background-color: -c-text-muted;
+}
+
+.tab-pane .tab .tab-close-button:hover {
+    -fx-background-color: -c-err;
+}
+
+.tab-pane > .tab-header-area > .control-buttons-tab > .container > .tab-down-button {
+    -fx-background-color: transparent;
+}
+
+.tab-pane > .tab-header-area > .control-buttons-tab > .container > .tab-down-button > .arrow {
+    -fx-background-color: -c-text-muted;
+}
+
+.tab-pane:focused > .tab-header-area > .headers-region > .tab:selected .focus-indicator {
+    -fx-border-color: transparent;
+}
+
+.tab-pane > .tab-content-area {
+    -fx-background-color: transparent;
+    -fx-padding: 0 0 6 0;
+}
+
+/* ===== Editor y áreas de texto ===== */
+.editor,
+.lineas,
+.resultado,
+.ai-input,
+.ai-respuesta {
+    -fx-control-inner-background: -c-editor;
+    -fx-background-color: -c-editor;
+    -fx-text-fill: -c-text;
+    -fx-highlight-fill: -c-accent-soft;
+    -fx-highlight-text-fill: -c-text;
+    -fx-prompt-text-fill: -c-text-muted;
+    -fx-background-radius: 0;
+    -fx-background-insets: 0;
+    -fx-border-color: transparent;
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+}
+
+.editor,
+.lineas,
+.resultado {
+    -fx-font-family: "Cascadia Mono", "Consolas", monospace;
+    -fx-font-size: 13px;
+}
+
+.text-area .content {
+    -fx-background-color: -c-editor;
+}
+
+.text-area .scroll-pane,
+.text-area .scroll-pane > .viewport {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+}
+
 .lineas {
-    -fx-control-inner-background: #211C2D;
-    -fx-text-fill: #82758F;
+    -fx-text-fill: -c-gutter;
+    -fx-border-color: transparent -c-border transparent transparent;
 }
 
-.lineas .scroll-pane {
-    -fx-hbar-policy: never;
-    -fx-vbar-policy: never;
-}
-
-.lineas .scroll-pane > .viewport {
-    -fx-background-color: #211C2D;
-}
-
-.lineas .scroll-bar,
-.lineas .scroll-bar:vertical,
-.lineas .scroll-bar:horizontal {
+.lineas .scroll-bar {
     -fx-pref-width: 0;
     -fx-pref-height: 0;
     -fx-max-width: 0;
@@ -314,101 +361,28 @@
     -fx-padding: 0;
 }
 
-.lineas .scroll-bar .increment-button,
-.lineas .scroll-bar .decrement-button,
-.lineas .scroll-bar .increment-arrow,
-.lineas .scroll-bar .decrement-arrow {
-    -fx-padding: 0;
-    -fx-shape: null;
-}
-
 .lineas .corner {
-    -fx-pref-width: 0;
-    -fx-pref-height: 0;
-    -fx-max-width: 0;
-    -fx-max-height: 0;
-    -fx-background-color: #211C2D;
-}
-
-.editor-status, .ide-bottom-bar {
-    -fx-background-color: #30283F;
-}
-
-.ai-header {
-    -fx-background-color: #211C2D;
-}
-
-.ai-title {
-    -fx-text-fill: #F5F1FA;
-    -fx-font-size: 14px;
-    -fx-font-weight: bold;
-}
-
-.ai-conversation, .ai-input-area {
-    -fx-background-color: #211C2D;
-}
-
-.ai-welcome {
-    -fx-background-color: #30283F;
-    -fx-background-radius: 7px;
-    -fx-padding: 12px;
-}
-
-.ai-welcome-title {
-    -fx-text-fill: #D6B9FF;
-    -fx-font-weight: bold;
-}
-
-.ai-message-text {
-    -fx-text-fill: #D8D0E2;
-}
-
-.ai-model-label {
-    -fx-text-fill: #A99CB9;
-    -fx-font-size: 10px;
-}
-
-.icon-button {
     -fx-background-color: transparent;
-    -fx-text-fill: #B9A9CC;
-    -fx-cursor: hand;
 }
 
-.pestanas, .tab-pane {
-    -fx-background-color: #211C2D;
+/* Chat: campos con borde que se enciende al enfocar */
+.ai-input,
+.ai-respuesta {
+    -fx-background-radius: 6;
+    -fx-border-radius: 6;
+    -fx-border-color: -c-border;
 }
 
-.tab-pane .tab-header-area .tab-header-background {
-    -fx-background-color: #211C2D;
+.ai-input:focused {
+    -fx-border-color: -c-accent;
 }
 
-.tab-pane .tab {
-    -fx-background-color: #292333;
+.ai-input .content,
+.ai-respuesta .content {
+    -fx-background-radius: 6;
 }
 
-.tab-pane .tab:selected {
-    -fx-background-color: #49356A;
-}
-
-.tab-pane .tab .tab-label {
-    -fx-text-fill: #D8D0E2;
-}
-
-.ide-split, .editor-split {
-    -fx-background-color: #17141F;
-    -fx-padding: 0;
-}
-
-.split-pane-divider {
-    -fx-background-color: #383043;
-    -fx-padding: 0 2px 0 2px;
-}
-
-.separator .line {
-    -fx-border-color: #383043;
-}
-
-/* Explorador de proyectos */
+/* ===== Explorador ===== */
 .project-tree {
     -fx-background-color: transparent;
     -fx-border-color: transparent;
@@ -424,64 +398,145 @@
 
 .project-tree .tree-cell {
     -fx-background-color: transparent;
-    -fx-text-fill: #D8D0E2;
-    -fx-padding: 5 4 5 4;
-    -fx-background-radius: 4px;
+    -fx-text-fill: -c-text;
+    -fx-padding: 4 4 4 4;
+    -fx-background-radius: 4;
+    -fx-border-width: 0 0 0 2;
+    -fx-border-color: transparent;
 }
 
 .project-tree .tree-cell:hover {
-    -fx-background-color: #2A2436;
+    -fx-background-color: -c-surface-2;
 }
 
 .project-tree .tree-cell:selected {
-    -fx-background-color: #49356A;
-    -fx-text-fill: #FFFFFF;
+    -fx-background-color: -c-accent-soft;
+    -fx-border-color: -c-accent;
 }
 
 .project-tree .tree-cell-folder {
-    -fx-text-fill: #CBB4F0;
+    -fx-text-fill: -c-accent;
+    -fx-font-weight: bold;
 }
 
-.project-tree .tree-cell-file {
-    -fx-text-fill: #D8D0E2;
+.modo-oscuro .project-tree .tree-cell-folder {
+    -fx-text-fill: derive(-c-accent, 45%);
 }
 
-.project-tree .arrow {
-    -fx-background-color: #A99CB9;
+.project-tree .tree-disclosure-node > .arrow {
+    -fx-background-color: -c-text-muted;
 }
 
-/* Pestañas del editor */
-.editor-tabs-pane {
-    -fx-background-color: #17141F;
-    -fx-tab-min-height: 30px;
+/* ===== Panel CerberusAI ===== */
+.ai-header {
+    -fx-border-color: transparent transparent -c-border transparent;
 }
 
-.editor-tabs-pane > .tab-header-area {
+.ai-title {
+    -fx-text-fill: -c-text;
+    -fx-font-size: 14px;
+    -fx-font-weight: 900;
+}
+
+.panel-chat {
+    -fx-background-color: transparent;
+}
+
+.combo-box {
+    -fx-background-color: -c-surface-2;
+    -fx-border-color: -c-border;
+    -fx-background-radius: 4;
+    -fx-border-radius: 4;
+}
+
+.combo-box:focused,
+.combo-box:hover {
+    -fx-border-color: -c-accent;
+}
+
+.combo-box .list-cell {
+    -fx-text-fill: -c-text;
+    -fx-background-color: transparent;
+}
+
+.combo-box .arrow {
+    -fx-background-color: -c-text-muted;
+}
+
+.combo-box-popup .list-view {
+    -fx-background-color: -c-elevated;
+    -fx-border-color: -c-border;
+}
+
+.combo-box-popup .list-view .list-cell {
+    -fx-background-color: -c-elevated;
+    -fx-text-fill: -c-text;
+}
+
+.combo-box-popup .list-view .list-cell:hover,
+.combo-box-popup .list-view .list-cell:selected {
+    -fx-background-color: -c-accent-soft;
+}
+
+/* ===== Estado (barra inferior y chat) ===== */
+.ide-status-bar {
+    -fx-background-color: -c-surface;
+    -fx-border-color: -c-border transparent transparent transparent;
+}
+
+.status-item {
+    -fx-text-fill: -c-text-muted;
+}
+
+.estado {
+    -fx-text-fill: -c-text-muted;
+}
+
+.estado.ok {
+    -fx-text-fill: -c-ok;
+}
+
+.estado.error {
+    -fx-text-fill: -c-err;
+}
+
+/* ===== Scrollbars finas ===== */
+.scroll-bar {
+    -fx-background-color: transparent;
+}
+
+.scroll-bar:vertical {
+    -fx-pref-width: 10;
+}
+
+.scroll-bar:horizontal {
+    -fx-pref-height: 10;
+}
+
+.scroll-bar .thumb {
+    -fx-background-color: -c-border;
+    -fx-background-radius: 5;
+    -fx-background-insets: 2;
+}
+
+.scroll-bar .thumb:hover,
+.scroll-bar .thumb:pressed {
+    -fx-background-color: -c-gutter;
+}
+
+.scroll-bar .increment-button,
+.scroll-bar .decrement-button {
     -fx-padding: 0;
+    -fx-background-color: transparent;
 }
 
-.editor-tabs-pane > .tab-header-area > .tab-header-background {
-    -fx-background-color: #292333;
+.scroll-bar .increment-arrow,
+.scroll-bar .decrement-arrow {
+    -fx-padding: 0;
+    -fx-shape: null;
 }
 
-.editor-tabs-pane > .tab-header-area > .headers-region > .tab {
-    -fx-background-color: #211C2D;
-    -fx-background-radius: 0;
-    -fx-padding: 4 10 4 10;
-}
-
-.editor-tabs-pane > .tab-header-area > .headers-region > .tab:selected {
-    -fx-background-color: #49356A;
-}
-
-.editor-tabs-pane .tab-label {
-    -fx-text-fill: #D8D0E2;
-}
-
-.editor-tabs-pane .tab:selected .tab-label {
-    -fx-text-fill: #FFFFFF;
-}
-
-.editor-tabs-pane > .tab-content-area {
-    -fx-background-color: #17141F;
+.scroll-pane > .corner,
+.text-area .corner {
+    -fx-background-color: transparent;
 }

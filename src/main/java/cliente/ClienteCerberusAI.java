@@ -95,6 +95,21 @@ public class ClienteCerberusAI {
         return mapper.readValue(respuesta.body(), Respuesta.class);
     }
 
+    /** POST /transcribir: envía un WAV y devuelve el texto dictado (español). */
+    public String transcribir(byte[] wav) throws IOException, InterruptedException {
+        HttpRequest peticion = nuevaPeticion(URI.create(baseUrl + "/transcribir"))
+                .timeout(tiempoLimite)
+                .header("Content-Type", "audio/wav")
+                .POST(HttpRequest.BodyPublishers.ofByteArray(wav))
+                .build();
+        HttpResponse<String> respuesta = http.send(peticion,
+                HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+        if (respuesta.statusCode() / 100 != 2) {
+            throw new IOException(mensajeDeError(respuesta));
+        }
+        return mapper.readTree(respuesta.body()).path("texto").asText("").strip();
+    }
+
     /** GET /health: true si la API responde 2xx. No lanza excepciones. */
     public boolean ping() {
         try {

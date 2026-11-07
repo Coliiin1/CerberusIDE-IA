@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.Set;
@@ -85,6 +86,9 @@ public class InterfazPrincipalController implements Initializable {
 
     @FXML
     private Label lblPosicion;
+
+    @FXML
+    private Label lblEstado;
 
     @FXML
     private TreeView<Path> treeProyecto;
@@ -602,8 +606,12 @@ public class InterfazPrincipalController implements Initializable {
             mostrarInfo("Abre o crea un archivo antes de compilar.");
             return;
         }
+        // Se valida antes de guardar para no escribir sobre archivos que no son del lenguaje.
+        if (editor.getArchivo() != null && rechazarSiNoEsTxt(editor)) {
+            return;
+        }
         if (editor.isDirty() || editor.getArchivo() == null) {
-            if (!guardarEditor(editor)) {
+            if (!guardarEditor(editor) || rechazarSiNoEsTxt(editor)) {
                 return;
             }
         }
@@ -617,6 +625,7 @@ public class InterfazPrincipalController implements Initializable {
             sin = new AnalizadorSintactico(lex.getTokensDetectados(), this::mostrarError);
         } else {
             txtLexico.setText("ANALIZADOR LÉXICO NO PASADO\n\n" + lex.mostrarTokens());
+            actualizarEstado("✕ Error léxico — " + editor.getNombre(), false);
             return;
         }
 
@@ -643,6 +652,25 @@ public class InterfazPrincipalController implements Initializable {
         } else {
             txtDocumentador.setText(sin.getDocumentador().imprimir());
         }
+
+        actualizarEstado(sin.getResultado()
+                ? "✓ Compilación exitosa — " + editor.getNombre()
+                : "✕ Error sintáctico/semántico — " + editor.getNombre(), sin.getResultado());
+    }
+
+    private boolean rechazarSiNoEsTxt(EditorTab editor) {
+        if (editor.getNombre().toLowerCase(Locale.ROOT).endsWith(".txt")) {
+            return false;
+        }
+        actualizarEstado("✕ No compilable: " + editor.getNombre(), false);
+        mostrarError("Solo se pueden compilar archivos .txt.\nArchivo actual: " + editor.getNombre());
+        return true;
+    }
+
+    private void actualizarEstado(String texto, boolean ok) {
+        lblEstado.setText(texto);
+        lblEstado.getStyleClass().removeAll("ok", "error");
+        lblEstado.getStyleClass().add(ok ? "ok" : "error");
     }
 
     private void configurarApi() {

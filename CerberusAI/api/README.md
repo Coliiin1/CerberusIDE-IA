@@ -81,6 +81,16 @@ curl.exe -H "X-API-Key: la-clave" https://...trycloudflare.com/health
 `role` puede ser `generar`, `explicar` o `corregir`. `compila` solo se calcula para
 `generar`/`corregir`.
 
+- `POST /transcribir` (dictado por voz; requiere `X-API-Key` si la clave está configurada):
+  cuerpo crudo `Content-Type: audio/wav` → `{"texto": "..."}` en español. Usa
+  [faster-whisper](https://github.com/SYSTRAN/faster-whisper) en local; el modelo se descarga
+  la primera vez que se usa (`small` ≈ 500 MB) y queda en caché. Errores: `400` sin audio o
+  audio ilegible, `413` si supera `MAX_AUDIO_BYTES`, `503` si falta `faster-whisper`.
+
+```powershell
+curl.exe -X POST --data-binary "@prueba.wav" -H "Content-Type: audio/wav" http://localhost:8000/transcribir
+```
+
 ## Autenticación y límite de peticiones
 
 - Si `CERBERUSAI_API_KEY` está definida, todas las peticiones deben enviar
@@ -124,4 +134,8 @@ dentro de la misma red; para cualquier red usa el túnel.
 | `CERBERUSAI_API_KEY` | vacío | Clave exigida en `X-API-Key`; vacío = sin autenticación. |
 | `CERBERUSAI_RATE_LIMIT` | `20` | Peticiones permitidas por IP y ventana; `0` desactiva. |
 | `CERBERUSAI_RATE_WINDOW` | `60` | Ventana del límite, en segundos. |
+| `WHISPER_MODEL` | `small` | Modelo de faster-whisper (`base`, `small`, `medium`...). |
+| `WHISPER_DEVICE` | `cpu` | `cpu` o `cuda`. |
+| `WHISPER_COMPUTE` | `int8` | Tipo de cómputo (`int8` en CPU, `float16` en GPU). |
+| `MAX_AUDIO_BYTES` | `4194304` | Tamaño máximo del WAV (4 MB ≈ 2 min a 16 kHz mono). |
 | `CLOUDFLARED` | `cloudflared` del PATH | Ruta alternativa al ejecutable del túnel. |

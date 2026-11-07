@@ -8,12 +8,13 @@
 <?import javafx.scene.control.MenuItem?>
 <?import javafx.scene.control.RadioMenuItem?>
 <?import javafx.scene.control.SeparatorMenuItem?>
-<?import javafx.scene.control.Separator?>
 <?import javafx.scene.control.SplitPane?>
 <?import javafx.scene.control.Tab?>
 <?import javafx.scene.control.TabPane?>
 <?import javafx.scene.control.TextArea?>
 <?import javafx.scene.control.TreeView?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
@@ -27,7 +28,7 @@
 
     <!-- BARRA SUPERIOR -->
     <top>
-        <VBox spacing="0">
+        <VBox>
             <MenuBar styleClass="ide-menu-bar">
                 <Menu text="Archivo">
                     <MenuItem text="Nuevo" fx:id="itemArchivoNuevo" accelerator="Shortcut+N"/>
@@ -42,48 +43,30 @@
                     <MenuItem text="Copiar" fx:id="itemEditarCopiar"/>
                     <MenuItem text="Pegar" fx:id="itemEditarPegar"/>
                 </Menu>
-                <Menu text="Ver"/>
-                <Menu text="Ejecutar"/>
-                <Menu text="Herramientas"/>
                 <Menu text="Opciones">
-                    <RadioMenuItem text="Modo Claro"
-                                   fx:id="radioModoClaro"/>
+                    <RadioMenuItem text="Modo Claro" fx:id="radioModoClaro"/>
                     <SeparatorMenuItem/>
-                    <MenuItem text="Configurar API de CerberusAI..."
-                              fx:id="itemConfigurarApiIA"/>
+                    <MenuItem text="Configurar API de CerberusAI..." fx:id="itemConfigurarApiIA"/>
                 </Menu>
-                <Menu text="Ayuda"/>
             </MenuBar>
 
-            <HBox alignment="CENTER_LEFT"
-                  spacing="12"
-                  styleClass="ide-toolbar">
+            <HBox alignment="CENTER_LEFT" spacing="10" styleClass="ide-toolbar">
                 <padding>
-                    <Insets top="10" right="16"
-                            bottom="10" left="16"/>
+                    <Insets top="8" right="16" bottom="8" left="14"/>
                 </padding>
 
-                <Label text="◈" styleClass="ide-logo"/>
+                <ImageView fitHeight="26" preserveRatio="true" smooth="true">
+                    <Image url="@../Imagenes/logoCT.png"/>
+                </ImageView>
                 <Label text="CERBERUS" styleClass="ide-brand"/>
                 <Label text="IDE" styleClass="ide-brand-secondary"/>
 
-                <Separator orientation="VERTICAL"
-                           styleClass="toolbar-separator"/>
-
-                <Label text="Proyecto:"
-                       styleClass="toolbar-project"/>
-                <Label fx:id="lblProyecto"
-                       text="Sin proyecto"
-                       styleClass="toolbar-project"/>
+                <Label text="/" styleClass="toolbar-slash"/>
+                <Label fx:id="lblProyecto" text="Sin proyecto" styleClass="toolbar-project"/>
 
                 <Region HBox.hgrow="ALWAYS"/>
 
-                <Label text="● Sin errores recientes"
-                       styleClass="ide-status"/>
-
-                <Button text="▶  Compilar"
-                        fx:id="btnCompilar"
-                        styleClass="btn-compilar"/>
+                <Button text="▶  Compilar" fx:id="btnCompilar" styleClass="btn-compilar"/>
             </HBox>
         </VBox>
     </top>
@@ -91,35 +74,29 @@
     <!-- ÁREA PRINCIPAL DEL IDE -->
     <center>
         <SplitPane fx:id="splitPrincipal"
-                   dividerPositions="0.19, 0.79"
+                   dividerPositions="0.19, 0.77"
                    styleClass="ide-split">
-
             <items>
 
-                <!-- EXPLORADOR IZQUIERDO -->
-                <VBox spacing="8" styleClass="explorer-panel">
+                <!-- EXPLORADOR -->
+                <VBox spacing="8" styleClass="card">
                     <padding>
-                        <Insets top="12" right="10"
-                                bottom="10" left="10"/>
+                        <Insets top="12" right="10" bottom="10" left="10"/>
                     </padding>
 
-                    <Label text="EXPLORADOR"
-                           styleClass="panel-heading"/>
-
                     <HBox alignment="CENTER_LEFT" spacing="6">
-                        <Button text="Abrir carpeta"
-                                fx:id="btnAbrirProyecto"
-                                styleClass="explorer-action"/>
+                        <Label text="EXPLORADOR" styleClass="panel-heading"/>
                         <Region HBox.hgrow="ALWAYS"/>
-                        <Button text="↻"
-                                fx:id="btnRefrescarProyecto"
-                                styleClass="icon-button"/>
+                        <Button text="↻" fx:id="btnRefrescarProyecto" styleClass="icon-button"/>
                     </HBox>
+
+                    <Button text="Abrir carpeta" fx:id="btnAbrirProyecto"
+                            maxWidth="Infinity" styleClass="btn-ghost"/>
 
                     <Label fx:id="lblProyectoVacio"
                            text="No hay ningún proyecto abierto. Usa «Abrir carpeta» para empezar."
                            wrapText="true"
-                           styleClass="tree-item-muted"/>
+                           styleClass="texto-tenue"/>
 
                     <TreeView fx:id="treeProyecto"
                               visible="false"
@@ -130,152 +107,82 @@
 
                 <!-- EDITOR Y RESULTADOS -->
                 <SplitPane orientation="VERTICAL"
-                           dividerPositions="0.70"
-                           styleClass="editor-split">
-
+                           dividerPositions="0.68"
+                           styleClass="ide-split-interno">
                     <items>
-
-                        <!-- EDITOR -->
-                        <VBox spacing="0" styleClass="editor-panel">
-
+                        <VBox styleClass="card">
                             <TabPane fx:id="tabsEditor"
                                      VBox.vgrow="ALWAYS"
                                      tabClosingPolicy="ALL_TABS"
                                      styleClass="editor-tabs-pane"/>
-
-                            <HBox alignment="CENTER_LEFT"
-                                  spacing="14"
-                                  styleClass="editor-status">
-                                <padding>
-                                    <Insets top="5" right="10"
-                                            bottom="5" left="10"/>
-                                </padding>
-                                <Label text="CERBERUS"
-                                       styleClass="status-item"/>
-                                <Region HBox.hgrow="ALWAYS"/>
-                                <Label fx:id="lblPosicion"
-                                       text="Línea 1, columna 1"
-                                       styleClass="status-item"/>
-                                <Label text="UTF-8"
-                                       styleClass="status-item"/>
-                                <Label text="Espacios: 4"
-                                       styleClass="status-item"/>
-                            </HBox>
                         </VBox>
 
-                        <!-- PANEL INFERIOR -->
-                        <VBox spacing="0" styleClass="output-panel">
-                            <HBox alignment="CENTER_LEFT"
-                                  styleClass="output-header">
-                                <padding>
-                                    <Insets top="8" right="12"
-                                            bottom="8" left="12"/>
-                                </padding>
-                                <Label text="RESULTADOS"
-                                       styleClass="panel-heading"/>
-                            </HBox>
-
+                        <VBox styleClass="card">
                             <TabPane fx:id="tabResultados"
-                                     styleClass="pestanas"
                                      tabClosingPolicy="UNAVAILABLE"
-                                     VBox.vgrow="ALWAYS">
+                                     VBox.vgrow="ALWAYS"
+                                     styleClass="resultados-pane">
                                 <tabs>
                                     <Tab text="Léxico">
                                         <content>
-                                            <TextArea fx:id="txtLexico"
-                                                      editable="false"
-                                                      wrapText="false"
-                                                      styleClass="resultado"/>
+                                            <TextArea fx:id="txtLexico" editable="false" styleClass="resultado"/>
                                         </content>
                                     </Tab>
-
                                     <Tab text="Sintáctico">
                                         <content>
-                                            <TextArea fx:id="txtSintactico"
-                                                      editable="false"
-                                                      wrapText="false"
-                                                      styleClass="resultado"/>
+                                            <TextArea fx:id="txtSintactico" editable="false" styleClass="resultado"/>
                                         </content>
                                     </Tab>
-
                                     <Tab text="Semántico">
                                         <content>
-                                            <TextArea fx:id="txtSemantico"
-                                                      editable="false"
-                                                      wrapText="false"
-                                                      styleClass="resultado"/>
+                                            <TextArea fx:id="txtSemantico" editable="false" styleClass="resultado"/>
                                         </content>
                                     </Tab>
-
                                     <Tab text="Documentador">
                                         <content>
-                                            <TextArea fx:id="txtDocumentador"
-                                                      editable="false"
-                                                      wrapText="false"
-                                                      styleClass="resultado"/>
+                                            <TextArea fx:id="txtDocumentador" editable="false" styleClass="resultado"/>
                                         </content>
                                     </Tab>
                                 </tabs>
                             </TabPane>
                         </VBox>
-
                     </items>
                 </SplitPane>
 
-                <!-- PANEL LATERAL DE CERBERUSAI -->
-                <VBox spacing="0" styleClass="ai-panel">
-
-                    <HBox alignment="CENTER_LEFT"
-                          spacing="10"
-                          styleClass="ai-header">
+                <!-- PANEL CERBERUSAI -->
+                <VBox styleClass="card">
+                    <HBox alignment="CENTER_LEFT" spacing="10" styleClass="ai-header">
                         <padding>
-                            <Insets top="12" right="12"
-                                    bottom="12" left="12"/>
+                            <Insets top="12" right="12" bottom="10" left="12"/>
                         </padding>
-
-                        <Label text="◈" styleClass="ai-logo"/>
-
-                        <VBox spacing="2">
-                            <Label text="CERBERUSai"
-                                   styleClass="ai-title"/>
-                            <Label text="Asistente de programación"
-                                   styleClass="ai-subtitle"/>
+                        <ImageView fitHeight="30" preserveRatio="true" smooth="true">
+                            <Image url="@../Imagenes/logoCT.png"/>
+                        </ImageView>
+                        <VBox spacing="1">
+                            <Label text="CERBERUSai" styleClass="ai-title"/>
+                            <Label text="Asistente de programación" styleClass="texto-tenue"/>
                         </VBox>
-
-                        <Region HBox.hgrow="ALWAYS"/>
                     </HBox>
-
-                    <Separator/>
 
                     <fx:include source="chat_cerberus.fxml"
                                 fx:id="chatCerberus"
                                 VBox.vgrow="ALWAYS"/>
-
                 </VBox>
 
             </items>
         </SplitPane>
     </center>
 
-    <!-- BARRA DE ESTADO INFERIOR -->
+    <!-- BARRA DE ESTADO -->
     <bottom>
-        <HBox alignment="CENTER_LEFT"
-              spacing="12"
-              styleClass="ide-bottom-bar">
+        <HBox alignment="CENTER_LEFT" spacing="16" styleClass="ide-status-bar">
             <padding>
-                <Insets top="5" right="12"
-                        bottom="5" left="12"/>
+                <Insets top="4" right="14" bottom="4" left="14"/>
             </padding>
-
-            <Label text="CERBERUS IDE"
-                   styleClass="status-item"/>
-            <Label text="● Listo"
-                   styleClass="status-item"/>
+            <Label fx:id="lblEstado" text="Listo" styleClass="estado"/>
             <Region HBox.hgrow="ALWAYS"/>
-            <Label text="Compilador"
-                   styleClass="status-item"/>
-            <Label text="CERBERUSai"
-                   styleClass="status-item"/>
+            <Label fx:id="lblPosicion" text="Línea 1, columna 1" styleClass="status-item"/>
+            <Label text="UTF-8" styleClass="status-item"/>
         </HBox>
     </bottom>
 

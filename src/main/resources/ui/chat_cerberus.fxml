@@ -18,6 +18,7 @@
 <?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.Tooltip?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
@@ -28,16 +29,19 @@
         <Insets top="10" right="10" bottom="10" left="10"/>
     </padding>
     <HBox spacing="8" alignment="CENTER_LEFT">
-        <Label text="Rol:" styleClass="etiqueta"/>
+        <Label text="Rol" styleClass="panel-heading"/>
         <ComboBox fx:id="cmbRol"/>
         <Region HBox.hgrow="ALWAYS"/>
-        <Label fx:id="lblChatEstado" text="" styleClass="estado-chat"/>
+        <Label fx:id="lblChatEstado" text="" styleClass="estado"/>
     </HBox>
     <TextArea fx:id="txtChatPrompt" promptText="Describe el programa, el codigo a explicar o a corregir..."
-              prefRowCount="4" wrapText="true" styleClass="resultado"/>
+              prefRowCount="4" wrapText="true" styleClass="ai-input"/>
     <HBox spacing="8" alignment="CENTER_LEFT">
-        <Button fx:id="btnEnviarChat" text="ENVIAR" styleClass="btn-compilar"/>
-        <Button fx:id="btnInsertarEditor" text="INSERTAR EN EDITOR" styleClass="btn-insertar" disable="true"/>
+        <Button fx:id="btnEnviarChat" text="Enviar" styleClass="btn-compilar"/>
+        <Button fx:id="btnDictar" text="🎤 Dictar" styleClass="btn-ghost">
+            <tooltip><Tooltip text="Dictar la petición por voz (pulsa otra vez para terminar)"/></tooltip>
+        </Button>
+        <Button fx:id="btnInsertarEditor" text="Insertar en editor" styleClass="btn-ghost" disable="true"/>
     </HBox>
-    <TextArea fx:id="txtChatRespuesta" editable="false" wrapText="true" VBox.vgrow="ALWAYS" styleClass="resultado"/>
+    <TextArea fx:id="txtChatRespuesta" editable="false" wrapText="true" VBox.vgrow="ALWAYS" styleClass="ai-respuesta"/>
 </VBox>

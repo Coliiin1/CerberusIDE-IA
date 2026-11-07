@@ -1,6 +1,7 @@
 package ui;
 
 import cliente.ClienteCerberusAI;
+import cliente.GrabadorMicrofono;
 import javafx.collections.FXCollections;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
@@ -40,6 +41,9 @@ public class ChatCerberusController implements Initializable {
     private Button btnInsertarEditor;
 
     @FXML
+    private Button btnDictar;
+
+    @FXML
     private Label lblChatEstado;
 
     @FXML
@@ -48,6 +52,7 @@ public class ChatCerberusController implements Initializable {
     private Consumer<String> insertarHandler;
     private String ultimoCodigo;
     private String apiUrl = ClienteCerberusAI.urlPorDefecto();
+    private final GrabadorMicrofono grabador = new GrabadorMicrofono();
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -56,6 +61,7 @@ public class ChatCerberusController implements Initializable {
 
         btnEnviarChat.setOnAction(e -> enviar());
         btnInsertarEditor.setOnAction(e -> insertar());
+        btnDictar.setOnAction(e -> alternarDictado());
         actualizarEstado("Listo.", null);
     }
 
@@ -124,6 +130,60 @@ public class ChatCerberusController implements Initializable {
         Thread hilo = new Thread(tarea, "cerberusai-chat");
         hilo.setDaemon(true);
         hilo.start();
+    }
+
+    private void alternarDictado() {
+        if (!grabador.isGrabando()) {
+            try {
+                grabador.iniciar();
+            } catch (Exception ex) {
+                actualizarEstado("No hay micrófono disponible: " + mensaje(ex), "error");
+                return;
+            }
+            btnDictar.setText("■ Detener");
+            btnDictar.getStyleClass().add("grabando");
+            btnEnviarChat.setDisable(true);
+            actualizarEstado("Escuchando... (máx. " + GrabadorMicrofono.SEGUNDOS_MAXIMOS + " s)", null);
+            return;
+        }
+
+        btnDictar.setText("🎤 Dictar");
+        btnDictar.getStyleClass().remove("grabando");
+        btnDictar.setDisable(true);
+        actualizarEstado("Transcribiendo...", null);
+
+        ClienteCerberusAI cliente = new ClienteCerberusAI(apiUrl);
+        Task<String> tarea = new Task<>() {
+            @Override
+            protected String call() throws Exception {
+                return cliente.transcribir(grabador.detener());
+            }
+        };
+        tarea.setOnSucceeded(e -> {
+            String texto = tarea.getValue();
+            if (texto == null || texto.isBlank()) {
+                actualizarEstado("No se entendió el audio.", "error");
+            } else {
+                String actual = txtChatPrompt.getText() == null ? "" : txtChatPrompt.getText().strip();
+                txtChatPrompt.setText(actual.isEmpty() ? texto : actual + " " + texto);
+                txtChatPrompt.positionCaret(txtChatPrompt.getLength());
+                actualizarEstado("Dictado listo. Revisa y pulsa Enviar.", "ok");
+            }
+            terminarDictado();
+        });
+        tarea.setOnFailed(e -> {
+            actualizarEstado("Error al transcribir: " + resumir(mensaje(tarea.getException())), "error");
+            terminarDictado();
+        });
+
+        Thread hilo = new Thread(tarea, "cerberusai-dictado");
+        hilo.setDaemon(true);
+        hilo.start();
+    }
+
+    private void terminarDictado() {
+        btnDictar.setDisable(false);
+        btnEnviarChat.setDisable(false);
     }
 
     private void insertar() {
