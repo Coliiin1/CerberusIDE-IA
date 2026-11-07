@@ -72,18 +72,25 @@ Notebook `CerberusAI/colab/train_cerberus_colab.ipynb` (cada celda verifica con 
 
 Si la sesión se cae: mismo `RUN_ID`, `RESUME = True`, ejecutar todo de nuevo en orden.
 
-## Fase D — Merge / GGUF / Ollama (local)
-- Backup de v1: `finetune/lora-adapter` → `lora-adapter-v1`, `cerberusai-q8_0.gguf` → `cerberusai-v1-q8_0.gguf`.
-- Descomprimir el zip en `CerberusAI/finetune/`.
-- `py CerberusAI\finetune\export_gguf.py` → `merged-model`.
-- `convert_hf_to_gguf.py` → `llama-quantize Q8_0` → `ollama create cerberusai-v2 -f Modelfile`.
-- Regenerar `chat_all/train/eval.jsonl` (Fase B) y comparar sha256 con `run_info.json`.
+> **Corrida 1 (`v2-20261106-1`): HECHA** en A100 80 GB. Mejor checkpoint `checkpoint-640`
+> (época 4, eval_loss 0.0205; la época 5 empieza a sobreajustar: 0.0207).
 
-## Fase E — Evaluación
-- `py CerberusAI\eval\run_eval.py --base-model cerberusai --ft-model cerberusai-v2` (v1 vs v2) y
-  `py CerberusAI\eval\run_eval.py --ft-model cerberusai-v2` (base vs v2).
-- El eval `generation` pasa de 9 a 104 tareas; v1 pudo ver algunas en su train (sesgo leve a favor de v1).
-- Si v2 gana: `ollama cp cerberusai-v2 cerberusai` (API/IDE sin cambios).
+## Fases D + E — Merge, GGUF y evaluación en Colab (sin PC)
+Notebook `CerberusAI/colab/exportar_evaluar_colab.ipynb` (A100, ≥ 40 GB RAM), mismo `RUN_ID`:
+1. GPU + RAM; Drive (adapter v2; v1 opcional en `MyDrive/CerberusAI/runs/v1/lora-adapter/`).
+2. Clona `main` y llama.cpp (`--depth 1`, sin compilar), instala `requirements-colab.txt` + `gguf-py`.
+3. `export_gguf.py` (merge fp16 en CPU) → `convert_hf_to_gguf.py --outtype q8_0` →
+   `runs/<RUN_ID>/gguf/cerberusai-q8_0.gguf` + `gguf_info.json` (sha256). v1 se exporta solo al disco de Colab.
+4. Ollama en Colab: `cerberusai-v2` (+ `cerberusai-v1`) con el `Modelfile` (FROM absoluto) y `ollama pull` del base.
+5. Oráculo: JDK Temurin 25 + `javac` de los paquetes puros (sin Maven) + `audit.TestSuite`.
+6. `run_eval.py` base vs v2 (y v1 vs v2) sobre las 104 tareas `generation` de `eval.jsonl` (verificado
+   por sha256 contra `run_info.json`) → `runs/<RUN_ID>/eval/resultados_*.txt`.
+
+Nota: v1 pudo ver algunas de esas tareas en su entrenamiento (sesgo leve a favor de v1).
+
+**Único paso en el PC, si v2 gana:** descargar el GGUF desde la web de Drive a `CerberusAI\finetune\`,
+verificar el sha256, `ollama cp cerberusai cerberusai-v1` y `ollama create cerberusai -f Modelfile`
+(API/IDE sin cambios).
 
 ## Cambios de código
 - `train_qlora.py`: `--dtype auto|bf16|fp16` (auto = bf16 si soportado, si no fp16).
