@@ -78,7 +78,8 @@ curl.exe -H "X-API-Key: la-clave" https://...trycloudflare.com/health
 }
 ```
 
-`role` puede ser `generar`, `explicar` o `corregir`. `compila` solo se calcula para
+`role` puede ser `generar` (por defecto si se omite), `explicar` o `corregir`; cualquier otro
+valor o un campo desconocido (p. ej. `rol`) responde **422**. `compila` solo se calcula para
 `generar`/`corregir`.
 
 - `POST /transcribir` (dictado por voz; requiere `X-API-Key` si la clave está configurada):

@@ -37,11 +37,11 @@ import threading
 import time
 import wave
 from collections import deque
-from typing import Optional
+from typing import Literal, Optional
 
 import requests
 from fastapi import Depends, FastAPI, HTTPException, Request
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from starlette.concurrency import run_in_threadpool
 
 AQUI = os.path.dirname(os.path.abspath(__file__))
@@ -139,7 +139,10 @@ def verificar_acceso(request: Request):
 
 
 class ChatRequest(BaseModel):
-    role: str = "generar"
+    # Rol desconocido o campo mal escrito (p. ej. "rol") -> 422, en vez de caer en "generar".
+    model_config = ConfigDict(extra="forbid")
+
+    role: Literal["generar", "explicar", "corregir"] = "generar"
     prompt: str
 
 
@@ -203,7 +206,7 @@ def health():
 
 @app.post("/chat", response_model=ChatResponse, dependencies=[Depends(verificar_acceso)])
 def chat(req: ChatRequest):
-    plantilla = ROLES.get(req.role, ROLES["generar"])
+    plantilla = ROLES[req.role]
     user = plantilla.format(prompt=req.prompt)
     payload = {
         "model": MODEL,

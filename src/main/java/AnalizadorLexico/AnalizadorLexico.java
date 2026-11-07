@@ -42,6 +42,10 @@ public class AnalizadorLexico {
     
     
     public boolean seccionarCadena(String cadena){
+        // Editores de Windows guardan "UTF-8 con BOM"; el BOM pegado a "clase" la volvia token ERROR.
+        if (cadena.startsWith("﻿")) {
+            cadena = cadena.substring(1);
+        }
         // Los literales de cadena se copian intactos: separar simbolos dentro de ellos altera su texto.
         Matcher literal = Pattern.compile("\"[^\"\\r\\n]*\"").matcher(cadena);
         StringBuilder separado = new StringBuilder();
